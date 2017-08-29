@@ -8,6 +8,10 @@ This tool will will install and update [Xen Orchestra](https://xen-orchestra.com
 
 Clone this repository and run xo-install.sh script as root
 
+```
+./install-xo.sh
+```
+
 Tool has been tested to work with following distros:
 
 - CentOS 7
@@ -40,7 +44,7 @@ CentOS:
 - git
 
 Debian/Ubuntu:
-- apt-transport
+- apt-transport-https
 - ca-certificates
 - curl
 - yarn
