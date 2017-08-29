@@ -199,7 +199,7 @@ function InstallXO {
         sleep 2
 
         echo "Fixing relative path to xo-web installation in xo-server configuration file"
-        sed -i "s/#'\/': '\/path\/to\/xo-web\/dist\//'\/': '\/..\/..\/xo-web\/dist\//" $INSTALLDIR/xo-builds/xo-server-$TIME/sample.config.yaml
+        sed -i "s/#'\/': '\/path\/to\/xo-web\/dist\//'\/': '..\/..\/xo-web\/dist\//" $INSTALLDIR/xo-builds/xo-server-$TIME/sample.config.yaml
         sleep 2
 
         if [[ $PORT != "80" ]]; then
