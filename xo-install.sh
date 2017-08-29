@@ -168,7 +168,7 @@ function InstallXO {
 	echo "xo-server and xo-web build quite a while. Grab a cup of coffee and lay back"
 	echo
         echo -n "Running xo-server install..."
-        cd $INSTALLDIR/xo-builds/xo-server-$TIME && yarn > /dev/null 2>$LOGFILE && yarn run build > /dev/null 2>$LOGFILE
+        cd $INSTALLDIR/xo-builds/xo-server-$TIME && yarn >/dev/null 2>$LOGFILE && yarn run build >/dev/null 2>$LOGFILE
         echo "done"
         echo -n "Running xo-web install..."
         cd $INSTALLDIR/xo-builds/xo-web-$TIME && yarn >/dev/null 2>$LOGFILE && yarn run build >/dev/null 2>$LOGFILE
@@ -229,15 +229,15 @@ function InstallXO {
                 chown -R $XOUSER:$XOUSER $INSTALLDIR/xo-builds/xo-server-$TIME
 
                 if [ ! -d /var/lib/xo-server ]; then
-                mkdir /var/lib/xo-server 2>/dev/null
+                	mkdir /var/lib/xo-server 2>/dev/null
                 fi
 
-        chown $XOUSER:$XOUSER /var/lib/xo-server
+        	chown $XOUSER:$XOUSER /var/lib/xo-server
         fi
 
         echo
         echo "Starting xo-server..."
-        /bin/systemctl start xo-server > /dev/null
+        /bin/systemctl start xo-server >/dev/null
 
 	timeout 60 bash <<-"EOF"
 		while [[ -z $(journalctl -u xo-server | grep "http:\/\/\[::\]:$PORT") ]]; do
@@ -349,6 +349,7 @@ read -p ": " option
                                 read -p "[y/N]: " answer
                                         case $answer in
                                                 y)
+						echo "Stopping xo-server..."
 						/bin/systemctl stop xo-server || { echo "failed to stop service, exiting..." ; exit 1; }
                                         ;;
                                                 n)
