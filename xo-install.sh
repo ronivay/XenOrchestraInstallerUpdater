@@ -343,7 +343,7 @@ read -p ": " option
                                 read -p "[y/N]: " answer
                                         case $answer in
                                                 y)
-                                                :
+						/bin/systemctl stop xo-server || { echo "failed to stop service, exiting..." ; exit 1; }
                                         ;;
                                                 n)
                                                 exit 0
