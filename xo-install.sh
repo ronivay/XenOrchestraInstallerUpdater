@@ -165,6 +165,8 @@ function InstallXO {
         echo "done"
 
         echo
+	echo "xo-server and xo-web build quite a while. Grab a cup of coffee and lay back"
+	echo
         echo -n "Running xo-server install..."
         cd $INSTALLDIR/xo-builds/xo-server-$TIME && yarn > /dev/null 2>$LOGFILE && yarn run build > /dev/null 2>$LOGFILE
         echo "done"
@@ -175,6 +177,10 @@ function InstallXO {
         echo
         echo "Fixing binary path in systemd service configuration and symlinking to /etc/systemd/system/xo-server.service"
         sed -i "s#ExecStart=.*#ExecStart=$INSTALLDIR\/xo-server\/bin\/xo-server#" $INSTALLDIR/xo-builds/xo-server-$TIME/xo-server.service
+
+	echo
+	echo "Adding WorkingDirectory parameter to systemd service configuration"
+	sed -i "/ExecStart=.*/a WorkingDirectory=/etc/xo/xo-server" $INSTALLDIR/xo-builds/xo-server-$TIME/xo-server.service
 
         if [ $XOUSER ]; then
                 echo "Adding user to systemd config"
