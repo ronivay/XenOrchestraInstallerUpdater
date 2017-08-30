@@ -48,7 +48,7 @@ CentOS was tested without SELinux. You need to deal with labels and permissions 
 Tool makes all necessary changes required for Xen-Orchestra to run (including packages, user creation, permissions). Please evaluate script if needed.
 I take no responsibility of possible damage caused by this tool.
 
-Below is a list of packages that will be installed (if required) if missing.
+Below is a list of packages that will be installed if missing.
 
 ```
 CentOS:

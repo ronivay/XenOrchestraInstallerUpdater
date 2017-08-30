@@ -307,9 +307,7 @@ function CheckSystemd {
 	fi
 }
 
-CheckUser
-CheckOS
-CheckSystemd
+function StartUpScreen {
 
 echo "-----------------------------------------"
 echo
@@ -424,3 +422,9 @@ read -p ": " option
 		;;
 esac
 
+}
+
+CheckUser
+CheckOS
+CheckSystemd
+StartUpScreen
