@@ -268,9 +268,10 @@ function UpdateXO {
 
 	InstallXO
 
-	# remove old builds. leave 5 latest
-	find $INSTALLDIR/xo-builds/ -maxdepth 1 -type d -name "xo-web*" -printf "%T@ %p\n" | sort -n | cut -d' ' -f2- | head -n -5 | xargs -r rm -r
-	find $INSTALLDIR/xo-builds/ -maxdepth 1 -type d -name "xo-server*" -printf "%T@ %p\n" | sort -n | cut -d' ' -f2- | head -n -5 | xargs -r rm -r
+	# remove old builds. leave 3 latest
+	echo "Removing old installations (leaving 5 latest)
+	find $INSTALLDIR/xo-builds/ -maxdepth 1 -type d -name "xo-web*" -printf "%T@ %p\n" | sort -n | cut -d' ' -f2- | head -n -3 | xargs -r rm -r
+	find $INSTALLDIR/xo-builds/ -maxdepth 1 -type d -name "xo-server*" -printf "%T@ %p\n" | sort -n | cut -d' ' -f2- | head -n -3 | xargs -r rm -r
 }
 
 function CheckOS {
