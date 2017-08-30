@@ -4,6 +4,8 @@
 
 This tool will will install and update [Xen Orchestra](https://xen-orchestra.com/#!/) automatically. xo-server and xo-web components are built from sources.
 
+There's also an option to build/pull docker image to get things up and running quickly.
+
 ## Instructions
 
 Clone this repository and run xo-install.sh script as root
@@ -12,13 +14,15 @@ Clone this repository and run xo-install.sh script as root
 ./install-xo.sh
 ```
 
+Tool makes some checks and offers options to update/install Xen-Orchestra or deploy a container. 
+
 Tool has been tested to work with following distros:
 
 - CentOS 7
 - Debian 8
 - Ubuntu 16.05
 
-CentOS was tested without SELinux. You need to deal with labels yourself if you want to use it.
+CentOS was tested without SELinux. You need to deal with labels and permissions yourself if you want to use it.
 
 ## Notes
 
