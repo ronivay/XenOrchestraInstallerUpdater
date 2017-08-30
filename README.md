@@ -1,20 +1,41 @@
+
 # XenOrchestraInstallerUpdater - Install / Update Xen-Orchestra from sources
 
-## In a nutshell
+# In a nutshell
 
-This tool will will install and update [Xen Orchestra](https://xen-orchestra.com/#!/) automatically. xo-server and xo-web components are built from sources.
+This repo consist of script to install and update [Xen Orchestra](https://xen-orchestra.com/#!/) and readymade files to create Docker image.
 
-There's also an option to build/pull docker image to get things up and running quickly.
+# Instructions
 
-## Instructions
-
+### script
 Clone this repository and run xo-install.sh script as root
 
 ```
 ./install-xo.sh
 ```
 
-Tool makes some checks and offers options to update/install Xen-Orchestra or deploy a container. 
+Tool makes some checks and offers options to update/install Xen-Orchestra or deploy a container.
+
+### docker
+You can also build the docker image locally if you wish or pull it from docker hub without using the script.
+
+```
+docker build -t docker/. xen-orchestra
+docker run -p 80:80 xen-orchestra
+```
+or
+```
+docker pull ronivay/xen-orchestra
+docker run -p 80:80 ronivay/xen-orchestra
+```
+
+I suggest adding persistent data mounts for xo-server and redis by adding volume flags to commands above like so:
+
+```
+docker run -p 80:80 -v /path/to/xodata:/var/lib/xo-server -v /path/to/redisdata:/var/lib/redis xen-orchestra
+```
+
+## Notes
 
 Tool has been tested to work with following distros:
 
@@ -23,8 +44,6 @@ Tool has been tested to work with following distros:
 - Ubuntu 16.05
 
 CentOS was tested without SELinux. You need to deal with labels and permissions yourself if you want to use it.
-
-## Notes
 
 Tool makes all necessary changes required for Xen-Orchestra to run (including packages, user creation, permissions). Please evaluate script if needed.
 I take no responsibility of possible damage caused by this tool.
