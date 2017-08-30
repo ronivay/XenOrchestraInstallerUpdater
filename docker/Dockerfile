@@ -14,7 +14,7 @@ RUN yum -y install yarn
 # epel-release for various packages not available from base repo
 RUN yum -y install epel-release
 
-# build dependencies, git for fetchin source and redis server for storing ata
+# build dependencies, git for fetching source and redis server for storing data
 RUN yum -y install gcc gcc-c++ make openssl-devel redis libpng-devel python git
 
 # monit to keep an eye on processes
