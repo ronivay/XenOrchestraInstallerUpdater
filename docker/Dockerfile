@@ -40,4 +40,6 @@ RUN npm install forever -g
 
 WORKDIR /etc/xo-server
 
+EXPOSE 80
+
 CMD ["/usr/bin/monit"]
