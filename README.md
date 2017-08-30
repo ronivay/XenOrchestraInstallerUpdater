@@ -17,7 +17,7 @@ Clone this repository and run xo-install.sh script as root
 Tool makes some checks and offers options to update/install Xen-Orchestra or deploy a container.
 
 ### docker
-You can also build the docker image locally if you wish or pull it from docker hub without using the script.
+You can also build the docker image locally if you wish or pull it from [docker hub](https://hub.docker.com/r/ronivay/xen-orchestra/) without using the script.
 
 ```
 docker build -t docker/. xen-orchestra
