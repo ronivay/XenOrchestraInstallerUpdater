@@ -304,9 +304,18 @@ function CheckOS {
 function CheckSystemd {
 
 	if [ ! $(which systemctl) ]; then
-		echo "This tool is implemented to work with systemd enabled systems only"
+		echo "This tool is designed to work with systemd enabled systems only"
 		exit 0
 	fi
+}
+
+function CheckDocker {
+	if [ -z $(which docker) ]; then
+		echo
+		echo "Docker needs to be installed for this to work"
+		exit 0
+	fi
+
 }
 
 function StartUpScreen {
@@ -382,6 +391,7 @@ read -p ": " option
 			exit 0
 		;;
 		3)
+			CheckDocker
 			echo
 			echo "Build image locally or fetch from docker hub?"
 			echo "1. Build"
