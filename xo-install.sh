@@ -316,7 +316,7 @@ echo
 echo "This script will automatically install/update Xen-Orchestra"
 echo
 echo "- By default xo-server will be running as root to prevent issues with permissions and port binding."
-echo "  uncomment and edit XOUSER variable in this script to add this custom user to XO-config"
+echo "  uncomment and edit XOUSER variable in this script to run service as unprivileged user"
 echo "  (Notice that you might have to make other changes depending on your system for this to work)"
 echo "  This method only changes the user which runs the service. Other install tasks like node packages are still ran as root"
 echo
