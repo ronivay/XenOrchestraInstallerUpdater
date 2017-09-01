@@ -14,7 +14,22 @@ Clone this repository and run xo-install.sh script as root
 ./install-xo.sh
 ```
 
-Tool makes some checks and offers options to update/install Xen-Orchestra or deploy a container.
+Tool makes some checks and offers options:
+
+1. Autoinstall
+ - Installs all dependencies (necessary packages and Xen-Orchestra itself)
+ - Packages listed in the end of this README
+
+2. Update / Install without dependencies
+ - Installs Xen-Orchestra from latest sources (doesn't install any packages)
+
+3. Deploy container
+ - Offers options to build container locally or pull from dockerhub
+
+notes:
+
+ - If you choose to install with option 2, you need to take care that required packages are already installed
+ - You can change xo-server and xo-web git branch by editing xo-install.sh scripts $BRANCH variable
 
 ### docker
 You can also build the docker image locally if you wish or pull it from [docker hub](https://hub.docker.com/r/ronivay/xen-orchestra/) without using the script.
@@ -54,8 +69,8 @@ Below is a list of packages that will be installed if missing.
 CentOS:
 - curl
 - epel-release
-- nodejs
-- npm
+- nodejs (v6)
+- npm (v3)
 - yarn
 - gcc
 - gcc+
@@ -71,8 +86,8 @@ Debian/Ubuntu:
 - ca-certificates
 - curl
 - yarn
-- nodejs
-- npm
+- nodejs (v6)
+- npm (v3)
 - build-essential
 - redis-server
 - libpng-dev

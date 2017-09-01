@@ -134,7 +134,7 @@ function InstallXO {
 	if [ $XOUSER ]; then
 		if [[ -z $(getent passwd $XOUSER) ]]; then
 			echo
-			echo "Creating $XOUSER user"
+			echo "Creating missing $XOUSER user"
 			useradd -s /sbin/nologin $XOUSER
 			echo
 			sleep 2
@@ -318,11 +318,10 @@ echo
 echo "- By default xo-server will be running as root to prevent issues with permissions and port binding."
 echo "  uncomment and edit XOUSER variable in this script to add this custom user to XO-config"
 echo "  (Notice that you might have to make other changes depending on your system for this to work)"
-echo "  This method only changes the user which runs the service. Other install tasks like node packages are still installed as root"
+echo "  This method only changes the user which runs the service. Other install tasks like node packages are still ran as root"
 echo
-echo "- Updating will result in a completely fresh source compile and only active symlink will be changed"
 echo "- Data stored in redis and /var/lib/xo-server/data will not be touched"
-echo "- Update option will only work for installations originally done with this tool"
+echo "- Option 2. actually creates a new build from sources but works as an update to installations originally done with this tool"
 echo
 echo "Following options will be used for installation:"
 echo
@@ -342,9 +341,9 @@ echo "Errorlog is stored to $LOGFILE for debug purposes"
 echo "-----------------------------------------"
 
 echo
-echo "1. Install"
-echo "2. Update"
-echo "3. Run with docker"
+echo "1. Autoinstall"
+echo "2. Update / Install without packages"
+echo "3. Deploy docker container"
 echo "4. Exit"
 echo
 read -p ": " option
