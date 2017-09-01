@@ -396,6 +396,7 @@ read -p ": " option
 			echo "Build image locally or fetch from docker hub?"
 			echo "1. Build"
 			echo "2. Pull"
+			echo "3. Cancel"
 			read -p ": " container
 				case $container in
 					1)
@@ -420,6 +421,9 @@ read -p ": " option
 						echo "If you want to persist xen-orchestra and redis data, use volume flags like:"
 						echo "docker run -itd -p 80:80 -v /path/to/data/xo-server:/var/lib/xo-server -v /path/to/data/redis:/var/lib/redis ronivay/xen-orchestra"
 						
+					;;
+					3)
+						exit 0
 					;;
 					esac
 		;;
