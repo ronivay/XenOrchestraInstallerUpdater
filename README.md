@@ -1,9 +1,6 @@
 
 # XenOrchestraInstallerUpdater - Install / Update Xen-Orchestra from sources
 
-![](https://dockerbuildbadges.quelltext.eu/status.svg?organization=ronivay=xen-orchestra)
-  `https://dockerbuildbadges.quelltext.eu/status.svg?organization=ronivay&repository=xen-orchestra
-
 # In a nutshell
 
 This repo consist of script to install and update [Xen Orchestra](https://xen-orchestra.com/#!/) and readymade files to create Docker image.
