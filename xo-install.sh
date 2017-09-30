@@ -402,7 +402,7 @@ read -p ": " option
 				case $container in
 					1)
 						echo
-						docker build -t xen-orchestra $(dirname $0)/docker/image/.
+						docker build -t xen-orchestra $(dirname $0)/docker/.
 						echo
 						echo
 						echo "Image built. Run container:"
@@ -424,6 +424,9 @@ read -p ": " option
 						
 					;;
 					3)
+						exit 0
+					;;
+					*)
 						exit 0
 					;;
 					esac
