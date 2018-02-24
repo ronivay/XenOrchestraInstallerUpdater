@@ -1,8 +1,8 @@
 set init
 
 check process xo-server with pidfile /var/run/xo-server.pid
-        start program = "/usr/bin/forever start --pidFile /var/run/xo-server.pid --sourceDir /etc/xo-server bin/xo-server"
-        stop program = "/usr/bin/forever stop /etc/xo-server/bin/xo-server"
+        start program = "/usr/bin/forever start --pidFile /var/run/xo-server.pid --sourceDir /etc/xen-orchestra/packages/xo-server bin/xo-server"
+        stop program = "/usr/bin/forever stop /etc/xen-orchestra/packages/xo-server/bin/xo-server"
 
 
 check process redis with pidfile /var/run/redis/redis.pid

@@ -5,7 +5,7 @@
 #XOUSER="node"
 PORT="80"
 INSTALLDIR="/etc/xo"
-BRANCH="stable"
+BRANCH="master"
 LOGFILE="$(dirname $0)/xo-install.log"
 
 ## Modify to your need ##
@@ -31,7 +31,7 @@ function InstallDependenciesCentOS {
 	if [[ -z $(rpm -qa | grep ^node) ]]; then
 		echo
 		echo -n "Installing node.js..."
-		curl -s -L https://rpm.nodesource.com/setup_6.x | bash - >/dev/null 2>$LOGFILE
+		curl -s -L https://rpm.nodesource.com/setup_8.x | bash - >/dev/null 2>$LOGFILE
 		echo "done"
 	fi
 
@@ -105,7 +105,7 @@ function InstallDependenciesDebian {
 	if [[ -z $(dpkg -l | grep node) ]] || [[ -z $(which npm) ]]; then
 		echo
 		echo -n "Installing node.js..."
-		curl -sL https://deb.nodesource.com/setup_6.x | bash - >/dev/null 2>$LOGFILE
+		curl -sL https://deb.nodesource.com/setup_8.x | bash - >/dev/null 2>$LOGFILE
 		apt-get install -y nodejs >/dev/null 2>$LOGFILE
 		echo "done"
 	fi
@@ -148,43 +148,33 @@ function InstallXO {
 	fi
 
 	echo
-	echo "Creating install directory: $INSTALLDIR/xo-builds/xo-server-$TIME"
-	mkdir -p "$INSTALLDIR/xo-builds/xo-server-$TIME"
-	sleep 2
-	echo "Creating install directory: $INSTALLDIR/xo-builds/xo-web-$TIME"
-	mkdir -p "$INSTALLDIR/xo-builds/xo-web-$TIME"
-	sleep 2
+	echo "Creating install directory: $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
+	mkdir -p "$INSTALLDIR/xo-builds/xen-orchestra-$TIME"
 
 	echo
 	echo "Fetching source code from branch: $BRANCH ..."
 	echo
-	git clone -b $BRANCH http://github.com/vatesfr/xo-server $INSTALLDIR/xo-builds/xo-server-$TIME
-	echo
-	echo
-	git clone -b $BRANCH http://github.com/vatesfr/xo-web $INSTALLDIR/xo-builds/xo-web-$TIME
+	git clone -b $BRANCH https://github.com/vatesfr/xen-orchestra $INSTALLDIR/xo-builds/xen-orchestra-$TIME
 	echo
 	echo "done"
 
 	echo
 	echo "xo-server and xo-web build quite a while. Grab a cup of coffee and lay back"
 	echo
-	echo -n "Running xo-server install..."
-	cd $INSTALLDIR/xo-builds/xo-server-$TIME && yarn >/dev/null 2>$LOGFILE
-	echo "done"
-	echo -n "Running xo-web install..."
-	cd $INSTALLDIR/xo-builds/xo-web-$TIME && yarn >/dev/null 2>$LOGFILE
+	echo -n "Running installation"
+	cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn >/dev/null 2>$LOGFILE && yarn build >/dev/null 2>$LOGFILE
 	echo "done"
 
 	echo
 	echo "Fixing binary path in systemd service configuration and symlinking to /etc/systemd/system/xo-server.service"
-	sed -i "s#ExecStart=.*#ExecStart=$INSTALLDIR\/xo-server\/bin\/xo-server#" $INSTALLDIR/xo-builds/xo-server-$TIME/xo-server.service
+	sed -i "s#ExecStart=.*#ExecStart=$INSTALLDIR\/xo-server\/bin\/xo-server#" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service
 	echo
 	echo "Adding WorkingDirectory parameter to systemd service configuration"
-	sed -i "/ExecStart=.*/a WorkingDirectory=/etc/xo/xo-server" $INSTALLDIR/xo-builds/xo-server-$TIME/xo-server.service
+	sed -i "/ExecStart=.*/a WorkingDirectory=/etc/xo/xo-server" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service
 
 	if [ $XOUSER ]; then
 		echo "Adding user to systemd config"
-		sed -i "/SyslogIdentifier=.*/a User=$XOUSER" $INSTALLDIR/xo-builds/xo-server-$TIME/xo-server.service
+		sed -i "/SyslogIdentifier=.*/a User=$XOUSER" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service
 
 		if [ $OSNAME == "CentOS" ]; then
 			echo -n "Attempting to set cap_net_bind_service permission for /usr/bin/node..."
@@ -197,38 +187,28 @@ function InstallXO {
 		fi
 	fi
 
-	echo
-	echo "Symlinking systemd service configuration"
-	ln -sfn $INSTALLDIR/xo-server/xo-server.service /etc/systemd/system/xo-server.service
-	sleep 2
-	echo "Reloading systemd configuration"
-	echo
-	/bin/systemctl daemon-reload
-	sleep 2
-
 	echo "Fixing relative path to xo-web installation in xo-server configuration file"
-	sed -i "s/#'\/': '\/path\/to\/xo-web\/dist\//'\/': '..\/..\/xo-web\/dist\//" $INSTALLDIR/xo-builds/xo-server-$TIME/sample.config.yaml
+	sed -i "s/#'\/': '\/path\/to\/xo-web\/dist\//'\/': '..\/xo-web\/dist\//" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.yaml
 	sleep 2
 
 	if [[ $PORT != "80" ]]; then
 		echo "Changing port in xo-server configuration file"
-		sed -i "s/port: 80/port: $PORT/" $INSTALLDIR/xo-builds/xo-server-$TIME/sample.config.yaml
+		sed -i "s/port: 80/port: $PORT/" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.yaml
 		sleep 2
 	fi
 
 	echo "Activating modified configuration file"
-	mv $INSTALLDIR/xo-builds/xo-server-$TIME/sample.config.yaml $INSTALLDIR/xo-builds/xo-server-$TIME/.xo-server.yaml
+	mv $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.yaml $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/.xo-server.yaml
 
 	echo
 	echo "Symlinking fresh xo-server install/update to $INSTALLDIR/xo-server"
-	ln -sfn $INSTALLDIR/xo-builds/xo-server-$TIME $INSTALLDIR/xo-server
+	ln -sfn $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server $INSTALLDIR/xo-server
 	sleep 2
 	echo "Symlinking fresh xo-web install/update to $INSTALLDIR/xo-web"
-	ln -sfn $INSTALLDIR/xo-builds/xo-web-$TIME $INSTALLDIR/xo-web
+	ln -sfn $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-web $INSTALLDIR/xo-web
 
 	if [ $XOUSER ]; then
-		chown -R $XOUSER:$XOUSER $INSTALLDIR/xo-builds/xo-web-$TIME
-		chown -R $XOUSER:$XOUSER $INSTALLDIR/xo-builds/xo-server-$TIME
+		chown -R $XOUSER:$XOUSER $INSTALLDIR/xo-builds/xen-orchestra-$TIME
 
 		if [ ! -d /var/lib/xo-server ]; then
 			mkdir /var/lib/xo-server 2>/dev/null
@@ -238,11 +218,20 @@ function InstallXO {
 	fi
 
 	echo
+	echo "Symlinking systemd service configuration"
+	ln -sfn $INSTALLDIR/xo-server/xo-server.service /etc/systemd/system/xo-server.service
+	sleep 2
+	echo "Reloading systemd configuration"
+	echo
+	/bin/systemctl daemon-reload
+	sleep 2
+
+	echo
 	echo "Starting xo-server..."
 	/bin/systemctl start xo-server >/dev/null
 
 	timeout 60 bash <<-"EOF"
-		while [[ -z $(journalctl -u xo-server | grep "http:\/\/\[::\]:$PORT") ]]; do
+		while [[ -z $(journalctl -u xo-server | sed -n 'H; /Starting XO Server/h; ${g;p;}' | grep "http:\/\/\[::\]:$PORT") ]]; do
 			echo "waiting port to be open"
 			sleep 10
 		done
@@ -271,8 +260,7 @@ function UpdateXO {
 	# remove old builds. leave 3 latest
 	echo
 	echo -n "Removing old installations (leaving 3 latest)..."
-	find $INSTALLDIR/xo-builds/ -maxdepth 1 -type d -name "xo-web*" -printf "%T@ %p\n" | sort -n | cut -d' ' -f2- | head -n -3 | xargs -r rm -r
-	find $INSTALLDIR/xo-builds/ -maxdepth 1 -type d -name "xo-server*" -printf "%T@ %p\n" | sort -n | cut -d' ' -f2- | head -n -3 | xargs -r rm -r
+	find $INSTALLDIR/xo-builds/ -maxdepth 1 -type d -name "xen-orchestra*" -printf "%T@ %p\n" | sort -n | cut -d' ' -f2- | head -n -3 | xargs -r rm -r
 	echo "done"
 }
 
@@ -402,7 +390,7 @@ read -p ": " option
 				case $container in
 					1)
 						echo
-						docker build -t xen-orchestra $(dirname $0)/docker/.
+						docker build -t xen-orchestra $(dirname $0)/docker/. || exit 1
 						echo
 						echo
 						echo "Image built. Run container:"
