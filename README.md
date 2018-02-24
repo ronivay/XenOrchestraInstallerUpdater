@@ -71,7 +71,7 @@ Below is a list of packages that will be installed if missing.
 CentOS:
 - curl
 - epel-release
-- nodejs (v6)
+- nodejs (v8)
 - npm (v3)
 - yarn
 - gcc
@@ -88,7 +88,7 @@ Debian/Ubuntu:
 - ca-certificates
 - curl
 - yarn
-- nodejs (v6)
+- nodejs (v8)
 - npm (v3)
 - build-essential
 - redis-server
