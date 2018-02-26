@@ -237,7 +237,7 @@ function InstallXO {
 		done
 	EOF
 
-	if [[ $(journalctl -u xo-server | grep "http:\/\/\[::\]:$PORT") ]]; then
+	if [[ $(journalctl -u xo-server | sed -n 'H; /Starting XO Server/h; ${g;p;}' | grep "http:\/\/\[::\]:$PORT") ]]; then
 		echo
 		echo "WebUI started in port $PORT"
 		echo "Default username: admin@admin.net password: admin"
