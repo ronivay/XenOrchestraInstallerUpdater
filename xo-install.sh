@@ -72,7 +72,7 @@ function InstallDependenciesDebian {
         
 	echo
 	echo -n "Running apt-get update..."
-	apt-get update >/dev/null 2>$LOGFLE
+	apt-get update 
 	echo "done"
 
 	# Install apt-transport-https and ca-certificates because of yarn https repo url
