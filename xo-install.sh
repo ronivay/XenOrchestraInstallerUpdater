@@ -14,7 +14,7 @@ function CheckUser {
 
 	# Make sure the script is ran as root
 
-	if [[ ! $(whoami) == "root" ]]; then
+	if [[ ! "$(id -u)" == "0" ]]; then
 		echo "This script needs to be ran as root"
 		exit 0
 	fi
