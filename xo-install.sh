@@ -14,7 +14,7 @@ function CheckUser {
 
 	# Make sure the script is ran as root
 
-	if [[ ! $(whoami) == "root" ]]; then
+	if [[ ! "$(id -u)" == "0" ]]; then
 		echo "This script needs to be ran as root"
 		exit 0
 	fi
@@ -170,7 +170,7 @@ function InstallXO {
 	sed -i "s#ExecStart=.*#ExecStart=$INSTALLDIR\/xo-server\/bin\/xo-server#" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service
 	echo
 	echo "Adding WorkingDirectory parameter to systemd service configuration"
-	sed -i "/ExecStart=.*/a WorkingDirectory=/etc/xo/xo-server" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service
+	sed -i "/ExecStart=.*/a WorkingDirectory=$INSTALLDIR/xo-server" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service
 
 	if [ $XOUSER ]; then
 		echo "Adding user to systemd config"
