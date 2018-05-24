@@ -11,7 +11,7 @@ This repo consist of script to install and update [Xen Orchestra](https://xen-or
 Clone this repository and run xo-install.sh script as root
 
 ```
-./install-xo.sh
+./xo-install.sh
 ```
 
 Tool makes some checks and offers options:
