@@ -31,7 +31,7 @@ function InstallDependenciesCentOS {
 	if [[ -z $(rpm -qa | grep ^node) ]]; then
 		echo
 		echo -n "Installing node.js..."
-		curl -s -L https://rpm.nodesource.com/setup_8.x | bash - >/dev/null 2>$LOGFILE
+		curl -s -L https://rpm.nodesource.com/setup_8.x | bash - >/dev/null
 		echo "done"
 	fi
 
@@ -39,8 +39,8 @@ function InstallDependenciesCentOS {
 	if [[ -z $(rpm -qa | grep yarn) ]]; then
 		echo
 		echo -n "Installing yarn..."
-		curl -s -o /etc/yum.repos.d/yarn.repo https://dl.yarnpkg.com/rpm/yarn.repo >/dev/null 2>$LOGFILE && \
-		yum -y install yarn >/dev/null 2>$LOGFILE
+		curl -s -o /etc/yum.repos.d/yarn.repo https://dl.yarnpkg.com/rpm/yarn.repo >/dev/null && \
+		yum -y install yarn >/dev/null
 		echo "done"
 	fi
 
@@ -48,21 +48,21 @@ function InstallDependenciesCentOS {
 	if [[ -z $(rpm -qa | grep epel-release) ]]; then
 		echo
 		echo -n "Installing epel-repo..."
-		yum -y install epel-release >/dev/null 2>$LOGFILE
+		yum -y install epel-release >/dev/null
 		echo "done"
 	fi
 
 	# install
 	echo
 	echo -n "Installing build dependencies, redis server, python and git..."
-	yum -y install gcc gcc-c++ make openssl-devel redis libpng-devel python git >/dev/null 2>$LOGFILE
+	yum -y install gcc gcc-c++ make openssl-devel redis libpng-devel python git >/dev/null
 	echo "done"
 	echo
 
 	echo "Enabling and starting redis service"
-	/bin/systemctl enable redis >/dev/null 2>$LOGFILE && /bin/systemctl start redis >/dev/null 2>$LOGFILE
+	/bin/systemctl enable redis >/dev/null && /bin/systemctl start redis >/dev/null
 
-}
+} 2>$LOGFILE
 
 function InstallDependenciesDebian {
 
@@ -72,20 +72,20 @@ function InstallDependenciesDebian {
         
 	echo
 	echo -n "Running apt-get update..."
-	apt-get update >/dev/null 2>$LOGFILE
+	apt-get update >/dev/null
 	echo "done"
 
 	# Install apt-transport-https and ca-certificates because of yarn https repo url
 	echo
 	echo -n "Installing apt-transport-https and ca-certificates packages to support https repos"
-	apt-get install -y apt-transport-https ca-certificates >/dev/null 2>$LOGFILE
+	apt-get install -y apt-transport-https ca-certificates >/dev/null
 	echo "done"
 
 	# install curl for later tasks if missing
 	if [[ ! $(which curl) ]]; then
 		echo
 		echo -n "Installing curl..."
-		apt-get install -y curl >/dev/null 2>$LOGFILE
+		apt-get install -y curl >/dev/null
 		echo "done"
 	fi
 
@@ -93,10 +93,10 @@ function InstallDependenciesDebian {
 	if [[ -z $(dpkg -l | grep yarn) ]]; then
 		echo
 		echo -n "Installing yarn..."
-		curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - >/dev/null 2>$LOGFILE
-		echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list >/dev/null 2>$LOGFILE
-		apt-get update >/dev/null 2>$LOGFILE
-		apt-get install -y yarn >/dev/null 2>$LOGFILE
+		curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - >/dev/null
+		echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list >/dev/null
+		apt-get update >/dev/null
+		apt-get install -y yarn >/dev/null
 		echo "done"
 	fi
 
@@ -105,8 +105,8 @@ function InstallDependenciesDebian {
 	if [[ -z $(dpkg -l | grep node) ]] || [[ -z $(which npm) ]]; then
 		echo
 		echo -n "Installing node.js..."
-		curl -sL https://deb.nodesource.com/setup_8.x | bash - >/dev/null 2>$LOGFILE
-		apt-get install -y nodejs >/dev/null 2>$LOGFILE
+		curl -sL https://deb.nodesource.com/setup_8.x | bash - >/dev/null
+		apt-get install -y nodejs >/dev/null
 		echo "done"
 	fi
 
@@ -114,13 +114,13 @@ function InstallDependenciesDebian {
 	# install packages
 	echo
 	echo -n "Installing build dependencies, redis server, python and git..."
-	apt-get install -y build-essential redis-server libpng-dev git python-minimal >/dev/null 2>$LOGFILE
+	apt-get install -y build-essential redis-server libpng-dev git python-minimal >/dev/null
 
 	echo "Enabling and starting redis service"
-	/bin/systemctl enable redis-server >/dev/null 2>$LOGFILE && /bin/systemctl start redis-server >/dev/null 2>$LOGFILE
+	/bin/systemctl enable redis-server >/dev/null && /bin/systemctl start redis-server >/dev/null
 
 
-}
+} 2>$LOGFILE
 
 
 function InstallXO {
@@ -162,7 +162,7 @@ function InstallXO {
 	echo "xo-server and xo-web build quite a while. Grab a cup of coffee and lay back"
 	echo
 	echo -n "Running installation"
-	cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn >/dev/null 2>$LOGFILE && yarn build >/dev/null 2>$LOGFILE
+	cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn >/dev/null && yarn build >/dev/null
 	echo "done"
 
 	echo
@@ -178,11 +178,11 @@ function InstallXO {
 
 		if [ $OSNAME == "CentOS" ]; then
 			echo -n "Attempting to set cap_net_bind_service permission for /usr/bin/node..."
-			setcap 'cap_net_bind_service=+ep' /usr/bin/node >/dev/null 2>$LOGFILE \
+			setcap 'cap_net_bind_service=+ep' /usr/bin/node >/dev/null \
 			&& echo "Success" || echo "Failed. Non-privileged user might not be able to bind to <1024 port"
 		else
 			echo -n "Attempting to set cap_net_bind_service permission for /usr/bin/nodejs..."
-			setcap 'cap_net_bind_service=+ep' /usr/bin/nodejs >/dev/null 2>$LOGFILE \
+			setcap 'cap_net_bind_service=+ep' /usr/bin/nodejs >/dev/null \
 			&& echo "Success" || echo "Failed. Non-privileged user might not be able to bind to <1024 port"
 		fi
 	fi
@@ -245,7 +245,7 @@ function InstallXO {
 		echo
 		echo "Looks like there was a problem when starting xo-server/reading journalctl. Please see logs for more details"
 	fi
-}
+} 2>$LOGFILE
 
 
 function UpdateXO {
@@ -262,7 +262,7 @@ function UpdateXO {
 	echo -n "Removing old installations (leaving 3 latest)..."
 	find $INSTALLDIR/xo-builds/ -maxdepth 1 -type d -name "xen-orchestra*" -printf "%T@ %p\n" | sort -n | cut -d' ' -f2- | head -n -3 | xargs -r rm -r
 	echo "done"
-}
+} 2>$LOGFILE
 
 function CheckOS {
 
@@ -288,7 +288,7 @@ function CheckOS {
 		exit 0
 	fi
 
-}
+} 2>$LOGFILE
 
 function CheckSystemd {
 
