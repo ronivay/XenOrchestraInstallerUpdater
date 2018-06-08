@@ -16,7 +16,7 @@ Clone this repository and run xo-install.sh script as root
 ./xo-install.sh
 
 for non-interactive update task:
-./xo-install --update
+./xo-install.sh --update
 ```
 
 Tool makes some checks and offers options:
