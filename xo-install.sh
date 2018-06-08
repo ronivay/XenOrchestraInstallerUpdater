@@ -264,6 +264,18 @@ function UpdateXO {
 	echo "done"
 } 2>$LOGFILE
 
+function UpdateXOAutomate {
+
+	case "$1" in
+		--update)
+			UpdateXO
+			;;
+		*)
+			StartUpScreen
+			;;
+		esac
+
+}	
 function CheckOS {
 
 	if [ -f /etc/centos-release ] ; then
@@ -320,6 +332,8 @@ echo "  This method only changes the user which runs the service. Other install 
 echo
 echo "- Data stored in redis and /var/lib/xo-server/data will not be touched"
 echo "- Option 2. actually creates a new build from sources but works as an update to installations originally done with this tool"
+echo
+echo "- To run option 2. without interactive mode (as cronjob for automated updates for example) use --update"
 echo
 echo "Following options will be used for installation:"
 echo
@@ -434,4 +448,10 @@ esac
 CheckUser
 CheckOS
 CheckSystemd
-StartUpScreen
+
+if [[ $# == "1" ]]; then
+	UpdateXOAutomate "$1"
+	exit 0
+else
+	StartUpScreen
+fi
