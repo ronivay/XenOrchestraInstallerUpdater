@@ -1,9 +1,9 @@
 #!/bin/bash
 
 #########################################################################
-# Title: XenOrchestraInstallerUpdater					#
-# Author: Roni Väyrynen							#
-# Repository: https://github.com/ronivay/XenOrchestraInstallerUpdater	#
+# Title: XenOrchestraInstallerUpdater                                   #
+# Author: Roni Väyrynen                                                 #
+# Repository: https://github.com/ronivay/XenOrchestraInstallerUpdater   #
 #########################################################################
 
 ### Start of editable variables ###
@@ -142,7 +142,7 @@ function InstallDependenciesDebian {
 } 2>$LOGFILE
 
 function InstallXOPlugins {
-	if [[ "$PLUGINS" ]] || [[ -z "$PLUGINS" ]]; then
+	if [[ "$PLUGINS" ]] && [[ ! -z "$PLUGINS" ]]; then
 
 		echo "Installing plugins defined in PLUGINS variable"
 		echo
