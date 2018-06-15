@@ -1,14 +1,33 @@
 #!/bin/bash
 
-## Modify to your need ##
+#########################################################################
+# Title: XenOrchestraInstallerUpdater					#
+# Author: Roni Väyrynen							#
+# Repository: https://github.com/ronivay/XenOrchestraInstallerUpdater	#
+#########################################################################
 
+### Start of editable variables ###
+
+# Optional user that runs the service. root by default
 #XOUSER="node"
+
+# Port number where xen-orchestra service is bound
 PORT="80"
+
+# Base dir for installation and future updates
 INSTALLDIR="/etc/xo"
+
+# Git branch where xen-orchestra sources are fetched
 BRANCH="master"
+
+# Log path for possible errors
 LOGFILE="$(dirname $0)/xo-install.log"
 
-## Modify to your need ##
+# comma separated list of plugins to be installed, check README for more information
+#PLUGINS="xo-server-transport-email,xo-server-usage-report,xo-server-perf-alert"
+
+
+### End of editable variables ###
 
 function CheckUser {
 
@@ -122,6 +141,28 @@ function InstallDependenciesDebian {
 
 } 2>$LOGFILE
 
+function InstallXOPlugins {
+	if [[ "$PLUGINS" ]] || [[ -z "$PLUGINS" ]]; then
+
+		echo "Installing plugins defined in PLUGINS variable"
+		echo
+		local PLUGINSARRAY=($(echo "$PLUGINS" | tr ',' ' '))
+		for x in "${PLUGINSARRAY[@]}"; do
+			if [[ $(find $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages -type d -name "$x") ]]; then
+				ln -sn $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/$x $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/node_modules/
+			else
+				echo "No $x plugin found from xen-orchestra packages, skipping"
+				continue
+			fi
+		done
+
+		cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn >/dev/null && yarn build >/dev/null
+	else
+		echo
+		echo "No plugins to install"
+	fi
+
+}
 
 function InstallXO {
 
@@ -348,6 +389,7 @@ fi
 
 echo "Port: $PORT"
 echo "Git Branch for source: $BRANCH"
+echo "Following plugins will be installed: "$PLUGINS""
 echo
 echo "Errorlog is stored to $LOGFILE for debug purposes"
 echo "-----------------------------------------"

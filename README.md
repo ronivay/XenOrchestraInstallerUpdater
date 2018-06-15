@@ -7,10 +7,12 @@ This repo consist of script to install and update [Xen Orchestra](https://xen-or
 
 Installation is done using latest xo-server and xo-web sources. With this method Xen-Orchestra has all features unlocked which are normally available only with monthly fee.
 
+Optional plugins can be installed. They are included in XO repository, but not installed by default. Check list from [Xen Orchestra plugins](https://github.com/vatesfr/xen-orchestra/tree/master/packages) and edit xo-install.sh accordingly.
+
 # Instructions
 
 ### script
-Clone this repository and run xo-install.sh script as root
+Clone this repository, edit variables to suit your preferences from the xo-install.sh script and run it as root
 
 ```
 ./xo-install.sh
