@@ -5,6 +5,6 @@ check process xo-server with pidfile /var/run/xo-server.pid
         stop program = "/usr/bin/forever stop /etc/xen-orchestra/packages/xo-server/bin/xo-server"
 
 
-check process redis with pidfile /var/run/redis/redis.pid
+check process redis with pidfile /var/run/redis_6379.pid
 		start program = "/usr/bin/redis-server /etc/redis.conf --daemonize yes"
 		stop program = "/usr/bin/redis-cli shutdown"
