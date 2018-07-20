@@ -17,7 +17,7 @@ PORT="80"
 # Base dir for installation and future updates
 INSTALLDIR="/etc/xo"
 
-# Git branch or tag where xen-orchestra sources are fetched
+# Git branch or tag (append tags/ before the tag name) where xen-orchestra sources are fetched
 BRANCH="master"
 
 # Log path for possible errors
