@@ -144,6 +144,7 @@ function InstallDependenciesDebian {
 function InstallXOPlugins {
 	if [[ "$PLUGINS" ]] && [[ ! -z "$PLUGINS" ]]; then
 
+		echo
 		echo "Installing plugins defined in PLUGINS variable"
 		echo
 		local PLUGINSARRAY=($(echo "$PLUGINS" | tr ',' ' '))
@@ -202,7 +203,7 @@ function InstallXO {
 	echo
 	echo "xo-server and xo-web build quite a while. Grab a cup of coffee and lay back"
 	echo
-	echo -n "Running installation"
+	echo -n "Running installation..."
 	cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn >/dev/null && yarn build >/dev/null
 	echo "done"
 
@@ -273,6 +274,9 @@ function InstallXO {
 	echo
 	echo "Starting xo-server..."
 	/bin/systemctl start xo-server >/dev/null
+
+	# no need to exit on errors anymore
+	set +x
 
 	timeout 60 bash <<-"EOF"
 		while [[ -z $(journalctl -u xo-server | sed -n 'H; /Starting XO Server/h; ${g;p;}' | grep "http:\/\/\[::\]:$PORT") ]]; do
