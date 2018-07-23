@@ -17,7 +17,7 @@ PORT="80"
 # Base dir for installation and future updates
 INSTALLDIR="/etc/xo"
 
-# Git branch where xen-orchestra sources are fetched
+# Git branch or tag (append tags/ before the tag name) where xen-orchestra sources are fetched
 BRANCH="master"
 
 # Log path for possible errors
@@ -196,7 +196,10 @@ function InstallXO {
 	echo
 	echo "Fetching source code from branch: $BRANCH ..."
 	echo
-	git clone -b $BRANCH https://github.com/vatesfr/xen-orchestra $INSTALLDIR/xo-builds/xen-orchestra-$TIME
+	git clone https://github.com/vatesfr/xen-orchestra $INSTALLDIR/xo-builds/xen-orchestra-$TIME
+	cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME
+	git checkout $BRANCH
+	cd $(dirname $0)
 	echo
 	echo "done"
 
