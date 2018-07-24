@@ -103,7 +103,7 @@ function InstallDependenciesDebian {
 	echo "done"
 
 	# install curl for later tasks if missing
-	if [[ ! $(which curl) ]]; then
+	if [[ -z $(which curl) ]]; then
 		echo
 		echo -n "Installing curl..."
 		apt-get install -y curl >/dev/null
@@ -161,6 +161,7 @@ function UpdateNodeYarn {
 } 2>$LOGFILE
 
 function InstallXOPlugins {
+
 	if [[ "$PLUGINS" ]] && [[ ! -z "$PLUGINS" ]]; then
 
 		echo
@@ -188,7 +189,7 @@ function InstallXO {
 
 	set -e
 
-	TIME=`date +%Y%d%m%H%M`
+	TIME=$(date +%Y%d%m%H%M)
 
 	# Create user if doesn't exist (if defined)
 
@@ -315,11 +316,11 @@ function InstallXO {
 		echo
 		echo "Looks like there was a problem when starting xo-server/reading journalctl. Please see logs for more details"
 	fi
+
 } 2>$LOGFILE
 
 
 function UpdateXO {
-
 
 	if [[ $(ps aux | grep xo-server | grep -v grep) ]]; then
 		/bin/systemctl stop xo-server || { echo "failed to stop service, exiting..." ; exit 1; }
@@ -332,6 +333,7 @@ function UpdateXO {
 	echo -n "Removing old installations (leaving 3 latest)..."
 	find $INSTALLDIR/xo-builds/ -maxdepth 1 -type d -name "xen-orchestra*" -printf "%T@ %p\n" | sort -n | cut -d' ' -f2- | head -n -3 | xargs -r rm -r
 	echo "done"
+
 } 2>$LOGFILE
 
 function UpdateXOAutomate {
@@ -347,6 +349,7 @@ function UpdateXOAutomate {
 		esac
 
 }	
+
 function CheckOS {
 
 	if [ -f /etc/centos-release ] ; then
@@ -375,7 +378,7 @@ function CheckOS {
 
 function CheckSystemd {
 
-	if [ ! $(which systemctl) ]; then
+	if [ -z $(which systemctl) ]; then
 		echo "This tool is designed to work with systemd enabled systems only"
 		exit 0
 	fi
@@ -401,8 +404,10 @@ echo "  uncomment and edit XOUSER variable in this script to run service as unpr
 echo "  (Notice that you might have to make other changes depending on your system for this to work)"
 echo "  This method only changes the user which runs the service. Other install tasks like node packages are still ran as root"
 echo
-echo "- Data stored in redis and /var/lib/xo-server/data will not be touched"
 echo "- Option 2. actually creates a new build from sources but works as an update to installations originally done with this tool"
+echo "  NodeJS and Yarn packages are updated automatically. Check AUTOUPDATE variable to disable this"
+echo "  Data stored in redis and /var/lib/xo-server/data will not be touched during update procedure."
+echo "  3 latest installations will be preserved and older ones are deleted after successful update. Fresh installation is symlinked as active"
 echo
 echo "- To run option 2. without interactive mode (as cronjob for automated updates for example) use --update"
 echo
