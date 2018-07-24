@@ -28,7 +28,8 @@ Tool makes some checks and offers options:
  - Packages listed in the end of this README
 
 2. Update / Install without dependencies
- - Installs Xen-Orchestra from latest sources (doesn't install any packages)
+ - Updates NodeJS and Yarn packages if AUTOUPDATE variable is set to true (it is by default)
+ - Installs Xen-Orchestra from latest sources (doesn't install any new packages)
 
 3. Deploy container
  - Offers options to build container locally or pull from dockerhub
