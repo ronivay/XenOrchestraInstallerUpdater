@@ -42,8 +42,6 @@ notes:
 ### docker
 You can also build the docker image locally if you wish or pull it from [docker hub](https://hub.docker.com/r/ronivay/xen-orchestra/) without using the script.
 
-![Docker hub ronivay/xen-orchestra](http://dockeri.co/image/ronivay/xen-orchestra)
-
 ```
 docker build -t docker/. xen-orchestra
 docker run -p 80:80 xen-orchestra
