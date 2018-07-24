@@ -26,6 +26,8 @@ LOGFILE="$(dirname $0)/xo-install.log"
 # comma separated list of plugins to be installed, check README for more information
 #PLUGINS="xo-server-transport-email,xo-server-usage-report,xo-server-perf-alert"
 
+# NodeJS and Yarn are automatically updated when running update. Switch this option to false if you want to disable it.
+AUTOUPDATE="true"
 
 ### End of editable variables ###
 
@@ -138,6 +140,23 @@ function InstallDependenciesDebian {
 	echo "Enabling and starting redis service"
 	/bin/systemctl enable redis-server >/dev/null && /bin/systemctl start redis-server >/dev/null
 
+
+} 2>$LOGFILE
+
+function UpdateNodeYarn {
+
+	if [[ $AUTOUPDATE == "true" ]]; then
+
+		if [ $OSNAME == "CentOS" ]; then
+			echo
+			echo "Checking updates for nodejs and yarn"
+			yum update -y nodejs yarn > /dev/null
+		else
+			echo
+			echo "Checking updates for nodejs and yarn"
+			apt-get update -y nodejs yarn > /dev/null
+		fi
+	fi
 
 } 2>$LOGFILE
 
@@ -319,6 +338,7 @@ function UpdateXOAutomate {
 
 	case "$1" in
 		--update)
+			UpdateNodeYarn
 			UpdateXO
 			;;
 		*)
@@ -442,6 +462,7 @@ read -p ": " option
 			fi
 		;;
 		2)
+			UpdateNodeYarn
 			UpdateXO
 			exit 0
 		;;
