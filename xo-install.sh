@@ -154,7 +154,7 @@ function UpdateNodeYarn {
 		else
 			echo
 			echo "Checking updates for nodejs and yarn"
-			apt-get update -y nodejs yarn > /dev/null
+			apt-get install -y --only-upgrade nodejs yarn > /dev/null
 		fi
 	fi
 
