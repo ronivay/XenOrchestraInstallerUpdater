@@ -385,6 +385,7 @@ function CheckSystemd {
 }
 
 function CheckDocker {
+
 	if [ -z $(which docker) ]; then
 		echo
 		echo "Docker needs to be installed for this to work"
@@ -392,6 +393,34 @@ function CheckDocker {
 	fi
 
 }
+
+function BuildDockerImage {
+
+	echo
+	docker build -t xen-orchestra $(dirname $0)/docker/.
+	echo
+	echo
+	echo "Image built. Run container:"
+	echo "docker run -itd -p 80:80 xen-orchestra"
+	echo
+	echo "If you want to persist xen-orchestra and redis data, use volume flags like:"
+	echo "docker run -itd -p 80:80 -v /path/to/data/xo-server:/var/lib/xo-server -v /path/to/data/redis:/var/lib/redis xen-orchestra"
+
+} 2>$LOGFILE
+
+function PullDockerImage {
+
+	echo
+	docker pull ronivay/xen-orchestra
+	echo
+	echo
+	echo "Image pulled. Run container:"
+	echo "docker run -itd -p 80:80 ronivay/xen-orchestra"
+	echo
+	echo "If you want to persist xen-orchestra and redis data, use volume flags like:"
+	echo "docker run -itd -p 80:80 -v /path/to/data/xo-server:/var/lib/xo-server -v /path/to/data/redis:/var/lib/redis ronivay/xen-orchestra"
+
+} 2>$LOGFILE
 
 function StartUpScreen {
 
@@ -481,26 +510,10 @@ read -p ": " option
 			read -p ": " container
 				case $container in
 					1)
-						echo
-						docker build -t xen-orchestra $(dirname $0)/docker/. || exit 1
-						echo
-						echo
-						echo "Image built. Run container:"
-						echo "docker run -itd -p 80:80 xen-orchestra"
-						echo 
-						echo "If you want to persist xen-orchestra and redis data, use volume flags like:"
-						echo "docker run -itd -p 80:80 -v /path/to/data/xo-server:/var/lib/xo-server -v /path/to/data/redis:/var/lib/redis xen-orchestra"
+						BuildDockerImage
 					;;
 					2)
-						echo
-						docker pull ronivay/xen-orchestra
-						echo
-						echo
-						echo "Image built. Run container:"
-						echo "docker run -itd -p 80:80 ronivay/xen-orchestra"
-						echo
-						echo "If you want to persist xen-orchestra and redis data, use volume flags like:"
-						echo "docker run -itd -p 80:80 -v /path/to/data/xo-server:/var/lib/xo-server -v /path/to/data/redis:/var/lib/redis ronivay/xen-orchestra"
+						PullDockerImage
 						
 					;;
 					3)
