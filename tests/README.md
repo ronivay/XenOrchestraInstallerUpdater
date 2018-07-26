@@ -20,7 +20,7 @@ Ubuntu HTTP Check: success
 
 Requirements:
 ```
-OSX
+OSX (not tested with anything else since this is mainly for my own use)
 Vagrant
 Virtualbox
 ````

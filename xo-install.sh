@@ -317,6 +317,7 @@ function InstallXO {
 	else
 		echo
 		echo "Looks like there was a problem when starting xo-server/reading journalctl. Please see logs for more details"
+		exit 1;
 	fi
 
 } 2>$LOGFILE
@@ -344,6 +345,17 @@ function UpdateXOAutomate {
 		--update)
 			UpdateNodeYarn
 			UpdateXO
+			;;
+		--run-test)
+			if [ $OSNAME == "CentOS" ]; then
+				InstallDependenciesCentOS
+				InstallXO
+				exit 0
+			else
+				InstallDependenciesDebian
+				InstallXO
+				exit 0
+			fi
 			;;
 		*)
 			StartUpScreen
