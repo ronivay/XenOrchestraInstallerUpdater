@@ -5,7 +5,7 @@ Automated tests to run installation on different operating systems and make sure
 `run-tests.sh` without arguments builds up each vagrant box one by one and outputs if curl check was successful or not.
 
 ```
-./run-tests-all.sh
+./run-tests.sh
 CentOS HTTP Check: success
 Debian HTTP Check: success
 Ubuntu HTTP Check: success

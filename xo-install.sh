@@ -317,7 +317,7 @@ function InstallXO {
 	else
 		echo
 		echo "Looks like there was a problem when starting xo-server/reading journalctl. Please see logs for more details"
-		exit 1;
+		exit 1
 	fi
 
 } 2>$LOGFILE
