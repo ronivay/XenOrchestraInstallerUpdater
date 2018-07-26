@@ -2,4 +2,4 @@ sudo: require
 language: bash
 
 script: 
-  - ./xo-install.sh --run-test
+  - sudo ./xo-install.sh --run-test
