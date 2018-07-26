@@ -7,6 +7,7 @@ function RunTestsSingle {
 	vagrant up &> $LOGFILE
 	sleep 5
 	echo "" >> $LOGFILE
+	echo "Curl output:" >> $LOGFILE
 	curl -s -L 192.168.33.101 >> $LOGFILE 2>&1 || false
 
 	if [[ $? == "1" ]]; then
