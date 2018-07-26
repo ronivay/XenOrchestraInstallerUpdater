@@ -63,10 +63,11 @@ docker run -p 80:80 -v /path/to/xodata:/var/lib/xo-server -v /path/to/redisdata:
 Tool has been tested to work with following distros:
 
 - CentOS 7
-- Debian 8
-- Ubuntu 16.05
+- Debian 9
+- Ubuntu 16.04
 
-CentOS was tested without SELinux. You need to deal with labels and permissions yourself if you want to use it.
+CentOS setup is confirmed to work with fresh minimal installation and SELinux enabled. 
+Although script doesn't do any SELinux checks or modifications, so you need to take care of possible changes by yourself according to your system.
 
 Tool makes all necessary changes required for Xen-Orchestra to run (including packages, user creation, permissions). Please evaluate script if needed.
 I take no responsibility of possible damage caused by this tool.

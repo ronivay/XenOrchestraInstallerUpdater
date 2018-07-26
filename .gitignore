@@ -1,1 +1,10 @@
 xo-install.log
+tests/*/*
+tests/*
+!tests/Ubuntu
+!tests/Ubuntu/Vagrantfile
+!tests/CentOS
+!tests/CentOS/Vagrantfile
+!tests/Debian
+!tests/Debian/Vagrantfile
+!tests/run-tests.sh

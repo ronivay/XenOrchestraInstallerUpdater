@@ -282,7 +282,7 @@ function InstallXO {
 			mkdir /var/lib/xo-server 2>/dev/null
 		fi
 
-		chown $XOUSER:$XOUSER /var/lib/xo-server
+		chown -R $XOUSER:$XOUSER /var/lib/xo-server
 	fi
 
 	echo
