@@ -1,5 +1,0 @@
-sudo: require
-language: bash
-
-script: 
-  - sudo ./xo-install.sh --run-test
