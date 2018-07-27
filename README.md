@@ -24,7 +24,7 @@ non-interactive update task (option 2):
 non-interactive install task (option 1):
 ./xo-install.sh --install
 
-non-interactive rollback task (option 4):
+quick option to rollback (option 4):
 ./xo-install.sh --rollback
 ```
 
