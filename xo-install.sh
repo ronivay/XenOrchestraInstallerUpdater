@@ -29,6 +29,9 @@ LOGFILE="$(dirname $0)/xo-install.log"
 # NodeJS and Yarn are automatically updated when running update. Switch this option to false if you want to disable it.
 AUTOUPDATE="true"
 
+# Define the number of previous installations you want to keep
+PRESERVE="3"
+
 ### End of editable variables ###
 
 function CheckUser {
@@ -332,10 +335,10 @@ function UpdateXO {
 
 	InstallXO
 
-	# remove old builds. leave 3 latest
+	# remove old builds. leave as many as defined in PRESERVE variable
 	echo
-	echo -n "Removing old installations (leaving 3 latest)..."
-	find $INSTALLDIR/xo-builds/ -maxdepth 1 -type d -name "xen-orchestra*" -printf "%T@ %p\n" | sort -n | cut -d' ' -f2- | head -n -3 | xargs -r rm -r
+	echo -n "Removing old installations (leaving $PRESERVE latest)..."
+	find $INSTALLDIR/xo-builds/ -maxdepth 1 -type d -name "xen-orchestra*" -printf "%T@ %p\n" | sort -n | cut -d' ' -f2- | head -n -$PRESERVE | xargs -r rm -r
 	echo "done"
 
 } 2>$LOGFILE
@@ -493,7 +496,7 @@ echo
 echo "- Option 2. actually creates a new build from sources but works as an update to installations originally done with this tool"
 echo "  NodeJS and Yarn packages are updated automatically. Check AUTOUPDATE variable to disable this"
 echo "  Data stored in redis and /var/lib/xo-server/data will not be touched during update procedure."
-echo "  3 latest installations will be preserved and older ones are deleted after successful update. Fresh installation is symlinked as active"
+echo "  X (defined in PRESERVE variable) number of latest installations will be preserved and older ones are deleted after successful update. Fresh installation is symlinked as active"
 echo "  Rollback to another installation with --rollback"
 echo
 echo "- To run option 2. without interactive mode (as cronjob for automated updates for example) use --update"
@@ -512,6 +515,7 @@ fi
 echo "Port: $PORT"
 echo "Git Branch for source: $BRANCH"
 echo "Following plugins will be installed: "$PLUGINS""
+echo "Number of previous installations to preserve: $PRESERVE"
 echo
 echo "Errorlog is stored to $LOGFILE for debug purposes"
 echo "-----------------------------------------"
