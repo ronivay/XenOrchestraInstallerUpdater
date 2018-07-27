@@ -313,7 +313,8 @@ function InstallXO {
 		echo "WebUI started in port $PORT"
 		echo "Default username: admin@admin.net password: admin"
 		echo
-		echo "Installation successful. Control xo-server.service with systemctl"
+		echo "Installation successful. Enabling xo-server to start on reboot"
+		/bin/systemctl enable xo-server > /dev/null
 	else
 		echo
 		echo "Looks like there was a problem when starting xo-server/reading journalctl. Please see logs for more details"
