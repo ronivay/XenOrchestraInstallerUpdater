@@ -186,7 +186,7 @@ function InstallXOPlugins {
 		echo "No plugins to install"
 	fi
 
-}
+} 2>$LOGFILE
 
 function InstallXO {
 
@@ -220,9 +220,13 @@ function InstallXO {
 	echo "Fetching source code from branch: $BRANCH ..."
 	echo
 	git clone https://github.com/vatesfr/xen-orchestra $INSTALLDIR/xo-builds/xen-orchestra-$TIME
-	cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME
-	git checkout $BRANCH
-	cd $(dirname $0)
+
+	if [[ "$BRANCH" != "master" ]]; then
+		cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME
+		git checkout $BRANCH
+		cd $(dirname $0)
+	fi
+
 	echo
 	echo "done"
 
@@ -413,7 +417,7 @@ function RollBackInstallation {
 			esac
 		done
 
-}
+} 2>$LOGFILE
 
 function CheckOS {
 
