@@ -29,7 +29,7 @@ LOGFILE="$(dirname $0)/xo-install.log"
 # NodeJS and Yarn are automatically updated when running update. Switch this option to false if you want to disable it.
 AUTOUPDATE="true"
 
-# Define the number of previous installations you want to keep
+# Define the number of previous installations you want to keep. Needs to be at least 1
 PRESERVE="3"
 
 ### End of editable variables ###
@@ -237,10 +237,10 @@ function InstallXO {
 	InstallXOPlugins
 
 	echo
-	echo "Fixing binary path in systemd service configuration and symlinking to /etc/systemd/system/xo-server.service"
+	echo "Fixing binary path in systemd service configuration file"
 	sed -i "s#ExecStart=.*#ExecStart=$INSTALLDIR\/xo-server\/bin\/xo-server#" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service
 	echo
-	echo "Adding WorkingDirectory parameter to systemd service configuration"
+	echo "Adding WorkingDirectory parameter to systemd service configuration file"
 	sed -i "/ExecStart=.*/a WorkingDirectory=$INSTALLDIR/xo-server" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service
 
 	if [ $XOUSER ]; then
@@ -289,8 +289,8 @@ function InstallXO {
 	fi
 
 	echo
-	echo "Symlinking systemd service configuration"
-	ln -sfn $INSTALLDIR/xo-server/xo-server.service /etc/systemd/system/xo-server.service
+	echo "Replacing systemd service configuration file"
+	/bin/cp -f $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service /etc/systemd/system/xo-server.service
 	sleep 2
 	echo "Reloading systemd configuration"
 	echo
@@ -335,11 +335,16 @@ function UpdateXO {
 
 	InstallXO
 
-	# remove old builds. leave as many as defined in PRESERVE variable
-	echo
-	echo -n "Removing old installations (leaving $PRESERVE latest)..."
-	find $INSTALLDIR/xo-builds/ -maxdepth 1 -type d -name "xen-orchestra*" -printf "%T@ %p\n" | sort -n | cut -d' ' -f2- | head -n -$PRESERVE | xargs -r rm -r
-	echo "done"
+	if [[ "$PRESERVE" != "0" ]]; then
+
+		# remove old builds. leave as many as defined in PRESERVE variable
+		echo
+		echo -n "Removing old installations (leaving $PRESERVE latest)..."
+		find $INSTALLDIR/xo-builds/ -maxdepth 1 -type d -name "xen-orchestra*" -printf "%T@ %p\n" | sort -n | cut -d' ' -f2- | head -n -$PRESERVE | xargs -r rm -r
+		echo "done"
+	else
+		echo "PRESERVE variable is set to 0. This needs to be at least 1. Not doing a cleanup"
+	fi
 
 } 2>$LOGFILE
 
@@ -376,37 +381,37 @@ function RollBackInstallation {
 
 	INSTALLATIONS=($(find $INSTALLDIR/xo-builds/ -maxdepth 1 -type d -name "xen-orchestra-*"))
 
-        if [[ $(echo ${#INSTALLATIONS[@]}) -le 1 ]]; then
-               	echo "Only one installation exists, nothing to change"
-                exit 0
-        fi
+	if [[ $(echo ${#INSTALLATIONS[@]}) -le 1 ]]; then
+		echo "Only one installation exists, nothing to change"
+		exit 0
+	fi
 
-        echo "Which installation to roll back?"
+	echo "Which installation to roll back?"
 	echo
 	local PS3="Pick a number. CTRL+C to exit: "
-        select INSTALLATION in "${INSTALLATIONS[@]}"; do
-               	case $INSTALLATION in
-                       	*xen-orchestra*)
-                               	echo
-                                echo "Setting $INSTALLDIR/xo-server symlink to $INSTALLATION/packages/xo-server"
-                               	ln -sfn $INSTALLATION/packages/xo-server $INSTALLDIR/xo-server
-                                echo "Setting $INSTALLDIR/xo-web symlink to $INSTALLATION/packages/xo-web"
-                               	ln -sfn $INSTALLATION/packages/xo-web $INSTALLDIR/xo-web
-                                echo
-                               	echo "Updating xo-server.service systemd configuration file location"
-                               	ln -sfn $INSTALLDIR/xo-server/xo-server.service /etc/systemd/system/xo-server.service
-                               	/bin/systemctl daemon-reload
-                               	echo
-                               	echo "Restarting xo-server..."
-                               	/bin/systemctl restart xo-server
-                               	echo
-                               	break
-                       	;;
-                        *)
-                                echo "Try again"
-                        ;;
-                        esac
-                done
+	select INSTALLATION in "${INSTALLATIONS[@]}"; do
+		case $INSTALLATION in
+			*xen-orchestra*)
+				echo
+				echo "Setting $INSTALLDIR/xo-server symlink to $INSTALLATION/packages/xo-server"
+				ln -sfn $INSTALLATION/packages/xo-server $INSTALLDIR/xo-server
+				echo "Setting $INSTALLDIR/xo-web symlink to $INSTALLATION/packages/xo-web"
+				ln -sfn $INSTALLATION/packages/xo-web $INSTALLDIR/xo-web
+				echo
+				echo "Replacing xo.server.service systemd configuration file"
+				/bin/cp -f $INSTALLATION/packages/xo-server/xo-server.service /etc/systemd/system/xo-server.service
+				/bin/systemctl daemon-reload
+				echo
+				echo "Restarting xo-server..."
+				/bin/systemctl restart xo-server
+				echo
+				break
+			;;
+			*)
+				echo "Try again"
+			;;
+			esac
+		done
 
 }
 
