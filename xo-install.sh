@@ -340,14 +340,14 @@ function UpdateXO {
 
 } 2>$LOGFILE
 
-function UpdateXOAutomate {
+function HandleArgs {
 
 	case "$1" in
 		--update)
 			UpdateNodeYarn
 			UpdateXO
 			;;
-		--run-test)
+		--install)
 			if [ $OSNAME == "CentOS" ]; then
 				InstallDependenciesCentOS
 				InstallXO
@@ -358,12 +358,54 @@ function UpdateXOAutomate {
 				exit 0
 			fi
 			;;
+		--rollback)
+			RollBackInstallation
+			exit 0
+			;;
 		*)
 			StartUpScreen
 			;;
 		esac
 
 }	
+
+function RollBackInstallation {
+
+	INSTALLATIONS=($(find $INSTALLDIR/xo-builds/ -maxdepth 1 -type d -name "xen-orchestra-*"))
+
+        if [[ $(echo ${#INSTALLATIONS[@]}) -le 1 ]]; then
+               	echo "Only one installation exists, nothing to change"
+                exit 0
+        fi
+
+        echo "Which installation to roll back?"
+	echo
+	local PS3="Pick a number. CTRL+C to exit: "
+        select INSTALLATION in "${INSTALLATIONS[@]}"; do
+               	case $INSTALLATION in
+                       	*xen-orchestra*)
+                               	echo
+                                echo "Setting $INSTALLDIR/xo-server symlink to $INSTALLATION/packages/xo-server"
+                               	ln -sfn $INSTALLATION/packages/xo-server $INSTALLDIR/xo-server
+                                echo "Setting $INSTALLDIR/xo-web symlink to $INSTALLATION/packages/xo-web"
+                               	ln -sfn $INSTALLATION/packages/xo-web $INSTALLDIR/xo-web
+                                echo
+                               	echo "Updating xo-server.service systemd configuration file location"
+                               	ln -sfn $INSTALLDIR/xo-server/xo-server.service /etc/systemd/system/xo-server.service
+                               	/bin/systemctl daemon-reload
+                               	echo
+                               	echo "Restarting xo-server..."
+                               	/bin/systemctl restart xo-server
+                               	echo
+                               	break
+                       	;;
+                        *)
+                                echo "Try again"
+                        ;;
+                        esac
+                done
+
+}
 
 function CheckOS {
 
@@ -452,6 +494,7 @@ echo "- Option 2. actually creates a new build from sources but works as an upda
 echo "  NodeJS and Yarn packages are updated automatically. Check AUTOUPDATE variable to disable this"
 echo "  Data stored in redis and /var/lib/xo-server/data will not be touched during update procedure."
 echo "  3 latest installations will be preserved and older ones are deleted after successful update. Fresh installation is symlinked as active"
+echo "  Rollback to another installation with --rollback"
 echo
 echo "- To run option 2. without interactive mode (as cronjob for automated updates for example) use --update"
 echo
@@ -477,7 +520,8 @@ echo
 echo "1. Autoinstall"
 echo "2. Update / Install without packages"
 echo "3. Deploy docker container"
-echo "4. Exit"
+echo "4. Rollback to another existing installation"
+echo "5. Exit"
 echo
 read -p ": " option
 
@@ -540,6 +584,10 @@ read -p ": " option
 					esac
 		;;
 		4)
+			RollBackInstallation
+			exit 0
+		;;
+		5)
 			exit 0
 		;;
 		*)
@@ -556,7 +604,7 @@ CheckOS
 CheckSystemd
 
 if [[ $# == "1" ]]; then
-	UpdateXOAutomate "$1"
+	HandleArgs "$1"
 	exit 0
 else
 	StartUpScreen

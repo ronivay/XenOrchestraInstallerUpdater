@@ -15,10 +15,17 @@ Optional plugins can be installed. They are included in XO repository, but not i
 Clone this repository, edit variables to suit your preferences from the xo-install.sh script and run it as root
 
 ```
+basic functionality including menu:
 ./xo-install.sh
 
-for non-interactive update task:
+non-interactive update task (option 2):
 ./xo-install.sh --update
+
+non-interactive install task (option 1):
+./xo-install.sh --install
+
+non-interactive rollback task (option 4):
+./xo-install.sh --rollback
 ```
 
 Tool makes some checks and offers options:
@@ -33,6 +40,9 @@ Tool makes some checks and offers options:
 
 3. Deploy container
  - Offers options to build container locally or pull from dockerhub
+
+4. Rollback installation
+ - Offers option to choose which installation to use from existing ones (if more than 1)
 
 notes:
 
