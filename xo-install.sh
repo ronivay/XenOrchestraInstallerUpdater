@@ -354,7 +354,10 @@ function InstallXO {
 function UpdateXO {
 
 	if [[ $(ps aux | grep xo-server | grep -v grep) ]]; then
+		echo
+		echo -n "Shutting down xo-server..."
 		/bin/systemctl stop xo-server || { echo "failed to stop service, exiting..." ; exit 1; }
+		echo "done"
 	fi
 
 	InstallXO
