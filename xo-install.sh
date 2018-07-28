@@ -45,9 +45,21 @@ function CheckUser {
 
 }
 
+function ErrorHandling {
+
+	echo "Something went wrong, exiting. Check $LOGFILE for more details and use rollback feature if needed"
+
+	if [[ -d $INSTALLDIR/xo-builds/xen-orchestra-$TIME ]]; then
+		echo "Removing $INSTALLDIR/xo-builds/xen-orchestra-$TIME because of failed installation."
+		rm -rf $INSTALLDIR/xo-builds/xen-orchestra-$TIME
+	fi
+}
+
 function InstallDependenciesCentOS {
 
 	set -e
+
+	trap ErrorHandling ERR INT
 
 	# Install necessary dependencies for XO build
 
@@ -91,6 +103,8 @@ function InstallDependenciesCentOS {
 function InstallDependenciesDebian {
 
 	set -e
+
+	trap ErrorHandling ERR INT
 
 	# Install necessary dependencies for XO build
         
@@ -165,6 +179,10 @@ function UpdateNodeYarn {
 
 function InstallXOPlugins {
 
+	set -e
+	
+	trap ErrorHandling ERR INT
+	
 	if [[ "$PLUGINS" ]] && [[ ! -z "$PLUGINS" ]]; then
 
 		echo
@@ -191,6 +209,8 @@ function InstallXOPlugins {
 function InstallXO {
 
 	set -e
+
+	trap ErrorHandling ERR INT
 
 	TIME=$(date +%Y%d%m%H%M)
 
@@ -381,7 +401,7 @@ function HandleArgs {
 
 }	
 
-function RollBackInstallation {
+function RollBackInstallation {	
 
 	INSTALLATIONS=($(find $INSTALLDIR/xo-builds/ -maxdepth 1 -type d -name "xen-orchestra-*"))
 
@@ -417,7 +437,7 @@ function RollBackInstallation {
 			esac
 		done
 
-} 2>$LOGFILE
+}
 
 function CheckOS {
 
