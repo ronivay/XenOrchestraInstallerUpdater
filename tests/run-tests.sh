@@ -19,8 +19,6 @@ function RunTestsSingle {
 	vagrant destroy -f &> $LOGFILE
 	unset VAGRANT_CWD
 
-echo $1
-
 }
 
 function RunTestsAll {
