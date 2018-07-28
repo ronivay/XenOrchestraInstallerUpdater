@@ -36,6 +36,10 @@ RUN mv /etc/xen-orchestra/packages/xo-server/sample.config.yaml /etc/xen-orchest
 # Install forever for starting/stopping Xen-Orchestra
 RUN npm install forever -g
 
+# Logging
+RUN ln -sf /proc/1/fd/1 /var/log/redis/redis.log
+RUN ln -sf /proc/1/fd/1 /var/log/xo-server.log
+
 WORKDIR /etc/xen-orchestra/xo-server
 
 EXPOSE 80
