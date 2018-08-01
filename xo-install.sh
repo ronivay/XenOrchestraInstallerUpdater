@@ -313,7 +313,7 @@ function InstallXO {
 	fi
 
 	# fix to prevent older installations to not update because systemd service is not symlinked anymore
-	if [[ $(find /etc/systemd/system -type l -name "xo-server.service") ]]; then
+	if [[ $(find /etc/systemd/system -maxdepth 1 -type l -name "xo-server.service") ]]; then
 		rm -f /etc/systemd/system/xo-server.service
 	fi
 
