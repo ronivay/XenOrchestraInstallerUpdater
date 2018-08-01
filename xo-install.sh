@@ -312,8 +312,14 @@ function InstallXO {
 		chown -R $XOUSER:$XOUSER /var/lib/xo-server
 	fi
 
+	# fix to prevent older installations to not update because systemd service is not symlinked anymore
+	if [[ $(find /etc/systemd/system -type l -name "xo-server.service") ]]; then
+		rm -f /etc/systemd/system/xo-server.service
+	fi
+
 	echo
 	echo "Replacing systemd service configuration file"
+
 	/bin/cp -f $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service /etc/systemd/system/xo-server.service
 	sleep 2
 	echo "Reloading systemd configuration"
