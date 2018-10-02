@@ -108,6 +108,7 @@ CentOS:
 Debian/Ubuntu:
 - apt-transport-https
 - ca-certificates
+- libcap2-bin
 - curl
 - yarn
 - nodejs (v8)

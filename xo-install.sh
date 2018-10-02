@@ -271,14 +271,19 @@ function InstallXO {
 		echo "Adding user to systemd config"
 		sed -i "/SyslogIdentifier=.*/a User=$XOUSER" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service
 
-		if [ $OSNAME == "CentOS" ]; then
-			echo -n "Attempting to set cap_net_bind_service permission for /usr/bin/node..."
-			setcap 'cap_net_bind_service=+ep' /usr/bin/node >/dev/null \
-			&& echo "Success" || echo "Failed. Non-privileged user might not be able to bind to <1024 port"
-		else
-			echo -n "Attempting to set cap_net_bind_service permission for /usr/bin/nodejs..."
-			setcap 'cap_net_bind_service=+ep' /usr/bin/nodejs >/dev/null \
-			&& echo "Success" || echo "Failed. Non-privileged user might not be able to bind to <1024 port"
+		if [ "$PORT" -le "1024" ]; then
+			NODEBINARY="$(which node)"
+			if [[ -L "$NODEBINARY" ]]; then
+				NODEBINARY="$(readlink -e $NODEBINARY)"
+			fi
+
+			if [[ ! -z $NODEBINARY ]]; then
+				echo -n "Attempting to set cap_net_bind_service permission for $NODEBINARY..."
+				setcap 'cap_net_bind_service=+ep' $NODEBINARY >/dev/null \
+				&& echo "Success" || echo "Failed. Non-privileged user might not be able to bind to <1024 port. xo-server won't start most likely"
+			else
+				echo "Can't find node executable, or it's a symlink to non existing file. Not trying to setcap. xo-server won't start most likely"
+			fi
 		fi
 	fi
 
