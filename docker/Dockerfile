@@ -27,6 +27,10 @@ RUN git clone -b master https://github.com/vatesfr/xen-orchestra /etc/xen-orches
 # Run build tasks against sources
 RUN cd /etc/xen-orchestra && yarn && yarn build
 
+# Install plugins
+RUN find /etc/xen-orchestra/packages/ -maxdepth 1 -mindepth 1 -not -name "xo-server" -not -name "xo-web" -exec ln -s {} /etc/xen-orchestra/packages/xo-server/node_modules \;
+RUN cd /etc/xen-orchestra && yarn && yarn build
+
 # Fix path for xo-web content in xo-server configuration
 RUN sed -i "s/#'\/': '\/path\/to\/xo-web\/dist\//'\/': '..\/xo-web\/dist\//" /etc/xen-orchestra/packages/xo-server/sample.config.yaml
 
