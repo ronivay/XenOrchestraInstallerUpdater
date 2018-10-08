@@ -104,6 +104,7 @@ CentOS:
 - libpng-devel
 - python
 - git
+- nfs-utils
 
 Debian/Ubuntu:
 - apt-transport-https
@@ -118,4 +119,7 @@ Debian/Ubuntu:
 - libpng-dev
 - git
 - python-minimal
+- libvhdi-utils
+- lvm2
+- nfs-common
 ```

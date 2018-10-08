@@ -90,8 +90,8 @@ function InstallDependenciesCentOS {
 
 	# install
 	echo
-	echo -n "Installing build dependencies, redis server, python and git..."
-	yum -y install gcc gcc-c++ make openssl-devel redis libpng-devel python git >/dev/null
+	echo -n "Installing build dependencies, redis server, python, git, nfs-utils..."
+	yum -y install gcc gcc-c++ make openssl-devel redis libpng-devel python git nfs-utils >/dev/null
 	echo "done"
 	echo
 
@@ -151,8 +151,8 @@ function InstallDependenciesDebian {
 
 	# install packages
 	echo
-	echo -n "Installing build dependencies, redis server, python and git..."
-	apt-get install -y build-essential redis-server libpng-dev git python-minimal >/dev/null
+	echo -n "Installing build dependencies, redis server, python, git, libvhdi-utils, lvm2..."
+	apt-get install -y build-essential redis-server libpng-dev git python-minimal libvhdi-utils lvm2 >/dev/null
 
 	echo "Enabling and starting redis service"
 	/bin/systemctl enable redis-server >/dev/null && /bin/systemctl start redis-server >/dev/null
