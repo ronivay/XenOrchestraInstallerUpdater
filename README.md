@@ -77,9 +77,12 @@ docker run -p 80:80 -v /path/to/xodata:/var/lib/xo-server -v /path/to/redisdata:
 
 Tool has been tested to work with following distros:
 
-- CentOS 7
+- CentOS 7 (note LVM file level restore issue from below)
 - Debian 9
 - Ubuntu 16.04
+
+In order to use file level restore from delta backups, the service needs to be ran as root.
+CentOS installation is currently not able to do file level restore if the backed up disk contains LVM.
 
 CentOS setup is confirmed to work with fresh minimal installation and SELinux enabled. 
 Although script doesn't do any SELinux checks or modifications, so you need to take care of possible changes by yourself according to your system.
@@ -105,6 +108,7 @@ CentOS:
 - python
 - git
 - nfs-utils
+- libvhdi-tools
 
 Debian/Ubuntu:
 - apt-transport-https

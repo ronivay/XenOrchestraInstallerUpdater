@@ -88,6 +88,16 @@ function InstallDependenciesCentOS {
 		echo "done"
 	fi
 
+	# only install libvhdi-tools if vhdimount is not present
+	if [[ -z $(which vhdimount) ]]; then
+		echo
+		echo -n "Installing libvhdi-tools from forensics repository"
+		rpm -ivh https://forensics.cert.org/cert-forensics-tools-release-el7.rpm >/dev/null
+		sed -i 's/enabled=1/enabled=0/g' /etc/yum.repos.d/cert-forensics-tools.repo
+		yum --enablerepo=forensics install -y libvhdi-tools >/dev/null
+		echo "done"
+	fi
+
 	# install
 	echo
 	echo -n "Installing build dependencies, redis server, python, git, nfs-utils..."
@@ -97,6 +107,9 @@ function InstallDependenciesCentOS {
 
 	echo "Enabling and starting redis service"
 	/bin/systemctl enable redis >/dev/null && /bin/systemctl start redis >/dev/null
+
+	echo "Enabling and starting rpcbind service"
+	/bin/systemctl enable rpcbind >/dev/null && /bin/systemctl start rpcbind >/dev/null
 
 } 2>$LOGFILE
 
@@ -151,12 +164,14 @@ function InstallDependenciesDebian {
 
 	# install packages
 	echo
-	echo -n "Installing build dependencies, redis server, python, git, libvhdi-utils, lvm2..."
-	apt-get install -y build-essential redis-server libpng-dev git python-minimal libvhdi-utils lvm2 >/dev/null
+	echo -n "Installing build dependencies, redis server, python, git, libvhdi-utils, lvm2, nfs-common..."
+	apt-get install -y build-essential redis-server libpng-dev git python-minimal libvhdi-utils lvm2 nfs-common >/dev/null
 
 	echo "Enabling and starting redis service"
 	/bin/systemctl enable redis-server >/dev/null && /bin/systemctl start redis-server >/dev/null
 
+        echo "Enabling and starting rpcbind service"
+        /bin/systemctl enable rpcbind >/dev/null && /bin/systemctl start rpcbind >/dev/null
 
 } 2>$LOGFILE
 

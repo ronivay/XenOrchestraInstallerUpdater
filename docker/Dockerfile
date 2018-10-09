@@ -15,7 +15,11 @@ RUN yum -y install yarn
 RUN yum -y install epel-release
 
 # build dependencies, git for fetching source and redis server for storing data
-RUN yum -y install gcc gcc-c++ make openssl-devel redis libpng-devel python git
+RUN yum -y install gcc gcc-c++ make openssl-devel redis libpng-devel python git nfs-utils
+
+# libvhdi-tools for file-level restore
+RUN rpm -ivh https://forensics.cert.org/cert-forensics-tools-release-el7.rpm
+RUN yum --enablerepo=forensics install -y libvhdi-tools
 
 # monit to keep an eye on processes
 RUN yum -y install monit

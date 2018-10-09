@@ -8,3 +8,7 @@ check process xo-server with pidfile /var/run/xo-server.pid
 check process redis with pidfile /var/run/redis_6379.pid
 	start program = "/usr/bin/redis-server /etc/redis.conf --daemonize yes"
 	stop program = "/usr/bin/redis-cli shutdown"
+
+check process rpcbind
+    matching "rpcbind"
+    start program = "/usr/sbin/rpcbind"
