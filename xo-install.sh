@@ -140,6 +140,14 @@ function InstallDependenciesDebian {
 		echo "done"
 	fi
 
+	# install setcap for non-root port binding if missing
+	if [[ -z $(which setcap) ]]; then
+		echo
+		echo -n "Installing setcap..."
+		apt-get install -y libcap2-bin >/dev/null
+		echo "done"
+	fi
+
 	# only install yarn repo and package if not found
 	if [[ -z $(dpkg -l | grep yarn) ]]; then
 		echo
