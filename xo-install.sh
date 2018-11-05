@@ -17,6 +17,14 @@ fi
 # See this file for all script configuration variables.
 source $CONFIG_FILE
 
+# Protocol to use for webserver. If both of the X.509 certificate files exist,
+# then assume that we want to enable HTTPS for the server.
+if [[ -e $PATH_TO_HTTPS_CERT ]] && [[ -e $PATH_TO_HTTPS_KEY ]]; then
+	HTTPS=true
+else
+	HTTPS=false
+fi
+
 function CheckUser {
 
 	# Make sure the script is ran as root
@@ -303,6 +311,14 @@ function InstallXO {
 		sleep 2
 	fi
 
+	if $HTTPS ; then
+		echo "Enabling HTTPS in xo-server configuration file"
+		sed -i "s%#   cert: '.\/certificate.pem'%  cert: '$PATH_TO_HTTPS_CERT'%" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.yaml
+		sed -i "s%#   key: '.\/key.pem'%  key: '$PATH_TO_HTTPS_KEY'%" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.yaml
+		sed -i "s/#redirectToHttps/redirectToHttps/" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.yaml
+		sleep 2
+	fi
+
 	echo "Activating modified configuration file"
 	mv $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.yaml $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/.xo-server.yaml
 
@@ -346,13 +362,13 @@ function InstallXO {
 	set +x
 
 	timeout 60 bash <<-"EOF"
-		while [[ -z $(journalctl -u xo-server | sed -n 'H; /Starting XO Server/h; ${g;p;}' | grep "http:\/\/\[::\]:$PORT") ]]; do
+		while [[ -z $(journalctl -u xo-server | sed -n 'H; /Starting XO Server/h; ${g;p;}' | grep "https\{0,1\}:\/\/\[::\]:$PORT") ]]; do
 			echo "waiting port to be open"
 			sleep 10
 		done
 	EOF
 
-	if [[ $(journalctl -u xo-server | sed -n 'H; /Starting XO Server/h; ${g;p;}' | grep "http:\/\/\[::\]:$PORT") ]]; then
+	if [[ $(journalctl -u xo-server | sed -n 'H; /Starting XO Server/h; ${g;p;}' | grep "https\{0,1\}:\/\/\[::\]:$PORT") ]]; then
 		echo
 		echo "WebUI started in port $PORT"
 		echo "Default username: admin@admin.net password: admin"
