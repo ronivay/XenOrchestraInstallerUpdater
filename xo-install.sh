@@ -17,6 +17,8 @@ fi
 # See this file for all script configuration variables.
 source $CONFIG_FILE
 
+XO_SRC_DIR="$INSTALLDIR/xo-src/xen-orchestra"
+
 # Protocol to use for webserver. If both of the X.509 certificate files exist,
 # then assume that we want to enable HTTPS for the server.
 if [[ -e $PATH_TO_HTTPS_CERT ]] && [[ -e $PATH_TO_HTTPS_KEY ]]; then
@@ -247,15 +249,27 @@ function InstallXO {
 	fi
 
 	echo
-	echo "Creating install directory: $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
-	mkdir -p "$INSTALLDIR/xo-builds/xen-orchestra-$TIME"
+	echo "Fetching Xen Orchestra source code ..."
+	echo
+	if [[ ! -d "$XO_SRC_DIR" ]]; then
+		mkdir -p "$XO_SRC_DIR"
+		git clone https://github.com/vatesfr/xen-orchestra "$XO_SRC_DIR"
+	else
+		cd "$XO_SRC_DIR"
+		git pull
+		cd $(dirname $0)
+	fi
 
+	# Deploy the latest xen-orchestra source to the new install directory.
 	echo
-	echo "Fetching source code from branch: $BRANCH ..."
-	echo
-	git clone https://github.com/vatesfr/xen-orchestra $INSTALLDIR/xo-builds/xen-orchestra-$TIME
+	echo "Creating install directory: $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
+	rm -rf "$INSTALLDIR/xo-builds/xen-orchestra-$TIME"
+	cp -r "$XO_SRC_DIR" "$INSTALLDIR/xo-builds/xen-orchestra-$TIME"
 
 	if [[ "$BRANCH" != "master" ]]; then
+		echo
+		echo "Checking out source code from branch '$BRANCH'"
+
 		cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME
 		git checkout $BRANCH
 		cd $(dirname $0)
@@ -263,6 +277,54 @@ function InstallXO {
 
 	echo
 	echo "done"
+
+	# Check if the new repo is any different from the currently-installed
+	# one. If not, then skip the build and delete the repo we just cloned.
+
+	# Get the commit ID of the to-be-installed xen-orchestra.
+	cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME
+	NEW_REPO_HASH=$(git rev-parse HEAD)
+	NEW_REPO_HASH_SHORT=$(git rev-parse --short HEAD)
+	cd $(dirname $0)
+
+	# Get the commit ID of the currently-installed xen-orchestra (if one
+	# exists).
+	if [[ -L $INSTALLDIR/xo-server ]]; then
+		cd $INSTALLDIR/xo-server
+		OLD_REPO_HASH=$(git rev-parse HEAD)
+		OLD_REPO_HASH_SHORT=$(git rev-parse --short HEAD)
+		cd $(dirname $0)
+	else
+		# If there's no existing installation, then we definitely want
+		# to proceed with the bulid.
+		OLD_REPO_HASH=""
+		OLD_REPO_HASH_SHORT=""
+	fi
+
+	# If the new install is no different from the existing install, then don't
+	# proceed with the build.
+	if [[ "$NEW_REPO_HASH" == "$OLD_REPO_HASH" ]]; then
+		echo
+		echo "No changes to xen-orchestra since previous install. Skipping xo-server and xo-web build."
+		echo "Cleaning up install directory: $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
+		rm -rf $INSTALLDIR/xo-builds/xen-orchestra-$TIME
+		return 0
+	fi
+
+	# Now that we know we're going to be building a new xen-orchestra, make
+	# sure there's no already-running xo-server process.
+	if [[ $(ps aux | grep xo-server | grep -v grep) ]]; then
+		echo
+		echo -n "Shutting down xo-server..."
+		/bin/systemctl stop xo-server || { echo "failed to stop service, exiting..." ; exit 1; }
+		echo "done"
+	fi
+
+	# If this isn't a fresh install, then list the upgrade the user is making.
+	if [[ ! -z "$OLD_REPO_HASH" ]]; then
+		echo
+		echo "Updating xen-orchestra from '$OLD_REPO_HASH_SHORT' to '$NEW_REPO_HASH_SHORT'"
+	fi
 
 	echo
 	echo "xo-server and xo-web build quite a while. Grab a cup of coffee and lay back"
@@ -385,13 +447,6 @@ function InstallXO {
 
 
 function UpdateXO {
-
-	if [[ $(ps aux | grep xo-server | grep -v grep) ]]; then
-		echo
-		echo -n "Shutting down xo-server..."
-		/bin/systemctl stop xo-server || { echo "failed to stop service, exiting..." ; exit 1; }
-		echo "done"
-	fi
 
 	InstallXO
 
