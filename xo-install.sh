@@ -6,33 +6,16 @@
 # Repository: https://github.com/ronivay/XenOrchestraInstallerUpdater   #
 #########################################################################
 
-### Start of editable variables ###
+SAMPLE_CONFIG_FILE="sample.xo-install.cfg"
+CONFIG_FILE="xo-install.cfg"
 
-# Optional user that runs the service. root by default
-#XOUSER="node"
+# Deploy default configuration file if the user doesn't have their own yet.
+if [[ ! -e "$CONFIG_FILE" ]]; then
+	cp $SAMPLE_CONFIG_FILE $CONFIG_FILE
+fi
 
-# Port number where xen-orchestra service is bound
-PORT="80"
-
-# Base dir for installation and future updates
-INSTALLDIR="/etc/xo"
-
-# Git branch or tag (append tags/ before the tag name) where xen-orchestra sources are fetched
-BRANCH="master"
-
-# Log path for possible errors
-LOGFILE="$(dirname $0)/xo-install.log"
-
-# comma separated list of plugins to be installed, check README for more information
-#PLUGINS="xo-server-transport-email,xo-server-usage-report,xo-server-perf-alert"
-
-# NodeJS and Yarn are automatically updated when running update. Switch this option to false if you want to disable it.
-AUTOUPDATE="true"
-
-# Define the number of previous installations you want to keep. Needs to be at least 1
-PRESERVE="3"
-
-### End of editable variables ###
+# See this file for all script configuration variables.
+source $CONFIG_FILE
 
 function CheckUser {
 

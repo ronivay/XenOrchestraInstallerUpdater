@@ -1,4 +1,5 @@
 xo-install.log
+xo-install.cfg
 tests/*/*
 tests/*
 !tests/Ubuntu
