@@ -18,24 +18,24 @@ function RunTestsSingle {
 	curl -s -L 192.168.33.101 >> $LOGFILE 2>&1 || false
 
 	if [[ $? == "1" ]]; then
-	echo "$1 install HTTP Check: failed"
+		echo "$1 install HTTP Check: failed"
 	else
 		echo "$1 install HTTP Check: success"
 	fi
 	sleep 5
 
 	vagrant provision --provision-with update >> $LOGFILE 2>&1
-        sleep 5
-        echo "" >> $LOGFILE
-        echo "Curl output after update:" >> $LOGFILE
-        curl -s -L 192.168.33.101 >> $LOGFILE 2>&1 || false
+	sleep 5
+	echo "" >> $LOGFILE
+	echo "Curl output after update:" >> $LOGFILE
+	curl -s -L 192.168.33.101 >> $LOGFILE 2>&1 || false
 
-        if [[ $? == "1" ]]; then
-        echo "$1 update HTTP Check: failed"
-        else
-                echo "$1 update HTTP Check: success"
-        fi
-        sleep 5
+	if [[ $? == "1" ]]; then
+		echo "$1 update HTTP Check: failed"
+	else
+		echo "$1 update HTTP Check: success"
+	fi
+	sleep 5
 
 	vagrant destroy -f >> $LOGFILE 2>&1
 	unset VAGRANT_CWD
@@ -54,13 +54,13 @@ for x in CentOS Debian Ubuntu; do
 		echo "Vagrant box failed to start, exiting"
 		exit 1;
 	fi
-	
+
 	vagrant provision --provision-with install >> $LOGFILE 2>&1
 	sleep 5
 	echo "" >> $LOGFILE
 	echo "Curl output after install:" >> $LOGFILE
 	curl -s -L -m 5 192.168.33.101 >> $LOGFILE 2>&1 || false
-	
+
 	if [[ $? == "1" ]]; then
 		echo "$x install HTTP Check: failed"
 	else

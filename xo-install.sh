@@ -120,7 +120,7 @@ function InstallDependenciesDebian {
 	trap ErrorHandling ERR INT
 
 	# Install necessary dependencies for XO build
-        
+
 	echo
 	echo -n "Running apt-get update..."
 	apt-get update >/dev/null
@@ -178,8 +178,8 @@ function InstallDependenciesDebian {
 	echo "Enabling and starting redis service"
 	/bin/systemctl enable redis-server >/dev/null && /bin/systemctl start redis-server >/dev/null
 
-        echo "Enabling and starting rpcbind service"
-        /bin/systemctl enable rpcbind >/dev/null && /bin/systemctl start rpcbind >/dev/null
+	echo "Enabling and starting rpcbind service"
+	/bin/systemctl enable rpcbind >/dev/null && /bin/systemctl start rpcbind >/dev/null
 
 } 2>$LOGFILE
 
@@ -203,9 +203,9 @@ function UpdateNodeYarn {
 function InstallXOPlugins {
 
 	set -e
-	
+
 	trap ErrorHandling ERR INT
-	
+
 	if [[ "$PLUGINS" ]] && [[ ! -z "$PLUGINS" ]]; then
 
 		echo
@@ -436,9 +436,9 @@ function HandleArgs {
 			;;
 		esac
 
-}	
+}
 
-function RollBackInstallation {	
+function RollBackInstallation {
 
 	INSTALLATIONS=($(find $INSTALLDIR/xo-builds/ -maxdepth 1 -type d -name "xen-orchestra-*"))
 
@@ -643,7 +643,7 @@ read -p ": " option
 					;;
 					2)
 						PullDockerImage
-						
+
 					;;
 					3)
 						exit 0
