@@ -266,7 +266,16 @@ function InstallXO {
 	rm -rf "$INSTALLDIR/xo-builds/xen-orchestra-$TIME"
 	cp -r "$XO_SRC_DIR" "$INSTALLDIR/xo-builds/xen-orchestra-$TIME"
 
-	if [[ "$BRANCH" != "master" ]]; then
+	if [[ "$BRANCH" == "release" ]]; then
+		cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME
+		TAG=$(git describe --tags $(git rev-list --tags --max-count=1))
+
+		echo
+		echo "Checking out latest tagged release '$TAG'"
+
+		git checkout $TAG 2> /dev/null  # Suppress the detached-head message.
+		cd $(dirname $0)
+	elif [[ "$BRANCH" != "master" ]]; then
 		echo
 		echo "Checking out source code from branch '$BRANCH'"
 
