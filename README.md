@@ -84,7 +84,7 @@ Tool has been tested to work with following distros:
 In order to use file level restore from delta backups, the service needs to be ran as root.
 CentOS installation is currently not able to do file level restore if the backed up disk contains LVM.
 
-CentOS setup is confirmed to work with fresh minimal installation and SELinux enabled. 
+CentOS setup is confirmed to work with fresh minimal installation and SELinux enabled.
 Although script doesn't do any SELinux checks or modifications, so you need to take care of possible changes by yourself according to your system.
 
 Tool makes all necessary changes required for Xen-Orchestra to run (including packages, user creation, permissions). Please evaluate script if needed.

@@ -10,5 +10,5 @@ check process redis with pidfile /var/run/redis_6379.pid
 	stop program = "/usr/bin/redis-cli shutdown"
 
 check process rpcbind
-    matching "rpcbind"
-    start program = "/usr/sbin/rpcbind"
+	matching "rpcbind"
+	start program = "/usr/sbin/rpcbind"

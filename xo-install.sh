@@ -6,33 +6,26 @@
 # Repository: https://github.com/ronivay/XenOrchestraInstallerUpdater   #
 #########################################################################
 
-### Start of editable variables ###
+SAMPLE_CONFIG_FILE="sample.xo-install.cfg"
+CONFIG_FILE="xo-install.cfg"
 
-# Optional user that runs the service. root by default
-#XOUSER="node"
+# Deploy default configuration file if the user doesn't have their own yet.
+if [[ ! -e "$CONFIG_FILE" ]]; then
+	cp $SAMPLE_CONFIG_FILE $CONFIG_FILE
+fi
 
-# Port number where xen-orchestra service is bound
-PORT="80"
+# See this file for all script configuration variables.
+source $CONFIG_FILE
 
-# Base dir for installation and future updates
-INSTALLDIR="/etc/xo"
+XO_SRC_DIR="$INSTALLDIR/xo-src/xen-orchestra"
 
-# Git branch or tag (append tags/ before the tag name) where xen-orchestra sources are fetched
-BRANCH="master"
-
-# Log path for possible errors
-LOGFILE="$(dirname $0)/xo-install.log"
-
-# comma separated list of plugins to be installed, check README for more information
-#PLUGINS="xo-server-transport-email,xo-server-usage-report,xo-server-perf-alert"
-
-# NodeJS and Yarn are automatically updated when running update. Switch this option to false if you want to disable it.
-AUTOUPDATE="true"
-
-# Define the number of previous installations you want to keep. Needs to be at least 1
-PRESERVE="3"
-
-### End of editable variables ###
+# Protocol to use for webserver. If both of the X.509 certificate files exist,
+# then assume that we want to enable HTTPS for the server.
+if [[ -e $PATH_TO_HTTPS_CERT ]] && [[ -e $PATH_TO_HTTPS_KEY ]]; then
+	HTTPS=true
+else
+	HTTPS=false
+fi
 
 function CheckUser {
 
@@ -120,7 +113,7 @@ function InstallDependenciesDebian {
 	trap ErrorHandling ERR INT
 
 	# Install necessary dependencies for XO build
-        
+
 	echo
 	echo -n "Running apt-get update..."
 	apt-get update >/dev/null
@@ -178,8 +171,8 @@ function InstallDependenciesDebian {
 	echo "Enabling and starting redis service"
 	/bin/systemctl enable redis-server >/dev/null && /bin/systemctl start redis-server >/dev/null
 
-        echo "Enabling and starting rpcbind service"
-        /bin/systemctl enable rpcbind >/dev/null && /bin/systemctl start rpcbind >/dev/null
+	echo "Enabling and starting rpcbind service"
+	/bin/systemctl enable rpcbind >/dev/null && /bin/systemctl start rpcbind >/dev/null
 
 } 2>$LOGFILE
 
@@ -203,9 +196,9 @@ function UpdateNodeYarn {
 function InstallXOPlugins {
 
 	set -e
-	
+
 	trap ErrorHandling ERR INT
-	
+
 	if [[ "$PLUGINS" ]] && [[ ! -z "$PLUGINS" ]]; then
 
 		echo
@@ -256,15 +249,36 @@ function InstallXO {
 	fi
 
 	echo
+	echo "Fetching Xen Orchestra source code ..."
+	echo
+	if [[ ! -d "$XO_SRC_DIR" ]]; then
+		mkdir -p "$XO_SRC_DIR"
+		git clone https://github.com/vatesfr/xen-orchestra "$XO_SRC_DIR"
+	else
+		cd "$XO_SRC_DIR"
+		git pull
+		cd $(dirname $0)
+	fi
+
+	# Deploy the latest xen-orchestra source to the new install directory.
+	echo
 	echo "Creating install directory: $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
-	mkdir -p "$INSTALLDIR/xo-builds/xen-orchestra-$TIME"
+	rm -rf "$INSTALLDIR/xo-builds/xen-orchestra-$TIME"
+	cp -r "$XO_SRC_DIR" "$INSTALLDIR/xo-builds/xen-orchestra-$TIME"
 
-	echo
-	echo "Fetching source code from branch: $BRANCH ..."
-	echo
-	git clone https://github.com/vatesfr/xen-orchestra $INSTALLDIR/xo-builds/xen-orchestra-$TIME
+	if [[ "$BRANCH" == "release" ]]; then
+		cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME
+		TAG=$(git describe --tags $(git rev-list --tags --max-count=1))
 
-	if [[ "$BRANCH" != "master" ]]; then
+		echo
+		echo "Checking out latest tagged release '$TAG'"
+
+		git checkout $TAG 2> /dev/null  # Suppress the detached-head message.
+		cd $(dirname $0)
+	elif [[ "$BRANCH" != "master" ]]; then
+		echo
+		echo "Checking out source code from branch '$BRANCH'"
+
 		cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME
 		git checkout $BRANCH
 		cd $(dirname $0)
@@ -272,6 +286,54 @@ function InstallXO {
 
 	echo
 	echo "done"
+
+	# Check if the new repo is any different from the currently-installed
+	# one. If not, then skip the build and delete the repo we just cloned.
+
+	# Get the commit ID of the to-be-installed xen-orchestra.
+	cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME
+	NEW_REPO_HASH=$(git rev-parse HEAD)
+	NEW_REPO_HASH_SHORT=$(git rev-parse --short HEAD)
+	cd $(dirname $0)
+
+	# Get the commit ID of the currently-installed xen-orchestra (if one
+	# exists).
+	if [[ -L $INSTALLDIR/xo-server ]]; then
+		cd $INSTALLDIR/xo-server
+		OLD_REPO_HASH=$(git rev-parse HEAD)
+		OLD_REPO_HASH_SHORT=$(git rev-parse --short HEAD)
+		cd $(dirname $0)
+	else
+		# If there's no existing installation, then we definitely want
+		# to proceed with the bulid.
+		OLD_REPO_HASH=""
+		OLD_REPO_HASH_SHORT=""
+	fi
+
+	# If the new install is no different from the existing install, then don't
+	# proceed with the build.
+	if [[ "$NEW_REPO_HASH" == "$OLD_REPO_HASH" ]]; then
+		echo
+		echo "No changes to xen-orchestra since previous install. Skipping xo-server and xo-web build."
+		echo "Cleaning up install directory: $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
+		rm -rf $INSTALLDIR/xo-builds/xen-orchestra-$TIME
+		return 0
+	fi
+
+	# Now that we know we're going to be building a new xen-orchestra, make
+	# sure there's no already-running xo-server process.
+	if [[ $(ps aux | grep xo-server | grep -v grep) ]]; then
+		echo
+		echo -n "Shutting down xo-server..."
+		/bin/systemctl stop xo-server || { echo "failed to stop service, exiting..." ; exit 1; }
+		echo "done"
+	fi
+
+	# If this isn't a fresh install, then list the upgrade the user is making.
+	if [[ ! -z "$OLD_REPO_HASH" ]]; then
+		echo
+		echo "Updating xen-orchestra from '$OLD_REPO_HASH_SHORT' to '$NEW_REPO_HASH_SHORT'"
+	fi
 
 	echo
 	echo "xo-server and xo-web build quite a while. Grab a cup of coffee and lay back"
@@ -320,6 +382,14 @@ function InstallXO {
 		sleep 2
 	fi
 
+	if $HTTPS ; then
+		echo "Enabling HTTPS in xo-server configuration file"
+		sed -i "s%#   cert: '.\/certificate.pem'%  cert: '$PATH_TO_HTTPS_CERT'%" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.yaml
+		sed -i "s%#   key: '.\/key.pem'%  key: '$PATH_TO_HTTPS_KEY'%" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.yaml
+		sed -i "s/#redirectToHttps/redirectToHttps/" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.yaml
+		sleep 2
+	fi
+
 	echo "Activating modified configuration file"
 	mv $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.yaml $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/.xo-server.yaml
 
@@ -363,13 +433,13 @@ function InstallXO {
 	set +x
 
 	timeout 60 bash <<-"EOF"
-		while [[ -z $(journalctl -u xo-server | sed -n 'H; /Starting XO Server/h; ${g;p;}' | grep "http:\/\/\[::\]:$PORT") ]]; do
+		while [[ -z $(journalctl -u xo-server | sed -n 'H; /Starting XO Server/h; ${g;p;}' | grep "https\{0,1\}:\/\/\[::\]:$PORT") ]]; do
 			echo "waiting port to be open"
 			sleep 10
 		done
 	EOF
 
-	if [[ $(journalctl -u xo-server | sed -n 'H; /Starting XO Server/h; ${g;p;}' | grep "http:\/\/\[::\]:$PORT") ]]; then
+	if [[ $(journalctl -u xo-server | sed -n 'H; /Starting XO Server/h; ${g;p;}' | grep "https\{0,1\}:\/\/\[::\]:$PORT") ]]; then
 		echo
 		echo "WebUI started in port $PORT"
 		echo "Default username: admin@admin.net password: admin"
@@ -386,13 +456,6 @@ function InstallXO {
 
 
 function UpdateXO {
-
-	if [[ $(ps aux | grep xo-server | grep -v grep) ]]; then
-		echo
-		echo -n "Shutting down xo-server..."
-		/bin/systemctl stop xo-server || { echo "failed to stop service, exiting..." ; exit 1; }
-		echo "done"
-	fi
 
 	InstallXO
 
@@ -436,9 +499,9 @@ function HandleArgs {
 			;;
 		esac
 
-}	
+}
 
-function RollBackInstallation {	
+function RollBackInstallation {
 
 	INSTALLATIONS=($(find $INSTALLDIR/xo-builds/ -maxdepth 1 -type d -name "xen-orchestra-*"))
 
@@ -643,7 +706,7 @@ read -p ": " option
 					;;
 					2)
 						PullDockerImage
-						
+
 					;;
 					3)
 						exit 0
