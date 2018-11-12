@@ -6,8 +6,8 @@
 # Repository: https://github.com/ronivay/XenOrchestraInstallerUpdater   #
 #########################################################################
 
-SAMPLE_CONFIG_FILE="sample.xo-install.cfg"
-CONFIG_FILE="xo-install.cfg"
+SAMPLE_CONFIG_FILE="$(dirname $0)/sample.xo-install.cfg"
+CONFIG_FILE="$(dirname $0)/xo-install.cfg"
 
 # Deploy default configuration file if the user doesn't have their own yet.
 if [[ ! -e "$CONFIG_FILE" ]]; then
@@ -201,18 +201,24 @@ function InstallXOPlugins {
 
 	if [[ "$PLUGINS" ]] && [[ ! -z "$PLUGINS" ]]; then
 
-		echo
-		echo "Installing plugins defined in PLUGINS variable"
-		echo
-		local PLUGINSARRAY=($(echo "$PLUGINS" | tr ',' ' '))
-		for x in "${PLUGINSARRAY[@]}"; do
-			if [[ $(find $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages -type d -name "$x") ]]; then
-				ln -sn $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/$x $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/node_modules/
-			else
-				echo "No $x plugin found from xen-orchestra packages, skipping"
+		if [[ "$PLUGINS" == "all" ]]; then
+			echo
+			echo "Installing all available plugins as defined in PLUGINS variable"
+			find "$INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/" -maxdepth 1 -mindepth 1 -not -name "xo-server" -not -name "xo-web" -not -name "xo-server-cloud" -exec ln -sn {} "$INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/node_modules/" \;
+		else
+			echo
+			echo "Installing plugins defined in PLUGINS variable"
+			echo
+			local PLUGINSARRAY=($(echo "$PLUGINS" | tr ',' ' '))
+				for x in "${PLUGINSARRAY[@]}"; do
+				if [[ $(find $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages -type d -name "$x") ]]; then
+					ln -sn $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/$x $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/node_modules/
+				else
+					echo "No $x plugin found from xen-orchestra packages, skipping"
 				continue
-			fi
-		done
+				fi
+			done
+		fi
 
 		cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn >/dev/null && yarn build >/dev/null
 	else
@@ -434,7 +440,7 @@ function InstallXO {
 
 	timeout 60 bash <<-"EOF"
 		while [[ -z $(journalctl -u xo-server | sed -n 'H; /Starting XO Server/h; ${g;p;}' | grep "https\{0,1\}:\/\/\[::\]:$PORT") ]]; do
-			echo "waiting port to be open"
+			echo "waiting for port to be open"
 			sleep 10
 		done
 	EOF

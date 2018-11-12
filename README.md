@@ -7,7 +7,7 @@ This repo consist of script to install and update [Xen Orchestra](https://xen-or
 
 Installation is done using latest xo-server and xo-web sources. With this method Xen-Orchestra has all features unlocked which are normally available only with monthly fee.
 
-Optional plugins can be installed. They are included in XO repository, but not installed by default. Check list from [Xen Orchestra plugins](https://github.com/vatesfr/xen-orchestra/tree/master/packages) and edit xo-install.sh accordingly.
+Optional plugins can be installed. They are included in XO repository, but not installed by default. Check list from [Xen Orchestra plugins](https://github.com/vatesfr/xen-orchestra/tree/master/packages) and edit xo-install.cfg accordingly.
 
 
 Paid version comes with pro support and appliance and is the suggested option for larger environments. Method that this script offers comes with no support and is not the officially recommended way of using Xen-Orchestra. This is mainly intended for testing purposes and small environments which don't require support.
@@ -52,7 +52,7 @@ Tool makes some checks and offers options:
 notes:
 
  - If you choose to install with option 2, you need to take care that required packages are already installed
- - You can change xo-server and xo-web git branch by editing xo-install.sh scripts $BRANCH variable
+ - You can change xo-server and xo-web git branch/tag by editing xo-install.cfg $BRANCH variable
 
 ### docker
 You can also build the docker image locally if you wish or pull it from [docker hub](https://hub.docker.com/r/ronivay/xen-orchestra/) without using the script.
