@@ -17,8 +17,8 @@ Xen-Orchestra is a great project and i strongly encourage you to consider the su
 # Instructions
 
 ### script
-Clone this repository, edit variables to suit your preferences from the xo-install.sh script and run it as root
-
+Clone this repository, copy sample.xo-install.cfg as xo-install.cfg and edit variables to suit your preferences and run xo-install.sh as root. Sample configuration will be copied as xo-install.cfg
+ if doesn't exist
 ```
 basic functionality including menu:
 ./xo-install.sh
