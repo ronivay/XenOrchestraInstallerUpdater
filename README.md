@@ -3,7 +3,7 @@
 
 # In a nutshell
 
-This repo consist of script to install and update [Xen Orchestra](https://xen-orchestra.com/#!/) and readymade files to create Docker image.
+This repo consist of script to install and update [Xen Orchestra](https://xen-orchestra.com/#!/) for CentOS 7/Ubuntu 16/Debian 8 & 9
 
 Installation is done using latest xo-server and xo-web sources. With this method Xen-Orchestra has all features unlocked which are normally available only with monthly fee.
 
@@ -44,7 +44,7 @@ Tool makes some checks and offers options:
  - Installs Xen-Orchestra from latest sources (doesn't install any new packages)
 
 3. Deploy container
- - Offers options to build container locally or pull from dockerhub
+ - Offers options to pull ready docker image from dockerhub, also maintained by me
 
 4. Rollback installation
  - Offers option to choose which installation to use from existing ones (if more than 1)
@@ -53,25 +53,6 @@ notes:
 
  - If you choose to install with option 2, you need to take care that required packages are already installed
  - You can change xo-server and xo-web git branch/tag by editing xo-install.cfg $BRANCH variable
-
-### docker
-You can also build the docker image locally if you wish or pull it from [docker hub](https://hub.docker.com/r/ronivay/xen-orchestra/) without using the script.
-
-```
-docker build -t docker/. xen-orchestra
-docker run -p 80:80 xen-orchestra
-```
-or
-```
-docker pull ronivay/xen-orchestra
-docker run -p 80:80 ronivay/xen-orchestra
-```
-
-I suggest adding persistent data mounts for xo-server and redis by adding volume flags to commands above like so:
-
-```
-docker run -p 80:80 -v /path/to/xodata:/var/lib/xo-server -v /path/to/redisdata:/var/lib/redis xen-orchestra
-```
 
 ## Notes
 
