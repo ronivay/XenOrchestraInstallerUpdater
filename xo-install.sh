@@ -17,6 +17,15 @@ fi
 # See this file for all script configuration variables.
 source $CONFIG_FILE
 
+# Set some default variables if sourcing config file fails for some reason
+PORT=${PORT:-80}
+INSTALLDIR=${INSTALLDIR:-"/etc/xo"}
+BRANCH=${BRANCH:-"master"}
+LOGFILE=${LOGFILE:-"$(dirname $0)/xo-install.log"}
+AUTOUPDATE=${AUTOUPDATE:-"true"}
+PRESERVE=${PRESERVE:-"3"}
+
+# Set path where new source is cloned/pulled
 XO_SRC_DIR="$INSTALLDIR/xo-src/xen-orchestra"
 
 # Protocol to use for webserver. If both of the X.509 certificate files exist,
