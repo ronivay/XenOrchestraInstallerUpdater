@@ -263,6 +263,12 @@ function InstallXO {
 		mkdir -p "$INSTALLDIR"
 	fi
 
+	# Create missing xo-builds directory if doesn't exist already
+	if [[ ! -d "$INSTALLDIR/xo-builds" ]]; then
+		echo "Creating missing xo-builds directory to $INSTALLDIR/xo-builds"
+		mkdir "$INSTALLDIR/xo-builds"
+	fi
+
 	echo
 	echo "Fetching Xen Orchestra source code ..."
 	echo

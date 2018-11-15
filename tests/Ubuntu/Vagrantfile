@@ -43,6 +43,6 @@ Vagrant.configure(2) do |config|
   #
   # Run automated test installation
   #
-  config.vm.provision "install", type: "shell", path: "../../xo-install.sh", args: "--install", run: "never"
-  config.vm.provision "update", type: "shell", path: "../../xo-install.sh", args: "--update", run: "never"
+  config.vm.provision "install", type: "shell", inline: "/vagrant/xo-install.sh --install", run: "never"
+  config.vm.provision "update", type: "shell", inline: "/vagrant/xo-install.sh --update", run: "never"
 end
