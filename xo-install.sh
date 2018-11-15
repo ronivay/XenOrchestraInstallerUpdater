@@ -279,7 +279,7 @@ function InstallXO {
 	echo
 	echo "Creating install directory: $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
 	rm -rf "$INSTALLDIR/xo-builds/xen-orchestra-$TIME"
-	cp -r "$XO_SRC_DIR" "$INSTALLDIR/xo-builds/xen-orchestra-$TIME"
+	cp -r "$XO_SRC_DIR"/. "$INSTALLDIR/xo-builds/xen-orchestra-$TIME"
 
 	if [[ "$BRANCH" == "release" ]]; then
 		cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME
