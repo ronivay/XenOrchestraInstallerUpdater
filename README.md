@@ -5,14 +5,14 @@
 
 This repo consist of script to install and update [Xen Orchestra](https://xen-orchestra.com/#!/) for CentOS 7/Ubuntu 16/Debian 8 & 9
 
-Installation is done using latest xo-server and xo-web sources. With this method Xen-Orchestra has all features unlocked which are normally available only with monthly fee.
+Installation is done using latest xo-server and xo-web sources by default. With this method Xen-Orchestra has all features unlocked which are normally available only with monthly fee.
 
 Optional plugins can be installed. They are included in XO repository, but not installed by default. Check list from [Xen Orchestra plugins](https://github.com/vatesfr/xen-orchestra/tree/master/packages) and edit xo-install.cfg accordingly.
 
+Xen-Orchestra is a great project and i strongly encourage you to consider the supported version of their product.
 
 Paid version comes with pro support and appliance and is the suggested option for larger environments. Method that this script offers comes with no support and is not the officially recommended way of using Xen-Orchestra. This is mainly intended for testing purposes and small environments which don't require support.
 
-Xen-Orchestra is a great project and i strongly encourage you to consider the supported version of their product.
 
 # Instructions
 
