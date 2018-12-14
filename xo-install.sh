@@ -612,6 +612,24 @@ function CheckDocker {
 
 }
 
+function CheckCertificate {
+	if [[ "$HTTPS" == "true" ]]; then
+		local CERT="$(openssl x509 -modulus -noout -in "$PATH_TO_HTTPS_CERT" | openssl md5)"
+		local KEY="$(openssl rsa -modulus -noout -in "$PATH_TO_HTTPS_KEY" | openssl md5)"
+		if [[ "$CERT" != "$KEY" ]]; then
+			echo
+			echo "$PATH_TO_HTTPS_CERT:"
+			echo "$CERT"
+			echo "$PATH_TO_HTTPS_KEY:"
+			echo "$KEY"
+			echo
+			echo "MD5 of your TLS key and certificate don't match. Please check files and try again."
+			exit 1
+		fi
+	fi
+
+} 2>$LOGFILE
+
 function PullDockerImage {
 
 	echo
@@ -731,6 +749,7 @@ esac
 CheckUser
 CheckOS
 CheckSystemd
+CheckCertificate
 
 if [[ $# == "1" ]]; then
 	HandleArgs "$1"
