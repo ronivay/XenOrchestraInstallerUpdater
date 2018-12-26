@@ -93,7 +93,7 @@ function InstallDependenciesCentOS {
 	# only install libvhdi-tools if vhdimount is not present
 	if [[ -z $(which vhdimount) ]]; then
 		echo
-		echo -n "Installing libvhdi-tools from forensics repository"
+		echo -n "Installing libvhdi-tools from forensics repository..."
 		rpm -ivh https://forensics.cert.org/cert-forensics-tools-release-el7.rpm >/dev/null
 		sed -i 's/enabled=1/enabled=0/g' /etc/yum.repos.d/cert-forensics-tools.repo
 		yum --enablerepo=forensics install -y libvhdi-tools >/dev/null
@@ -105,13 +105,16 @@ function InstallDependenciesCentOS {
 	echo -n "Installing build dependencies, redis server, python, git, nfs-utils..."
 	yum -y install gcc gcc-c++ make openssl-devel redis libpng-devel python git nfs-utils >/dev/null
 	echo "done"
+
 	echo
-
-	echo "Enabling and starting redis service"
+	echo -n "Enabling and starting redis service..."
 	/bin/systemctl enable redis >/dev/null && /bin/systemctl start redis >/dev/null
+	echo "done"
 
-	echo "Enabling and starting rpcbind service"
+	echo
+	echo -n "Enabling and starting rpcbind service..."
 	/bin/systemctl enable rpcbind >/dev/null && /bin/systemctl start rpcbind >/dev/null
+	echo "done"
 
 } 2>$LOGFILE
 
@@ -130,7 +133,7 @@ function InstallDependenciesDebian {
 
 	# Install apt-transport-https and ca-certificates because of yarn https repo url
 	echo
-	echo -n "Installing apt-transport-https and ca-certificates packages to support https repos"
+	echo -n "Installing apt-transport-https and ca-certificates packages to support https repos..."
 	apt-get install -y apt-transport-https ca-certificates >/dev/null
 	echo "done"
 
@@ -176,12 +179,17 @@ function InstallDependenciesDebian {
 	echo
 	echo -n "Installing build dependencies, redis server, python, git, libvhdi-utils, lvm2, nfs-common..."
 	apt-get install -y build-essential redis-server libpng-dev git python-minimal libvhdi-utils lvm2 nfs-common >/dev/null
+	echo "done"
 
-	echo "Enabling and starting redis service"
+	echo
+	echo -n "Enabling and starting redis service..."
 	/bin/systemctl enable redis-server >/dev/null && /bin/systemctl start redis-server >/dev/null
+	echo "done"
 
-	echo "Enabling and starting rpcbind service"
+	echo
+	echo -n "Enabling and starting rpcbind service..."
 	/bin/systemctl enable rpcbind >/dev/null && /bin/systemctl start rpcbind >/dev/null
+	echo "done"
 
 } 2>$LOGFILE
 
@@ -604,6 +612,24 @@ function CheckDocker {
 
 }
 
+function CheckCertificate {
+	if [[ "$HTTPS" == "true" ]]; then
+		local CERT="$(openssl x509 -modulus -noout -in "$PATH_TO_HTTPS_CERT" | openssl md5)"
+		local KEY="$(openssl rsa -modulus -noout -in "$PATH_TO_HTTPS_KEY" | openssl md5)"
+		if [[ "$CERT" != "$KEY" ]]; then
+			echo
+			echo "$PATH_TO_HTTPS_CERT:"
+			echo "$CERT"
+			echo "$PATH_TO_HTTPS_KEY:"
+			echo "$KEY"
+			echo
+			echo "MD5 of your TLS key and certificate don't match. Please check files and try again."
+			exit 1
+		fi
+	fi
+
+} 2>$LOGFILE
+
 function PullDockerImage {
 
 	echo
@@ -723,6 +749,7 @@ esac
 CheckUser
 CheckOS
 CheckSystemd
+CheckCertificate
 
 if [[ $# == "1" ]]; then
 	HandleArgs "$1"
