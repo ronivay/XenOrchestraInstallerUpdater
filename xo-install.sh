@@ -327,7 +327,7 @@ function InstallXO {
 
 	# Get the commit ID of the currently-installed xen-orchestra (if one
 	# exists).
-	if [[ -L $INSTALLDIR/xo-server ]]; then
+	if [[ -L $INSTALLDIR/xo-server ]] && [[ ! -z $(readlink -e $INSTALLDIR/xo-server) ]]; then
 		cd $INSTALLDIR/xo-server
 		OLD_REPO_HASH=$(git rev-parse HEAD)
 		OLD_REPO_HASH_SHORT=$(git rev-parse --short HEAD)
