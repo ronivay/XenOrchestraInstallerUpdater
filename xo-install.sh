@@ -483,8 +483,9 @@ function InstallXO {
 	echo "Starting xo-server..."
 	/bin/systemctl start xo-server >/dev/null
 
-	# no need to exit on errors anymore
-	set +x
+	# no need to exit/trap on errors anymore
+	set +e
+	trap - ERR INT
 
 	timeout 60 bash <<-"EOF"
 		while [[ -z $(journalctl -u xo-server | sed -n 'H; /Starting XO Server/h; ${g;p;}' | grep "https\{0,1\}:\/\/\[::\]:$PORT") ]]; do
@@ -503,6 +504,7 @@ function InstallXO {
 	else
 		echo
 		echo "Looks like there was a problem when starting xo-server/reading journalctl. Please see logs for more details"
+		journalctl -u xo-server -n 50 >> $LOGFILE
 		exit 1
 	fi
 
