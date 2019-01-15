@@ -402,25 +402,50 @@ function InstallXO {
 	fi
 
 	echo "Fixing relative path to xo-web installation in xo-server configuration file"
-	sed -i "s/#'\/': '\/path\/to\/xo-web\/dist\//'\/': '..\/xo-web\/dist\//" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.yaml
-	sleep 2
-
-	if [[ $PORT != "80" ]]; then
-		echo "Changing port in xo-server configuration file"
-		sed -i "s/port: 80/port: $PORT/" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.yaml
+	
+	# temporarily look for .yaml file first, if not found then assume that new .toml format exists
+	if [[ -f $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.yaml ]]; then
+		sed -i "s/#'\/': '\/path\/to\/xo-web\/dist\//'\/': '..\/xo-web\/dist\//" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.yaml
 		sleep 2
-	fi
 
-	if $HTTPS ; then
-		echo "Enabling HTTPS in xo-server configuration file"
-		sed -i "s%#   cert: '.\/certificate.pem'%  cert: '$PATH_TO_HTTPS_CERT'%" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.yaml
-		sed -i "s%#   key: '.\/key.pem'%  key: '$PATH_TO_HTTPS_KEY'%" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.yaml
-		sed -i "s/#redirectToHttps/redirectToHttps/" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.yaml
-		sleep 2
-	fi
+		if [[ $PORT != "80" ]]; then
+			echo "Changing port in xo-server configuration file"
+			sed -i "s/port: 80/port: $PORT/" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.yaml
+			sleep 2
+		fi
 
-	echo "Activating modified configuration file"
-	mv $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.yaml $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/.xo-server.yaml
+		if $HTTPS ; then
+			echo "Enabling HTTPS in xo-server configuration file"
+			sed -i "s%#   cert: '.\/certificate.pem'%  cert: '$PATH_TO_HTTPS_CERT'%" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.yaml
+			sed -i "s%#   key: '.\/key.pem'%  key: '$PATH_TO_HTTPS_KEY'%" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.yaml
+			sed -i "s/#redirectToHttps/redirectToHttps/" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.yaml
+			sleep 2
+		fi
+
+		echo "Activating modified configuration file"
+		mv $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.yaml $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/.xo-server.yaml
+
+	else
+		sed -i "s/#'\/' = '\/path\/to\/xo-web\/dist\//'\/' = '..\/xo-web\/dist\//" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml
+                sleep 2
+
+                if [[ $PORT != "80" ]]; then
+                        echo "Changing port in xo-server configuration file"
+                        sed -i "s/port = 80/port = $PORT/" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml
+                        sleep 2
+                fi
+
+                if $HTTPS ; then
+                        echo "Enabling HTTPS in xo-server configuration file"
+                        sed -i "s%# cert = '.\/certificate.pem'%cert = '$PATH_TO_HTTPS_CERT'%" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml
+                        sed -i "s%# key = '.\/key.pem'%key = '$PATH_TO_HTTPS_KEY'%" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml
+                        sed -i "s/# redirectToHttps/redirectToHttps/" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml
+                        sleep 2
+                fi
+
+                echo "Activating modified configuration file"
+                mv $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/.xo-server.toml
+	fi
 
 	echo
 	echo "Symlinking fresh xo-server install/update to $INSTALLDIR/xo-server"
