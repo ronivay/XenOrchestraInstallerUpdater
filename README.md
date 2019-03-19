@@ -60,7 +60,7 @@ Tool has been tested to work with following distros:
 
 - CentOS 7 (note LVM file level restore issue from below)
 - Debian 9
-- Ubuntu 16.04
+- Ubuntu 18.04
 
 In order to use file level restore from delta backups, the service needs to be ran as root.
 CentOS installation is currently not able to do file level restore if the backed up disk contains LVM.
