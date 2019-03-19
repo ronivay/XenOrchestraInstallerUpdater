@@ -610,12 +610,12 @@ function CheckOS {
 		if [[ $OSNAME == "Debian" ]] && [[ ! $OSVERSION =~ ^(8|9)$ ]]; then
 			echo "Only Debian 8/9 supported"
 			exit 0
-		elif [[ $OSNAME == "Ubuntu" ]] && [[ ! $OSVERSION == "16" ]]; then
-			echo "Only Ubuntu 16 supported"
+		elif [[ $OSNAME == "Ubuntu" ]] && [[ ! $OSVERSION == "18" ]]; then
+			echo "Only Ubuntu 18 supported"
 			exit 0
 		fi
 	else
-		echo "Only CentOS 7 / Ubuntu 16 and Debian 8/9 supported"
+		echo "Only CentOS 7 / Ubuntu 18 and Debian 8/9 supported"
 		exit 0
 	fi
 
