@@ -3,7 +3,7 @@
 
 # In a nutshell
 
-This repo consist of script to install and update [Xen Orchestra](https://xen-orchestra.com/#!/) for CentOS 7/Ubuntu 16/Debian 8 & 9
+This repo consist of script to install and update [Xen Orchestra](https://xen-orchestra.com/#!/) for CentOS 7/Ubuntu 18/Debian 8 & 9
 
 Installation is done using latest xo-server and xo-web sources by default. With this method Xen-Orchestra has all features unlocked which are normally available only with monthly fee.
 
