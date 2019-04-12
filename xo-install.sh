@@ -496,7 +496,7 @@ function InstallXO {
 
 	if [[ $(journalctl -u xo-server | sed -n 'H; /Starting XO Server/h; ${g;p;}' | grep "https\{0,1\}:\/\/\[::\]:$PORT") ]]; then
 		echo
-		echo "WebUI started in port $PORT"
+		echo "WebUI started in port $PORT. Make sure you have firewall rules in place to allow access."
 		echo "Default username: admin@admin.net password: admin"
 		echo
 		echo "Installation successful. Enabling xo-server to start on reboot"
