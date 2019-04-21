@@ -36,7 +36,7 @@ quick option to rollback (option 4):
 Tool makes some checks and offers options:
 
 1. Autoinstall
- - Installs all dependencies (necessary packages and Xen-Orchestra itself)
+ - Installs all dependencies (necessary packages and Xen-Orchestra itself). Doesn't do firewall changes, so make sure you allow access to port specified in xo-install.cfg.
  - Packages listed in the end of this README
 
 2. Update / Install without dependencies
