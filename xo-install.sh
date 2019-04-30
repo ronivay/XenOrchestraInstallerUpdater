@@ -217,13 +217,10 @@ function InstallXOPlugins {
 	if [[ "$PLUGINS" ]] && [[ ! -z "$PLUGINS" ]]; then
 
 		if [[ "$PLUGINS" == "all" ]]; then
-			echo
-			echo "Installing all available plugins as defined in PLUGINS variable"
+			echo "Installing all available plugins as defined in PLUGINS variable..."
 			find "$INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/" -maxdepth 1 -mindepth 1 -not -name "xo-server" -not -name "xo-web" -not -name "xo-server-cloud" -exec ln -sn {} "$INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/node_modules/" \;
 		else
-			echo
-			echo "Installing plugins defined in PLUGINS variable"
-			echo
+			echo "Installing plugins defined in PLUGINS variable..."
 			local PLUGINSARRAY=($(echo "$PLUGINS" | tr ',' ' '))
 				for x in "${PLUGINSARRAY[@]}"; do
 				if [[ $(find $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages -type d -name "$x") ]]; then
@@ -234,10 +231,7 @@ function InstallXOPlugins {
 				fi
 			done
 		fi
-
-		cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn >/dev/null && yarn build >/dev/null
 	else
-		echo
 		echo "No plugins to install"
 	fi
 
@@ -255,10 +249,8 @@ function InstallXO {
 
 	if [ $XOUSER ]; then
 		if [[ -z $(getent passwd $XOUSER) ]]; then
-			echo
 			echo "Creating missing $XOUSER user"
 			useradd -s /sbin/nologin $XOUSER
-			echo
 			sleep 2
 		fi
 	fi
@@ -275,9 +267,7 @@ function InstallXO {
 		mkdir "$INSTALLDIR/xo-builds"
 	fi
 
-	echo
 	echo -n "Fetching Xen Orchestra source code... "
-	echo
 	if [[ ! -d "$XO_SRC_DIR" ]]; then
 		mkdir -p "$XO_SRC_DIR"
 		git clone https://github.com/vatesfr/xen-orchestra "$XO_SRC_DIR"
@@ -288,7 +278,6 @@ function InstallXO {
 	fi
 
 	# Deploy the latest xen-orchestra source to the new install directory.
-	echo
 	echo -n "Creating install directory: $INSTALLDIR/xo-builds/xen-orchestra-$TIME... "
 	rm -rf "$INSTALLDIR/xo-builds/xen-orchestra-$TIME"
 	cp -r "$XO_SRC_DIR" "$INSTALLDIR/xo-builds/xen-orchestra-$TIME"
@@ -297,13 +286,11 @@ function InstallXO {
 	if [[ "$BRANCH" == "release" ]]; then
 		cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME
 		TAG=$(git describe --tags $(git rev-list --tags --max-count=1))
-		echo
 		echo -n "Checking out latest tagged release '$TAG'... "
 		git checkout $TAG 2> /dev/null  # Suppress the detached-head message.
 		cd $(dirname $0)
 		echo "done"
 	elif [[ "$BRANCH" != "master" ]]; then
-		echo
 		echo -n "Checking out source code from branch '$BRANCH'... "
 		cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME
 		git checkout $BRANCH
@@ -337,7 +324,6 @@ function InstallXO {
 	# If the new install is no different from the existing install, then don't
 	# proceed with the build.
 	if [[ "$NEW_REPO_HASH" == "$OLD_REPO_HASH" ]]; then
-		echo
 		echo "No changes to xen-orchestra since previous install. Skipping xo-server and xo-web build."
 		echo -n "Cleaning up install directory: $INSTALLDIR/xo-builds/xen-orchestra-$TIME... "
 		rm -rf $INSTALLDIR/xo-builds/xen-orchestra-$TIME
@@ -348,7 +334,6 @@ function InstallXO {
 	# Now that we know we're going to be building a new xen-orchestra, make
 	# sure there's no already-running xo-server process.
 	if [[ $(ps aux | grep xo-server | grep -v grep) ]]; then
-		echo
 		echo -n "Shutting down xo-server... "
 		/bin/systemctl stop xo-server || { echo "failed to stop service, exiting..." ; exit 1; }
 		echo "done"
@@ -356,40 +341,34 @@ function InstallXO {
 
 	# If this isn't a fresh install, then list the upgrade the user is making.
 	if [[ ! -z "$OLD_REPO_HASH" ]]; then
-		echo
 		echo "Updating xen-orchestra from '$OLD_REPO_HASH_SHORT' to '$NEW_REPO_HASH_SHORT'"
 	fi
 	
 	# Update source files to exclude open source banner and modal warnings
-	echo
 	echo -n "Removing open-source warning and banner... "
 	cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME
 	/usr/bin/sed -i 's/+process.env.XOA_PLAN === 5/false/' packages/xo-web/src/xo-app/index.js >/dev/null 2>&1
 	cd $(dirname $0)
 	echo "done"
 
-	echo
-	echo "xo-server and xo-web build for quite a while. Grab a cup of coffee and lay back"
-	echo
+	# Install plugins
+	InstallXOPlugins
+	
 	echo -n "Running installation... "
 	cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn >/dev/null && yarn build >/dev/null
 	echo "done"
 
-	# Install plugins
-	InstallXOPlugins
-
-	echo
 	echo -n "Fixing binary path in systemd service configuration file... "
 	sed -i "s#ExecStart=.*#ExecStart=$INSTALLDIR\/xo-server\/bin\/xo-server#" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service
 	echo "done"
-	echo
 	echo -n "Adding WorkingDirectory parameter to systemd service configuration file... "
 	sed -i "/ExecStart=.*/a WorkingDirectory=$INSTALLDIR/xo-server" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service
 	echo "done"
 
 	if [ $XOUSER ]; then
-		echo "Adding user to systemd config"
+		echo -n "Adding user to systemd config... "
 		sed -i "/SyslogIdentifier=.*/a User=$XOUSER" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service
+		echo "done"
 
 		if [ "$PORT" -le "1024" ]; then
 			NODEBINARY="$(which node)"
@@ -460,7 +439,6 @@ function InstallXO {
 		echo "done"
 	fi
 
-	echo
 	echo -n "Symlinking fresh xo-server install/update to $INSTALLDIR/xo-server... "
 	ln -sfn $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server $INSTALLDIR/xo-server
 	echo "done"
@@ -484,19 +462,16 @@ function InstallXO {
 		rm -f /etc/systemd/system/xo-server.service
 	fi
 
-	echo
 	echo -n "Replacing systemd service configuration file... "
 	/bin/cp -f $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service /etc/systemd/system/xo-server.service
 	echo "done"
 	sleep 2
-	echo "Reloading systemd configuration... "
-	echo
-	/bin/systemctl daemon-reload
+	echo -n "Reloading systemd configuration... "
+	/bin/systemctl daemon-reload >/dev/null
 	echo "done"
 	sleep 2
 
-	echo
-	echo "Starting xo-server... "
+	echo -n "Starting xo-server... "
 	/bin/systemctl start xo-server >/dev/null
 	echo "done"
 
@@ -513,7 +488,7 @@ function InstallXO {
 
 	if [[ $(journalctl -u xo-server | sed -n 'H; /Starting XO Server/h; ${g;p;}' | grep "https\{0,1\}:\/\/\[::\]:$PORT") ]]; then
 		echo
-		echo "WebUI started in port $PORT. Make sure you have firewall rules in place to allow access."
+		echo "WebUI started on port $PORT. Make sure you have firewall rules in place to allow access."
 		echo "Default username: admin@admin.net password: admin"
 		echo
 		echo "Installation successful. Enabling xo-server to start on reboot"
