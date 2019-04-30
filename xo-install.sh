@@ -289,7 +289,7 @@ function InstallXO {
 
 	# Deploy the latest xen-orchestra source to the new install directory.
 	echo
-	echo "Creating install directory: $INSTALLDIR/xo-builds/xen-orchestra-$TIME... "
+	echo -n "Creating install directory: $INSTALLDIR/xo-builds/xen-orchestra-$TIME... "
 	rm -rf "$INSTALLDIR/xo-builds/xen-orchestra-$TIME"
 	cp -r "$XO_SRC_DIR" "$INSTALLDIR/xo-builds/xen-orchestra-$TIME"
 	echo "done"
@@ -381,11 +381,13 @@ function InstallXO {
 	InstallXOPlugins
 
 	echo
-	echo "Fixing binary path in systemd service configuration file"
+	echo -n "Fixing binary path in systemd service configuration file... "
 	sed -i "s#ExecStart=.*#ExecStart=$INSTALLDIR\/xo-server\/bin\/xo-server#" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service
+	echo "done"
 	echo
-	echo "Adding WorkingDirectory parameter to systemd service configuration file"
+	echo -n "Adding WorkingDirectory parameter to systemd service configuration file... "
 	sed -i "/ExecStart=.*/a WorkingDirectory=$INSTALLDIR/xo-server" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service
+	echo "done"
 
 	if [ $XOUSER ]; then
 		echo "Adding user to systemd config"
@@ -407,58 +409,67 @@ function InstallXO {
 		fi
 	fi
 
-	echo "Fixing relative path to xo-web installation in xo-server configuration file"
+	echo -n "Fixing relative path to xo-web installation in xo-server configuration file... "
 	
 	# temporarily look for .yaml file first, if not found then assume that new .toml format exists
 	if [[ -f $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.yaml ]]; then
 		sed -i "s/#'\/': '\/path\/to\/xo-web\/dist\//'\/': '..\/xo-web\/dist\//" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.yaml
+		echo "done"
 		sleep 2
 
 		if [[ $PORT != "80" ]]; then
-			echo "Changing port in xo-server configuration file"
+			echo -n "Changing port in xo-server configuration file... "
 			sed -i "s/port: 80/port: $PORT/" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.yaml
+			echo "done"
 			sleep 2
 		fi
 
 		if $HTTPS ; then
-			echo "Enabling HTTPS in xo-server configuration file"
+			echo -n "Enabling HTTPS in xo-server configuration file... "
 			sed -i "s%#   cert: '.\/certificate.pem'%  cert: '$PATH_TO_HTTPS_CERT'%" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.yaml
 			sed -i "s%#   key: '.\/key.pem'%  key: '$PATH_TO_HTTPS_KEY'%" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.yaml
 			sed -i "s/#redirectToHttps/redirectToHttps/" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.yaml
+			echo "done"
 			sleep 2
 		fi
 
-		echo "Activating modified configuration file"
+		echo -n "Activating modified configuration file... "
 		mv $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.yaml $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/.xo-server.yaml
-
+		echo "done"
 	else
 		sed -i "s/#'\/' = '\/path\/to\/xo-web\/dist\//'\/' = '..\/xo-web\/dist\//" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml
-                sleep 2
+		echo "done"
+		sleep 2
 
-                if [[ $PORT != "80" ]]; then
-                        echo "Changing port in xo-server configuration file"
-                        sed -i "s/port = 80/port = $PORT/" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml
-                        sleep 2
-                fi
+		if [[ $PORT != "80" ]]; then
+				echo -n "Changing port in xo-server configuration file... "
+				sed -i "s/port = 80/port = $PORT/" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml
+				echo "done"
+				sleep 2
+		fi
 
-                if $HTTPS ; then
-                        echo "Enabling HTTPS in xo-server configuration file"
-                        sed -i "s%# cert = '.\/certificate.pem'%cert = '$PATH_TO_HTTPS_CERT'%" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml
-                        sed -i "s%# key = '.\/key.pem'%key = '$PATH_TO_HTTPS_KEY'%" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml
-                        sed -i "s/# redirectToHttps/redirectToHttps/" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml
-                        sleep 2
-                fi
+		if $HTTPS ; then
+				echo -n "Enabling HTTPS in xo-server configuration file... "
+				sed -i "s%# cert = '.\/certificate.pem'%cert = '$PATH_TO_HTTPS_CERT'%" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml
+				sed -i "s%# key = '.\/key.pem'%key = '$PATH_TO_HTTPS_KEY'%" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml
+				sed -i "s/# redirectToHttps/redirectToHttps/" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml
+				echo "done"
+				sleep 2
+		fi
 
-                echo "Activating modified configuration file"
-                mv $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/.xo-server.toml
+		echo -n "Activating modified configuration file... "
+		mv $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/.xo-server.toml
+		echo "done"
 	fi
 
 	echo
-	echo "Symlinking fresh xo-server install/update to $INSTALLDIR/xo-server"
+	echo -n "Symlinking fresh xo-server install/update to $INSTALLDIR/xo-server... "
 	ln -sfn $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server $INSTALLDIR/xo-server
+	echo "done"
 	sleep 2
-	echo "Symlinking fresh xo-web install/update to $INSTALLDIR/xo-web"
+	echo -n "Symlinking fresh xo-web install/update to $INSTALLDIR/xo-web... "
 	ln -sfn $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-web $INSTALLDIR/xo-web
+	echo "done"
 
 	if [ $XOUSER ]; then
 		chown -R $XOUSER:$XOUSER $INSTALLDIR/xo-builds/xen-orchestra-$TIME
@@ -476,18 +487,20 @@ function InstallXO {
 	fi
 
 	echo
-	echo "Replacing systemd service configuration file"
-
+	echo -n "Replacing systemd service configuration file... "
 	/bin/cp -f $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service /etc/systemd/system/xo-server.service
+	echo "done"
 	sleep 2
-	echo "Reloading systemd configuration"
+	echo "Reloading systemd configuration... "
 	echo
 	/bin/systemctl daemon-reload
+	echo "done"
 	sleep 2
 
 	echo
-	echo "Starting xo-server..."
+	echo "Starting xo-server... "
 	/bin/systemctl start xo-server >/dev/null
+	echo "done"
 
 	# no need to exit/trap on errors anymore
 	set +e
