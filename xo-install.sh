@@ -363,6 +363,14 @@ function InstallXO {
 		echo
 		echo "Updating xen-orchestra from '$OLD_REPO_HASH_SHORT' to '$NEW_REPO_HASH_SHORT'"
 	fi
+	
+	# Update source files to exclude open source banner and modal warnings
+	echo
+	echo -n "Removing open-source warning and banner"
+	cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME
+	/usr/bin/sed -i 's/+process.env.XOA_PLAN === 5/false/' packages/xo-web/src/xo-app/index.js >/dev/null 2>&1
+	cd $(dirname $0)
+	echo "done"
 
 	echo
 	echo "xo-server and xo-web build quite a while. Grab a cup of coffee and lay back"
