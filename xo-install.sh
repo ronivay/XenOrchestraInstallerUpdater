@@ -278,7 +278,7 @@ function InstallXO {
 	fi
 
 	echo
-	echo "Fetching Xen Orchestra source code ..."
+	echo -n "Fetching Xen Orchestra source code... "
 	echo
 	if [[ ! -d "$XO_SRC_DIR" ]]; then
 		mkdir -p "$XO_SRC_DIR"
@@ -291,29 +291,28 @@ function InstallXO {
 
 	# Deploy the latest xen-orchestra source to the new install directory.
 	echo
-	echo "Creating install directory: $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
+	echo "Creating install directory: $INSTALLDIR/xo-builds/xen-orchestra-$TIME... "
 	rm -rf "$INSTALLDIR/xo-builds/xen-orchestra-$TIME"
 	cp -r "$XO_SRC_DIR" "$INSTALLDIR/xo-builds/xen-orchestra-$TIME"
+	echo "done"
 
 	if [[ "$BRANCH" == "release" ]]; then
 		cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME
 		TAG=$(git describe --tags $(git rev-list --tags --max-count=1))
 
 		echo
-		echo "Checking out latest tagged release '$TAG'"
+		echo -n "Checking out latest tagged release '$TAG'... "
 
 		git checkout $TAG 2> /dev/null  # Suppress the detached-head message.
 		cd $(dirname $0)
 	elif [[ "$BRANCH" != "master" ]]; then
 		echo
-		echo "Checking out source code from branch '$BRANCH'"
+		echo -n "Checking out source code from branch '$BRANCH'... "
 
 		cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME
 		git checkout $BRANCH
 		cd $(dirname $0)
 	fi
-
-	echo
 	echo "done"
 
 	# Check if the new repo is any different from the currently-installed
@@ -344,8 +343,9 @@ function InstallXO {
 	if [[ "$NEW_REPO_HASH" == "$OLD_REPO_HASH" ]]; then
 		echo
 		echo "No changes to xen-orchestra since previous install. Skipping xo-server and xo-web build."
-		echo "Cleaning up install directory: $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
+		echo -n "Cleaning up install directory: $INSTALLDIR/xo-builds/xen-orchestra-$TIME... "
 		rm -rf $INSTALLDIR/xo-builds/xen-orchestra-$TIME
+		echo "done"
 		return 0
 	fi
 
@@ -353,7 +353,7 @@ function InstallXO {
 	# sure there's no already-running xo-server process.
 	if [[ $(ps aux | grep xo-server | grep -v grep) ]]; then
 		echo
-		echo -n "Shutting down xo-server..."
+		echo -n "Shutting down xo-server... "
 		/bin/systemctl stop xo-server || { echo "failed to stop service, exiting..." ; exit 1; }
 		echo "done"
 	fi
@@ -373,9 +373,9 @@ function InstallXO {
 	echo "done"
 
 	echo
-	echo "xo-server and xo-web build quite a while. Grab a cup of coffee and lay back"
+	echo "xo-server and xo-web build for quite a while. Grab a cup of coffee and lay back"
 	echo
-	echo -n "Running installation..."
+	echo -n "Running installation... "
 	cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn >/dev/null && yarn build >/dev/null
 	echo "done"
 
@@ -400,7 +400,7 @@ function InstallXO {
 			fi
 
 			if [[ ! -z $NODEBINARY ]]; then
-				echo -n "Attempting to set cap_net_bind_service permission for $NODEBINARY..."
+				echo -n "Attempting to set cap_net_bind_service permission for $NODEBINARY... "
 				setcap 'cap_net_bind_service=+ep' $NODEBINARY >/dev/null \
 				&& echo "Success" || echo "Failed. Non-privileged user might not be able to bind to <1024 port. xo-server won't start most likely"
 			else
@@ -527,7 +527,7 @@ function UpdateXO {
 
 		# remove old builds. leave as many as defined in PRESERVE variable
 		echo
-		echo -n "Removing old installations (leaving $PRESERVE latest)..."
+		echo -n "Removing old installations (leaving $PRESERVE latest)... "
 		find $INSTALLDIR/xo-builds/ -maxdepth 1 -type d -name "xen-orchestra*" -printf "%T@ %p\n" | sort -n | cut -d' ' -f2- | head -n -$PRESERVE | xargs -r rm -r
 		echo "done"
 	else
