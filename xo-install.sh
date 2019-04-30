@@ -231,6 +231,7 @@ function InstallXOPlugins {
 				fi
 			done
 		fi
+		cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn >/dev/null && yarn build >/dev/null
 	else
 		echo "No plugins to install"
 	fi
@@ -351,12 +352,12 @@ function InstallXO {
 	cd $(dirname $0)
 	echo "done"
 
-	# Install plugins
-	InstallXOPlugins
-	
 	echo -n "Running installation... "
 	cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn >/dev/null && yarn build >/dev/null
 	echo "done"
+	
+	# Install plugins
+	InstallXOPlugins
 
 	echo -n "Fixing binary path in systemd service configuration file... "
 	sed -i "s#ExecStart=.*#ExecStart=$INSTALLDIR\/xo-server\/bin\/xo-server#" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service
