@@ -198,12 +198,10 @@ function UpdateNodeYarn {
 	if [[ $AUTOUPDATE == "true" ]]; then
 
 		if [ $OSNAME == "CentOS" ]; then
-			echo
-			echo "Checking updates for nodejs and yarn"
+			echo "Checking updates for nodejs and yarn... "
 			yum update -y nodejs yarn > /dev/null
 		else
-			echo
-			echo "Checking updates for nodejs and yarn"
+			echo "Checking updates for nodejs and yarn... "
 			apt-get install -y --only-upgrade nodejs yarn > /dev/null
 		fi
 	fi
