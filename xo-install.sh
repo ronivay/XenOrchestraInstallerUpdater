@@ -198,11 +198,13 @@ function UpdateNodeYarn {
 	if [[ $AUTOUPDATE == "true" ]]; then
 
 		if [ $OSNAME == "CentOS" ]; then
-			echo "Checking updates for nodejs and yarn... "
+			echo -n "Checking for updates to nodejs and yarn... "
 			yum update -y nodejs yarn > /dev/null
+			echo "done"
 		else
-			echo "Checking updates for nodejs and yarn... "
+			echo -n "Checking for updates to nodejs and yarn... "
 			apt-get install -y --only-upgrade nodejs yarn > /dev/null
+			echo "done"
 		fi
 	fi
 
@@ -217,21 +219,26 @@ function InstallXOPlugins {
 	if [[ "$PLUGINS" ]] && [[ ! -z "$PLUGINS" ]]; then
 
 		if [[ "$PLUGINS" == "all" ]]; then
-			echo "Installing all available plugins as defined in PLUGINS variable..."
+			echo -n "Installing all available plugins as defined in PLUGINS variable... "
 			find "$INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/" -maxdepth 1 -mindepth 1 -not -name "xo-server" -not -name "xo-web" -not -name "xo-server-cloud" -exec ln -sn {} "$INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/node_modules/" \;
+			echo "done"
 		else
-			echo "Installing plugins defined in PLUGINS variable..."
+			echo "Installing plugins defined in PLUGINS variable:"
 			local PLUGINSARRAY=($(echo "$PLUGINS" | tr ',' ' '))
 				for x in "${PLUGINSARRAY[@]}"; do
 				if [[ $(find $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages -type d -name "$x") ]]; then
+					echo -n "- Installing ${x}... "
 					ln -sn $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/$x $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/node_modules/
+					echo "done"
 				else
-					echo "No $x plugin found from xen-orchestra packages, skipping"
+					echo "No $x plugin found, skipping"
 				continue
 				fi
 			done
 		fi
+		echo -n "Building plugins from sources... "
 		cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn >/dev/null && yarn build >/dev/null
+		echo "done"
 	else
 		echo "No plugins to install"
 	fi
@@ -352,7 +359,7 @@ function InstallXO {
 	cd $(dirname $0)
 	echo "done"
 
-	echo -n "Running installation... "
+	echo -n "Building Xen-Orchestra from sources... "
 	cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn >/dev/null && yarn build >/dev/null
 	echo "done"
 	
@@ -492,8 +499,11 @@ function InstallXO {
 		echo "WebUI started on port $PORT. Make sure you have firewall rules in place to allow access."
 		echo "Default username: admin@admin.net password: admin"
 		echo
-		echo "Installation successful. Enabling xo-server to start on reboot"
+		echo "Installation successful"
+		echo
+		echo -n "Enabling xo-server to start on reboot... "
 		/bin/systemctl enable xo-server > /dev/null
+		echo "done"
 	else
 		echo
 		echo "Looks like there was a problem when starting xo-server/reading journalctl. Please see logs for more details"
