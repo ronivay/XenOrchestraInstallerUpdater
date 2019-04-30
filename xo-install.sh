@@ -1,10 +1,10 @@
 #!/bin/bash
 
-#########################################################################
-# Title: XenOrchestraInstallerUpdater                                   #
-# Author: Roni Väyrynen                                                 #
-# Repository: https://github.com/ronivay/XenOrchestraInstallerUpdater   #
-#########################################################################
+###########################################################################
+# Title: XenOrchestraInstallerUpdater                                     #
+# Author: Roni Väyrynen, Lance Fogle                                      #
+# Repository: https://github.com/OnyxFireInc/XenOrchestraInstallerUpdater #
+###########################################################################
 
 SAMPLE_CONFIG_FILE="$(dirname $0)/sample.xo-install.cfg"
 CONFIG_FILE="$(dirname $0)/xo-install.cfg"
