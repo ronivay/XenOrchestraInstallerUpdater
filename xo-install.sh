@@ -297,21 +297,19 @@ function InstallXO {
 	if [[ "$BRANCH" == "release" ]]; then
 		cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME
 		TAG=$(git describe --tags $(git rev-list --tags --max-count=1))
-
 		echo
 		echo -n "Checking out latest tagged release '$TAG'... "
-
 		git checkout $TAG 2> /dev/null  # Suppress the detached-head message.
 		cd $(dirname $0)
+		echo "done"
 	elif [[ "$BRANCH" != "master" ]]; then
 		echo
 		echo -n "Checking out source code from branch '$BRANCH'... "
-
 		cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME
 		git checkout $BRANCH
 		cd $(dirname $0)
+		echo "done"
 	fi
-	echo "done"
 
 	# Check if the new repo is any different from the currently-installed
 	# one. If not, then skip the build and delete the repo we just cloned.
