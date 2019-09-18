@@ -355,6 +355,7 @@ function InstallXO {
 	# Update source files to exclude open source banner and modal warnings
 	echo -n "Removing open-source warning and banner... "
 	cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME
+	/usr/bin/sed -i 's/+process.env.XOA_PLAN === 5/false/' packages/xo-web/src/xo-app/index.js >/dev/null 2>&1
 	/usr/bin/sed -i "s/plan === 'Community'/false/" packages/xo-web/src/xo-app/index.js >/dev/null 2>&1
 	cd $(dirname $0)
 	echo "done"
