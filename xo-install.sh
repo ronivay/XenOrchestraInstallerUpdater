@@ -36,7 +36,7 @@ COLOR_BLUE='\e[1;34m'
 OK="[${COLOR_GREEN}ok${COLOR_N}]"
 FAIL="[${COLOR_RED}fail${COLOR_N}]"
 INFO="[${COLOR_BLUE}info${COLOR_N}]"
-PROGRESS="[${COLOR_BLUE}...${COLOR_N}]"
+PROGRESS="[${COLOR_BLUE}..${COLOR_N}]"
 
 # Protocol to use for webserver. If both of the X.509 certificate files exist,
 # then assume that we want to enable HTTPS for the server.
