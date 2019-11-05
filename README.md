@@ -96,6 +96,7 @@ CentOS:
 - git
 - nfs-utils
 - libvhdi-tools
+- cifs-utils
 
 Debian/Ubuntu:
 - apt-transport-https
@@ -113,4 +114,5 @@ Debian/Ubuntu:
 - libvhdi-utils
 - lvm2
 - nfs-common
+- cifs-utils
 ```

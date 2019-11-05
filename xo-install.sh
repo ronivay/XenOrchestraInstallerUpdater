@@ -112,9 +112,9 @@ function InstallDependenciesCentOS {
 
 	# install
 	echo
-	echo -ne "${PROGRESS} Installing build dependencies, redis server, python, git, nfs-utils"
-	yum -y install gcc gcc-c++ make openssl-devel redis libpng-devel python git nfs-utils >/dev/null
-	echo -e "\r${OK} Installing build dependencies, redis server, python, git, nfs-utils"
+	echo -ne "${PROGRESS} Installing build dependencies, redis server, python, git, nfs-utils cifs-utils"
+	yum -y install gcc gcc-c++ make openssl-devel redis libpng-devel python git nfs-utils cifs-utils >/dev/null
+	echo -e "\r${OK} Installing build dependencies, redis server, python, git, nfs-utils, cifs-utils"
 
 	echo
 	echo -ne "${PROGRESS} Enabling and starting redis service"
@@ -187,9 +187,9 @@ function InstallDependenciesDebian {
 
 	# install packages
 	echo
-	echo -ne "${PROGRESS} Installing build dependencies, redis server, python, git, libvhdi-utils, lvm2, nfs-common"
-	apt-get install -y build-essential redis-server libpng-dev git python-minimal libvhdi-utils lvm2 nfs-common >/dev/null
-	echo -e "\r${OK} Installing build dependencies, redis server, python, git, libvhdi-utils, lvm2, nfs-common"
+	echo -ne "${PROGRESS} Installing build dependencies, redis server, python, git, libvhdi-utils, lvm2, nfs-common, cifs-utils"
+	apt-get install -y build-essential redis-server libpng-dev git python-minimal libvhdi-utils lvm2 nfs-common cifs-utils >/dev/null
+	echo -e "\r${OK} Installing build dependencies, redis server, python, git, libvhdi-utils, lvm2, nfs-common, cifs-utils"
 
 	echo
 	echo -ne "${PROGRESS} Enabling and starting redis service"
