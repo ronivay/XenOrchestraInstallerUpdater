@@ -112,7 +112,7 @@ function InstallDependenciesCentOS {
 
 	# install
 	echo
-	echo -ne "${PROGRESS} Installing build dependencies, redis server, python, git, nfs-utils cifs-utils"
+	echo -ne "${PROGRESS} Installing build dependencies, redis server, python, git, nfs-utils, cifs-utils"
 	yum -y install gcc gcc-c++ make openssl-devel redis libpng-devel python git nfs-utils cifs-utils >/dev/null
 	echo -e "\r${OK} Installing build dependencies, redis server, python, git, nfs-utils, cifs-utils"
 
