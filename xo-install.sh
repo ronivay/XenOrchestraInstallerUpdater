@@ -19,7 +19,7 @@ source $CONFIG_FILE
 
 # Set some default variables if sourcing config file fails for some reason
 PORT=${PORT:-80}
-INSTALLDIR=${INSTALLDIR:-"/etc/xo"}
+INSTALLDIR=${INSTALLDIR:-"/opt/xo"}
 BRANCH=${BRANCH:-"master"}
 LOGFILE=${LOGFILE:-"$(dirname $0)/xo-install.log"}
 AUTOUPDATE=${AUTOUPDATE:-"true"}
@@ -368,16 +368,22 @@ function InstallXO {
 	InstallXOPlugins
 
 	echo -n "Fixing binary path in systemd service configuration file... "
-	sed -i "s#ExecStart=.*#ExecStart=$INSTALLDIR\/xo-server\/bin\/xo-server#" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service
+	/usr/bin/sed -i "s#ExecStart=.*#ExecStart=$INSTALLDIR\/xo-server\/bin\/xo-server#" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service
 	echo "done"
 	echo -n "Adding WorkingDirectory parameter to systemd service configuration file... "
-	sed -i "/ExecStart=.*/a WorkingDirectory=$INSTALLDIR/xo-server" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service
+	/usr/bin/sed -i "/ExecStart=.*/a WorkingDirectory=$INSTALLDIR/xo-server" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service
 	echo "done"
 
 	if [ $XOUSER ]; then
 		echo -n "Adding user to systemd config... "
-		sed -i "/SyslogIdentifier=.*/a User=$XOUSER" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service
+		/usr/bin/sed -i "/SyslogIdentifier=.*/a User=$XOUSER" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service
 		echo "done"
+		
+		if [[ ! -z "/usr/bin/sudo" ]]; then
+			echo -n "Setting user to use sudo... "
+			/usr/bin/sed -i 's/#useSudo = false/useSudo = true/' $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml
+			echo "done"
+		fi
 
 		if [ "$PORT" -le "1024" ]; then
 			NODEBINARY="$(which node)"
@@ -396,57 +402,33 @@ function InstallXO {
 	fi
 
 	echo -n "Fixing relative path to xo-web installation in xo-server configuration file... "
-	
-	# temporarily look for .yaml file first, if not found then assume that new .toml format exists
-	if [[ -f $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.yaml ]]; then
-		sed -i "s/#'\/': '\/path\/to\/xo-web\/dist\//'\/': '..\/xo-web\/dist\//" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.yaml
-		echo "done"
-		sleep 2
+	sed -i "s/#'\/' = '\/path\/to\/xo-web\/dist\//'\/' = '..\/xo-web\/dist\//" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml
+	echo "done"
+	sleep 2
 
-		if [[ $PORT != "80" ]]; then
+	if [[ $PORT != "80" ]]; then
 			echo -n "Changing port in xo-server configuration file... "
-			sed -i "s/port: 80/port: $PORT/" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.yaml
+			sed -i "s/port = 80/port = $PORT/" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml
 			echo "done"
 			sleep 2
-		fi
-
-		if $HTTPS ; then
-			echo -n "Enabling HTTPS in xo-server configuration file... "
-			sed -i "s%#   cert: '.\/certificate.pem'%  cert: '$PATH_TO_HTTPS_CERT'%" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.yaml
-			sed -i "s%#   key: '.\/key.pem'%  key: '$PATH_TO_HTTPS_KEY'%" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.yaml
-			sed -i "s/#redirectToHttps/redirectToHttps/" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.yaml
-			echo "done"
-			sleep 2
-		fi
-
-		echo -n "Activating modified configuration file... "
-		mv $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.yaml $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/.xo-server.yaml
-		echo "done"
-	else
-		sed -i "s/#'\/' = '\/path\/to\/xo-web\/dist\//'\/' = '..\/xo-web\/dist\//" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml
-		echo "done"
-		sleep 2
-
-		if [[ $PORT != "80" ]]; then
-				echo -n "Changing port in xo-server configuration file... "
-				sed -i "s/port = 80/port = $PORT/" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml
-				echo "done"
-				sleep 2
-		fi
-
-		if $HTTPS ; then
-				echo -n "Enabling HTTPS in xo-server configuration file... "
-				sed -i "s%# cert = '.\/certificate.pem'%cert = '$PATH_TO_HTTPS_CERT'%" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml
-				sed -i "s%# key = '.\/key.pem'%key = '$PATH_TO_HTTPS_KEY'%" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml
-				sed -i "s/# redirectToHttps/redirectToHttps/" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml
-				echo "done"
-				sleep 2
-		fi
-
-		echo -n "Activating modified configuration file... "
-		mv $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/.xo-server.toml
-		echo "done"
 	fi
+
+	if $HTTPS ; then
+			echo -n "Enabling HTTPS in xo-server configuration file... "
+			sed -i "s%# cert = '.\/certificate.pem'%cert = '$PATH_TO_HTTPS_CERT'%" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml
+			sed -i "s%# key = '.\/key.pem'%key = '$PATH_TO_HTTPS_KEY'%" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml
+			sed -i "s/# redirectToHttps/redirectToHttps/" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml
+			echo "done"
+			sleep 2
+	fi
+
+	echo -n "Activating modified configuration file... "
+	# Create configuration directory if doesn't exist already
+	if [[ ! -d "/etc/xo-server" ]] ; then
+		mkdir -p /etc/xo-server
+	fi
+	mv $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml /etc/xo-server/config.toml
+	echo "done"
 
 	echo -n "Symlinking fresh xo-server install/update to $INSTALLDIR/xo-server... "
 	ln -sfn $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server $INSTALLDIR/xo-server
