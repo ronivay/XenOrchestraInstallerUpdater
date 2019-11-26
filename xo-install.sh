@@ -261,6 +261,11 @@ function InstallXO {
 			useradd -s /sbin/nologin $XOUSER
 			sleep 2
 		fi
+		# Create sudo permissions for non-root user
+		if [[ ! -e "/etc/sudoers.d/$XOUSER" ]]; then
+			# Allow user to mount nfs
+			echo "$XOUSER  localhost=NOPASSWD:/bin/mount" > /etc/sudoers.d/$XOUSER
+		fi
 	fi
 
 	# Create installation directory if doesn't exist already
