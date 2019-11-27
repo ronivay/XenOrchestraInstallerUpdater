@@ -705,7 +705,7 @@ echo "Number of previous installations to preserve: $PRESERVE"
 echo
 echo "Errorlog is stored to $LOGFILE for debug purposes"
 echo
-echo "Xen Orchestra configuration will be stored to $CONFIGPATH/.config/xo-server/config.toml, if you don't want it to be replaced with every update, set CONFIGUPDATE to false in xo-server.cfg"
+echo "Xen Orchestra configuration will be stored to $CONFIGPATH/.config/xo-server/config.toml, if you don't want it to be replaced with every update, set CONFIGUPDATE to false in xo-install.cfg"
 echo "-----------------------------------------"
 
 echo
