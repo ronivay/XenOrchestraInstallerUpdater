@@ -24,6 +24,8 @@ BRANCH=${BRANCH:-"master"}
 LOGFILE=${LOGFILE:-"$(dirname $0)/xo-install.log"}
 AUTOUPDATE=${AUTOUPDATE:-"true"}
 PRESERVE=${PRESERVE:-"3"}
+XOUSER=${XOUSER:-"root"}
+CONFIGPATH="$(getent passwd $XOUSER | cut -d: -f6)"
 
 # Set path where new source is cloned/pulled
 XO_SRC_DIR="$INSTALLDIR/xo-src/xen-orchestra"
@@ -414,32 +416,12 @@ function InstallXO {
 		fi
 	fi
 
-	echo -e ${INFO} "Fixing relative path to xo-web installation in xo-server configuration file"
-	
-	# temporarily look for .yaml file first, if not found then assume that new .toml format exists
-	if [[ -f $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.yaml ]]; then
-		sed -i "s/#'\/': '\/path\/to\/xo-web\/dist\//'\/': '..\/xo-web\/dist\//" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.yaml
-		sleep 2
+        if [[ ! -f $CONFIGPATH/.config/xo-server/config.toml ]] || [[ "$CONFIGUPDATE" == "true" ]]; then
 
-		if [[ $PORT != "80" ]]; then
-			echo -e "${INFO} Changing port in xo-server configuration file"
-			sed -i "s/port: 80/port: $PORT/" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.yaml
-			sleep 2
-		fi
+	        echo -e ${INFO} "Fixing relative path to xo-web installation in xo-server configuration file"
 
-		if $HTTPS ; then
-			echo -e "${INFO} Enabling HTTPS in xo-server configuration file"
-			sed -i "s%#   cert: '.\/certificate.pem'%  cert: '$PATH_TO_HTTPS_CERT'%" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.yaml
-			sed -i "s%#   key: '.\/key.pem'%  key: '$PATH_TO_HTTPS_KEY'%" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.yaml
-			sed -i "s/#redirectToHttps/redirectToHttps/" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.yaml
-			sleep 2
-		fi
-
-		echo -e "${INFO} Activating modified configuration file"
-		mv $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.yaml $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/.xo-server.yaml
-
-	else
-		sed -i "s/#'\/' = '\/path\/to\/xo-web\/dist\//'\/' = '..\/xo-web\/dist\//" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml
+		INSTALLDIRESC=$(echo $INSTALLDIR | sed 's/\//\\\//g')
+		sed -i "s/#'\/any\/url' = '\/path\/to\/directory'/'\/' = '$INSTALLDIRESC\/xo-web\/dist\/'/" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml
                 sleep 2
 
                 if [[ $PORT != "80" ]]; then
@@ -457,8 +439,10 @@ function InstallXO {
                 fi
 
                 echo -e "${INFO} Activating modified configuration file"
-                mv $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/.xo-server.toml
-	fi
+		mkdir -p $CONFIGPATH/.config/xo-server
+                mv -f $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml $CONFIGPATH/.config/xo-server/config.toml
+
+        fi
 
 	echo
 	echo -e "${INFO} Symlinking fresh xo-server install/update to $INSTALLDIR/xo-server"
@@ -720,6 +704,8 @@ echo "Following plugins will be installed: "$PLUGINS""
 echo "Number of previous installations to preserve: $PRESERVE"
 echo
 echo "Errorlog is stored to $LOGFILE for debug purposes"
+echo
+echo "Xen Orchestra configuration will be stored to $CONFIGPATH/.config/xo-server/config.toml, if you don't want it to be replaced with every update, set CONFIGUPDATE to false in xo-server.cfg"
 echo "-----------------------------------------"
 
 echo
