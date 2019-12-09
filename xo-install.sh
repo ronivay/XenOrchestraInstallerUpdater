@@ -406,9 +406,10 @@ function InstallXO {
 		fi
 	fi
 
-	echo -n "Fixing relative path to xo-web installation in xo-server configuration file... "
-	sed -i "s/#'\/' = '\/path\/to\/xo-web\/dist\//'\/' = '..\/xo-web\/dist\//" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml
-	echo "done"
+	### No longer required unless changing the path outside the same directory ###
+	#echo -n "Fixing relative path to xo-web installation in xo-server configuration file... "
+	#sed -i "s/#'\/' = '\/path\/to\/xo-web\/dist\//'\/' = '..\/xo-web\/dist\//" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml
+	#echo "done"
 	sleep 2
 
 	if [[ $PORT != "80" ]]; then
