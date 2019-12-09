@@ -264,7 +264,7 @@ function InstallXO {
 		# Create sudo permissions for non-root user
 		if [[ ! -e "/etc/sudoers.d/$XOUSER" ]]; then
 			# Allow user to mount nfs
-			echo "$XOUSER  ALL=NOPASSWD:/bin/mount" > /etc/sudoers.d/$XOUSER
+			echo "$XOUSER  ALL=NOPASSWD:/bin/mount, NOPASSWD:/bin/mkdir, NOPASSWD:/bin/findmnt" > /etc/sudoers.d/$XOUSER
 		fi
 	fi
 
