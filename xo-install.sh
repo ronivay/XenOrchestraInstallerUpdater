@@ -339,7 +339,7 @@ function InstallXO {
 	if [[ "$NEW_REPO_HASH" == "$OLD_REPO_HASH" ]]; then
 		echo "No changes to xen-orchestra since previous install. Skipping xo-server and xo-web build."
 		echo -n "Cleaning up install directory: $INSTALLDIR/xo-builds/xen-orchestra-$TIME... "
-		rm -rf $INSTALLDIR/xo-builds/xen-orchestra-$TIME
+		/usr/bin/rm -rf $INSTALLDIR/xo-builds/xen-orchestra-$TIME
 		echo "done"
 		return 0
 	fi
@@ -384,6 +384,15 @@ function InstallXO {
 		/usr/bin/sed -i "/SyslogIdentifier=.*/a User=$XOUSER" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service
 		echo "done"
 		
+		echo -n "Creating new mounts directory..."
+		/usr/bin/mkdir -p $INSTALLDIR/remotes/mounts
+		/usr/bin/chown -R $XOUSER.$XOUSER $INSTALLDIR/remotes
+		echo "done"
+		
+		echo -n "Updating mounts dir in config file..."
+		/usr/bin/sed -i "s/#mountsDir = '\/run\/xo-server\/mounts'/mountsDir = '$INSTALLDIR\/remotes\/mounts'/" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml
+		echo "done"
+		
 		if [[ ! -z "/usr/bin/sudo" ]]; then
 			echo -n "Setting user to use sudo... "
 			/usr/bin/sed -i 's/#useSudo = false/useSudo = true/' $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml
@@ -414,59 +423,59 @@ function InstallXO {
 
 	if [[ $PORT != "80" ]]; then
 			echo -n "Changing port in xo-server configuration file... "
-			sed -i "s/port = 80/port = $PORT/" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml
+			/usr/bin/sed -i "s/port = 80/port = $PORT/" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml
 			echo "done"
 			sleep 2
 	fi
 
 	if $HTTPS ; then
 			echo -n "Enabling HTTPS in xo-server configuration file... "
-			sed -i "s%# cert = '.\/certificate.pem'%cert = '$PATH_TO_HTTPS_CERT'%" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml
-			sed -i "s%# key = '.\/key.pem'%key = '$PATH_TO_HTTPS_KEY'%" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml
-			sed -i "s/# redirectToHttps/redirectToHttps/" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml
+			/usr/bin/sed -i "s%# cert = '.\/certificate.pem'%cert = '$PATH_TO_HTTPS_CERT'%" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml
+			/usr/bin/sed -i "s%# key = '.\/key.pem'%key = '$PATH_TO_HTTPS_KEY'%" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml
+			/usr/bin/sed -i "s/# redirectToHttps/redirectToHttps/" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml
 			echo "done"
-			sleep 2
+			/usr/bin/sleep 2
 	fi
 
 	echo -n "Activating modified configuration file... "
 	# Create configuration directory if doesn't exist already
 	if [[ ! -d "/etc/xo-server" ]] ; then
-		mkdir -p /etc/xo-server
+		/usr/bin/mkdir -p /etc/xo-server
 	fi
-	mv $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml /etc/xo-server/config.toml
+	/usr/bin/mv $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml /etc/xo-server/config.toml
 	echo "done"
 
 	echo -n "Symlinking fresh xo-server install/update to $INSTALLDIR/xo-server... "
-	ln -sfn $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server $INSTALLDIR/xo-server
+	/usr/bin/ln -sfn $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server $INSTALLDIR/xo-server
 	echo "done"
-	sleep 2
+	/usr/bin/sleep 2
 	echo -n "Symlinking fresh xo-web install/update to $INSTALLDIR/xo-web... "
-	ln -sfn $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-web $INSTALLDIR/xo-web
+	/usr/bin/ln -sfn $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-web $INSTALLDIR/xo-web
 	echo "done"
 
 	if [ $XOUSER ]; then
-		chown -R $XOUSER:$XOUSER $INSTALLDIR/xo-builds/xen-orchestra-$TIME
+		/usr/bin/chown -R $XOUSER:$XOUSER $INSTALLDIR/xo-builds/xen-orchestra-$TIME
 
 		if [ ! -d /var/lib/xo-server ]; then
-			mkdir /var/lib/xo-server 2>/dev/null
+			/usr/bin/mkdir /var/lib/xo-server 2>/dev/null
 		fi
 
-		chown -R $XOUSER:$XOUSER /var/lib/xo-server
+		/usr/bin/chown -R $XOUSER:$XOUSER /var/lib/xo-server
 	fi
 
 	# fix to prevent older installations to not update because systemd service is not symlinked anymore
 	if [[ $(find /etc/systemd/system -maxdepth 1 -type l -name "xo-server.service") ]]; then
-		rm -f /etc/systemd/system/xo-server.service
+		/usr/bin/rm -f /etc/systemd/system/xo-server.service
 	fi
 
 	echo -n "Replacing systemd service configuration file... "
-	/bin/cp -f $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service /etc/systemd/system/xo-server.service
+	/usr/bin/cp -f $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service /etc/systemd/system/xo-server.service
 	echo "done"
-	sleep 2
+	/usr/bin/sleep 2
 	echo -n "Reloading systemd configuration... "
 	/bin/systemctl daemon-reload >/dev/null
 	echo "done"
-	sleep 2
+	/usr/bin/sleep 2
 
 	echo -n "Starting xo-server... "
 	/bin/systemctl start xo-server >/dev/null
