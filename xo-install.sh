@@ -384,13 +384,13 @@ function InstallXO {
 		/usr/bin/sed -i "/SyslogIdentifier=.*/a User=$XOUSER" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service
 		echo "done"
 		
-		echo -n "Creating new mounts directory..."
+		echo -n "Creating new mounts directory and settings permissions..."
 		/usr/bin/mkdir -p $INSTALLDIR/remotes/mounts
 		/usr/bin/chown -R $XOUSER.$XOUSER $INSTALLDIR/remotes
 		echo "done"
 		
 		echo -n "Updating mounts dir in config file..."
-		/usr/bin/sed -i "s/#mountsDir = '\/run\/xo-server\/mounts'/mountsDir = '$INSTALLDIR\/remotes\/mounts'/" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml
+		/usr/bin/sed -i "s%#mountsDir = '/run/xo-server/mounts'%mountsDir = '$INSTALLDIR/remotes/mounts'%" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml
 		echo "done"
 		
 		if [[ ! -z "/usr/bin/sudo" ]]; then
