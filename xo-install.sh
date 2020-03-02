@@ -364,14 +364,7 @@ function InstallXO {
 	/usr/bin/sed -i "s/plan === 'Community'/false/" packages/xo-web/src/xo-app/index.js >/dev/null 2>&1
 	cd $(dirname $0)
 	echo "done"
-
-	echo -n "Building Xen-Orchestra from sources... "
-	cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn >/dev/null && yarn build >/dev/null
-	echo "done"
 	
-	# Install plugins
-	InstallXOPlugins
-
 	echo -n "Fixing binary path in systemd service configuration file... "
 	/usr/bin/sed -i "s#ExecStart=.*#ExecStart=$INSTALLDIR\/xo-server\/bin\/xo-server#" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service
 	echo "done"
@@ -384,10 +377,13 @@ function InstallXO {
 		/usr/bin/sed -i "/SyslogIdentifier=.*/a User=$XOUSER" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service
 		echo "done"
 		
-		echo -n "Creating new mounts directory and settings permissions..."
-		/usr/bin/mkdir -p $INSTALLDIR/remotes/mounts
-		/usr/bin/chown -R $XOUSER.$XOUSER $INSTALLDIR/remotes
-		echo "done"
+		if [[ ! -d "$INSTALLDIR/remotes/mounts" ]] ; then
+			echo -n "Creating new mounts directory and setting permissions..."
+			/usr/bin/mkdir -p $INSTALLDIR/remotes/mounts
+			/usr/bin/chown $XOUSER.$XOUSER $INSTALLDIR/remotes
+			/usr/bin/chown $XOUSER.$XOUSER $INSTALLDIR/remotes/mounts
+			echo "done"
+		fi
 		
 		echo -n "Updating mounts dir in config file..."
 		/usr/bin/sed -i "s%#mountsDir = '/run/xo-server/mounts'%mountsDir = '$INSTALLDIR/remotes/mounts'%" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml
@@ -436,6 +432,13 @@ function InstallXO {
 			echo "done"
 			/usr/bin/sleep 2
 	fi
+
+	echo -n "Building Xen-Orchestra from sources... "
+	cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn >/dev/null && yarn build >/dev/null
+	echo "done"
+	
+	# Install plugins
+	InstallXOPlugins
 
 	echo -n "Activating modified configuration file... "
 	# Create configuration directory if doesn't exist already
