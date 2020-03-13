@@ -396,7 +396,7 @@ function InstallXO {
 	echo -e "${INFO} Adding WorkingDirectory parameter to systemd service configuration file"
 	sed -i "/ExecStart=.*/a WorkingDirectory=$INSTALLDIR/xo-server" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service
 
-	if [ $XOUSER ]; then
+	if [[ "$XOUSER" != "root" ]]; then
 		echo -e "${INFO} Adding user to systemd config"
 		sed -i "/SyslogIdentifier=.*/a User=$XOUSER" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service
 
@@ -407,7 +407,7 @@ function InstallXO {
 			fi
 
 			if [[ ! -z $NODEBINARY ]]; then
-				echo -ne "${INFO} Attempting to set cap_net_bind_service permission for $NODEBINARY"
+				echo -ne "${PROGRESS} Attempting to set cap_net_bind_service permission for $NODEBINARY"
 				setcap 'cap_net_bind_service=+ep' $NODEBINARY >/dev/null \
 				&& echo -e "\r${OK} Attempting to set cap_net_bind_service permission for $NODEBINARY" || { echo -e "\r${FAIL} Attempting to set cap_net_bind_service permission for $NODEBINARY" ; echo "	Non-privileged user might not be able to bind to <1024 port. xo-server won't start most likely" ; }
 			else
