@@ -83,7 +83,7 @@ Below is a list of packages that will be installed if missing.
 CentOS:
 - curl
 - epel-release
-- nodejs (v8)
+- nodejs (v12)
 - npm (v3)
 - yarn
 - gcc
@@ -104,7 +104,7 @@ Debian/Ubuntu:
 - libcap2-bin
 - curl
 - yarn
-- nodejs (v8)
+- nodejs (v12)
 - npm (v3)
 - build-essential
 - redis-server
