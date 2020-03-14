@@ -81,7 +81,7 @@ function InstallDependenciesCentOS {
 	if [[ -z $(rpm -qa | grep ^node) ]]; then
 		echo
 		echo -ne "${PROGRESS} Installing node.js"
-		curl -s -L https://rpm.nodesource.com/setup_8.x | bash - >/dev/null
+		curl -s -L https://rpm.nodesource.com/setup_12.x | bash - >/dev/null
 		echo -e "\r${OK} Installing node.js"
 	fi
 
@@ -181,7 +181,7 @@ function InstallDependenciesDebian {
 	if [[ -z $(dpkg -l | grep node) ]] || [[ -z $(which npm) ]]; then
 		echo
 		echo -ne "${PROGRESS} Installing node.js"
-		curl -sL https://deb.nodesource.com/setup_8.x | bash - >/dev/null
+		curl -sL https://deb.nodesource.com/setup_12.x | bash - >/dev/null
 		apt-get install -y nodejs >/dev/null
 		echo -e "\r${OK} Installing node.js"
 	fi
