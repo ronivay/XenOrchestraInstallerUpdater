@@ -149,6 +149,13 @@ function InstallDependenciesDebian {
 	apt-get install -y apt-transport-https ca-certificates >/dev/null
 	echo -e "\r${OK} Installing apt-transport-https and ca-certificates packages to support https repos"
 
+	if [[ $OSVERSION == "10" ]]; then
+		echo
+		echo -ne "${PROGRESS} Debian 10, so installing gnupg also"
+		apt-get install gnupg -y >/dev/null
+		echo -e "\r${OK} Debian 10, so installing gnupg also"
+	fi
+
 	# install curl for later tasks if missing
 	if [[ -z $(which curl) ]]; then
 		echo
@@ -604,8 +611,8 @@ function CheckOS {
 	elif [[ -f /etc/os-release ]]; then
 		OSVERSION=$(grep ^VERSION_ID /etc/os-release | cut -d'=' -f2 | grep -Eo "[0-9]{1,2}" | head -1)
 		OSNAME=$(grep ^NAME /etc/os-release | cut -d'=' -f2 | sed 's/"//g' | awk '{print $1}')
-		if [[ $OSNAME == "Debian" ]] && [[ ! $OSVERSION =~ ^(8|9)$ ]]; then
-			echo -e "${FAIL} Only Debian 8/9 supported"
+		if [[ $OSNAME == "Debian" ]] && [[ ! $OSVERSION =~ ^(8|9|10)$ ]]; then
+			echo -e "${FAIL} Only Debian 8/9/10 supported"
 			exit 0
 		elif [[ $OSNAME == "Ubuntu" ]] && [[ ! $OSVERSION =~ ^(16|18)$ ]]; then
 			echo -e "${FAIL} Only Ubuntu 16/18 supported"
