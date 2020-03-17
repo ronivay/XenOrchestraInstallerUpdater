@@ -241,26 +241,21 @@ function InstallXOPlugins {
 
 		if [[ "$PLUGINS" == "all" ]]; then
 			echo
-			echo -ne "${PROGRESS} Installing all available plugins as defined in PLUGINS variable"
+			echo -ne "${PROGRESS} Installing plugins"
 			find "$INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/" -maxdepth 1 -mindepth 1 -not -name "xo-server" -not -name "xo-web" -not -name "xo-server-cloud" -exec ln -sn {} "$INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/node_modules/" \;
-			echo -e "\r${OK} Installing all available plugins as defined in PLUGINS variable"
 		else
 			echo
-			echo -ne "${PROGRESS} Installing plugins defined in PLUGINS variable"
+			echo -ne "${PROGRESS} Installing plugins"
 			local PLUGINSARRAY=($(echo "$PLUGINS" | tr ',' ' '))
 				for x in "${PLUGINSARRAY[@]}"; do
 				if [[ $(find $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages -type d -name "$x") ]]; then
 					ln -sn $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/$x $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/node_modules/
-					echo -e "\r${OK} Installing plugins defined in PLUGINS variable"
-				else
-					echo -e "\r${FAIL} Installing plugins defined in PLUGINS variable"
-					echo -e "	${INFO} No $x plugin found from xen-orchestra packages, skipping"
-				continue
 				fi
 			done
 		fi
 
 		cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn >/dev/null && yarn build >/dev/null
+		echo -e "\r${OK} Installing plugins"
 	else
 		echo
 		echo -e "${INFO} No plugins to install"
@@ -383,7 +378,7 @@ function InstallXO {
 	# If this isn't a fresh install, then list the upgrade the user is making.
 	if [[ ! -z "$OLD_REPO_HASH" ]]; then
 		echo
-		echo -e "${INFO}Updating xen-orchestra from '$OLD_REPO_HASH_SHORT' to '$NEW_REPO_HASH_SHORT'"
+		echo -e "${INFO} Updating xen-orchestra from '$OLD_REPO_HASH_SHORT' to '$NEW_REPO_HASH_SHORT'"
 	fi
 
 	echo
