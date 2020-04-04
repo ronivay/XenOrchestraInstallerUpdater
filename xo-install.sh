@@ -656,6 +656,17 @@ function CheckCertificate {
 
 } 2>$LOGFILE
 
+function CheckMemory {
+	SYSMEM=$(grep MemTotal /proc/meminfo | awk '{print $2}')
+
+	if [[ $SYSMEM < 3000000 ]]; then
+		RAM="0"
+	else
+		RAM="1"
+	fi
+
+}	
+
 function PullDockerImage {
 
 	echo
@@ -674,6 +685,10 @@ function StartUpScreen {
 
 echo "-----------------------------------------"
 echo
+if [[ $RAM == 0 ]]; then
+	echo -e "${COLOR_RED}WARNING: you have less than 3GB of RAM in your system. Installation might run out of memory${COLOR_N}"
+	echo
+fi
 echo "This script will automatically install/update Xen-Orchestra"
 echo
 echo "- By default xo-server will be running as root to prevent issues with permissions and port binding."
@@ -778,6 +793,7 @@ CheckUser
 CheckOS
 CheckSystemd
 CheckCertificate
+CheckMemory
 
 if [[ $# == "1" ]]; then
 	HandleArgs "$1"
