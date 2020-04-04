@@ -35,6 +35,7 @@ COLOR_N='\e[0m'
 COLOR_GREEN='\e[1;32m'
 COLOR_RED='\e[1;31m'
 COLOR_BLUE='\e[1;34m'
+COLOR_WHITE='\e[1;97m'
 OK="[${COLOR_GREEN}ok${COLOR_N}]"
 FAIL="[${COLOR_RED}fail${COLOR_N}]"
 INFO="[${COLOR_BLUE}info${COLOR_N}]"
@@ -660,9 +661,9 @@ function CheckMemory {
 	SYSMEM=$(grep MemTotal /proc/meminfo | awk '{print $2}')
 
 	if [[ $SYSMEM < 3000000 ]]; then
-		RAM="0"
-	else
-		RAM="1"
+		echo
+        	echo -e "${COLOR_RED}WARNING: you have less than 3GB of RAM in your system. Installation might run out of memory${COLOR_N}"
+        	echo
 	fi
 
 }	
@@ -685,52 +686,35 @@ function StartUpScreen {
 
 echo "-----------------------------------------"
 echo
-if [[ $RAM == 0 ]]; then
-	echo -e "${COLOR_RED}WARNING: you have less than 3GB of RAM in your system. Installation might run out of memory${COLOR_N}"
-	echo
-fi
-echo "This script will automatically install/update Xen-Orchestra"
-echo
-echo "- By default xo-server will be running as root to prevent issues with permissions and port binding."
-echo "  uncomment and edit XOUSER variable in this script to run service as unprivileged user"
-echo "  (Notice that you might have to make other changes depending on your system for this to work)"
-echo "  This method only changes the user which runs the service. Other install tasks like node packages are still ran as root"
-echo
-echo "- Option 2. actually creates a new build from sources but works as an update to installations originally done with this tool"
-echo "  NodeJS and Yarn packages are updated automatically. Check AUTOUPDATE variable to disable this"
-echo "  Data stored in redis and /var/lib/xo-server/data will not be touched during update procedure."
-echo "  X (defined in PRESERVE variable) number of latest installations will be preserved and older ones are deleted after successful update. Fresh installation is symlinked as active"
-echo "  Rollback to another installation with --rollback"
-echo
-echo "- To run option 2. without interactive mode (as cronjob for automated updates for example) use --update"
+echo "Welcome to automated Xen Orchestra install"
 echo
 echo "Following options will be used for installation:"
 echo
-echo "OS: $OSNAME $OSVERSION"
-echo "Basedir: $INSTALLDIR"
+echo -e "OS: ${COLOR_WHITE}$OSNAME $OSVERSION ${COLOR_N}"
+echo -e "Basedir: ${COLOR_WHITE}$INSTALLDIR ${COLOR_N}"
 
 if [ $XOUSER ]; then
-	echo "User: $XOUSER"
+	echo -e "User: ${COLOR_WHITE}$XOUSER ${COLOR_N}"
 else
-	echo "User: root"
+	echo -e "User: ${COLOR_WHITE}root ${COLOR_N}"
 fi
 
-echo "Port: $PORT"
-echo "Git Branch for source: $BRANCH"
-echo "Following plugins will be installed: "$PLUGINS""
-echo "Number of previous installations to preserve: $PRESERVE"
+echo -e "Port: ${COLOR_WHITE}$PORT${COLOR_N}"
+echo -e "Git Branch for source: ${COLOR_WHITE}$BRANCH${COLOR_N}"
+echo -e "Following plugins will be installed: ${COLOR_WHITE}"$PLUGINS"${COLOR_N}"
+echo -e "Number of previous installations to preserve: ${COLOR_WHITE}$PRESERVE${COLOR_N}"
 echo
-echo "Errorlog is stored to $LOGFILE for debug purposes"
+echo -e "Errorlog is stored to ${COLOR_WHITE}$LOGFILE${COLOR_N} for debug purposes"
 echo
-echo "Xen Orchestra configuration will be stored to $CONFIGPATH/.config/xo-server/config.toml, if you don't want it to be replaced with every update, set CONFIGUPDATE to false in xo-install.cfg"
+echo -e "Xen Orchestra configuration will be stored to ${COLOR_WHITE}$CONFIGPATH/.config/xo-server/config.toml${COLOR_N}, if you don't want it to be replaced with every update, set ${COLOR_WHITE}CONFIGUPDATE${COLOR_N} to false in ${COLOR_WHITE}xo-install.cfg${COLOR_N}"
 echo "-----------------------------------------"
 
 echo
-echo "1. Autoinstall"
-echo "2. Update / Install without packages"
-echo "3. Deploy docker container"
-echo "4. Rollback to another existing installation"
-echo "5. Exit"
+echo -e "${COLOR_WHITE}1. Autoinstall${COLOR_N}"
+echo -e "${COLOR_WHITE}2. Update / Install without packages${COLOR_N}"
+echo -e "${COLOR_WHITE}3. Deploy docker container${COLOR_N}"
+echo -e "${COLOR_WHITE}4. Rollback to another existing installation${COLOR_N}"
+echo -e "${COLOR_WHITE}5. Exit${COLOR_N}"
 echo
 read -p ": " option
 
