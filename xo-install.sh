@@ -563,10 +563,10 @@ function HandleArgs {
 
 function RollBackInstallation {
 
-	INSTALLATIONS=($(find $INSTALLDIR/xo-builds/ -maxdepth 1 -type d -name "xen-orchestra-*"))
+	INSTALLATIONS=($(find $INSTALLDIR/xo-builds/ -maxdepth 1 -type d -name "xen-orchestra-*" 2>/dev/null))
 
 	if [[ $(echo ${#INSTALLATIONS[@]}) -le 1 ]]; then
-		echo -e "${INFO} Only one installation exists, nothing to change"
+		echo -e "${INFO} One or less installations exist, nothing to change"
 		exit 0
 	fi
 
