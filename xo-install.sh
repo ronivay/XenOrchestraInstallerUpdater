@@ -274,7 +274,7 @@ function InstallXO {
 
 	# Create user if doesn't exist (if defined)
 
-	if [ $XOUSER ]; then
+	if [[ "$XOUSER" != "root" ]]; then
 		if [[ -z $(getent passwd $XOUSER) ]]; then
 			echo
 			echo -ne "${PROGRESS} Creating missing $XOUSER user"
@@ -454,7 +454,7 @@ function InstallXO {
 	echo -e "${INFO} Symlinking fresh xo-web install/update to $INSTALLDIR/xo-web"
 	ln -sfn $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-web $INSTALLDIR/xo-web
 
-	if [ $XOUSER ]; then
+	if [[ "$XOUSER" != "root" ]]; then
 		chown -R $XOUSER:$XOUSER $INSTALLDIR/xo-builds/xen-orchestra-$TIME
 
 		if [ ! -d /var/lib/xo-server ]; then
