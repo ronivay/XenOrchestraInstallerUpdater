@@ -16,6 +16,10 @@ Paid version comes with pro support and appliance and is the suggested option fo
 
 # Instructions
 
+### platform
+
+Suggested platform is a VM with fresh install of any of the supported OS. You should put at least 3GB of RAM to the machine, but preferably 2vCPU/4GB RAM. Otherwise you may encounter OOM error during installation because of running out of memory.
+
 ### script
 Clone this repository, copy sample.xo-install.cfg as xo-install.cfg and edit variables to suit your preferences and run xo-install.sh as root. Sample configuration will be copied as xo-install.cfg
  if doesn't exist
