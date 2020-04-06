@@ -194,6 +194,17 @@ function InstallDependenciesDebian {
 		echo -e "\r${OK} Installing node.js"
 	fi
 
+	# if we run Debian 10 and have default nodejs v10 installed, then replace it with node 12.x
+	if [[ $OSVERSION == "10" ]]; then
+		NODEV=$(node -v 2>/dev/null| grep -Eo '[0-9.]+' | cut -d'.' -f1)
+		if [[ ! -z $NODEV ]] &&[[ $NODEV < 12 ]]; then
+			echo
+			echo -ne "${PROGRESS} Installing node.js"
+			curl -sL https://deb.nodesource.com/setup_12.x | bash - >/dev/null
+			apt-get install -y nodejs >/dev/null
+			echo -e "\r${OK} Installing node.js"
+		fi
+	fi
 
 	# install packages
 	echo

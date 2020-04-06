@@ -107,7 +107,7 @@ Debian/Ubuntu:
 - libcap2-bin
 - curl
 - yarn
-- nodejs (v12)
+- nodejs (v12) (possible debian 10 default nodejs v10 will be replaced)
 - npm (v3)
 - build-essential
 - redis-server
