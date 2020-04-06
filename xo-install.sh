@@ -139,6 +139,13 @@ function InstallDependenciesDebian {
 
 	# Install necessary dependencies for XO build
 
+	if [[ $OSVERSION =~ (16|18) ]]; then
+		echo -ne "${PROGRESS} OS Ubuntu so making sure universe repository is enabled"
+		add-apt-repository universe >/dev/null
+		echo -e "\r${OK} OS Ubuntu so making sure universe repository is enabled"
+		echo
+	fi
+
 	echo
 	echo -ne "${PROGRESS} Running apt-get update"
 	apt-get update >/dev/null
