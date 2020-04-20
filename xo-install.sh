@@ -19,7 +19,7 @@ source $CONFIG_FILE
 
 # Set some default variables if sourcing config file fails for some reason
 PORT=${PORT:-80}
-INSTALLDIR=${INSTALLDIR:-"/etc/xo"}
+INSTALLDIR=${INSTALLDIR:-"/opt/xo"}
 BRANCH=${BRANCH:-"master"}
 LOGFILE=${LOGFILE:-"$(dirname $0)/xo-install.log"}
 AUTOUPDATE=${AUTOUPDATE:-"true"}
