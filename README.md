@@ -101,6 +101,7 @@ CentOS:
 - nfs-utils
 - libvhdi-tools
 - cifs-utils
+- lvm2
 
 Debian/Ubuntu:
 - apt-transport-https
