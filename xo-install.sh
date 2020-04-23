@@ -107,7 +107,12 @@ function InstallDependenciesCentOS {
 	if [[ -z $(which vhdimount) ]]; then
 		echo
 		echo -ne "${PROGRESS} Installing libvhdi-tools from forensics repository"
-		rpm -ivh https://forensics.cert.org/cert-forensics-tools-release-el7.rpm >/dev/null
+		if [[ $OSVERSION == "7" ]]; then
+			rpm -ivh https://forensics.cert.org/cert-forensics-tools-release-el7.rpm >/dev/null
+		fi
+		if [[ $OSVERSION == "8" ]]; then
+			rpm -ivh https://forensics.cert.org/cert-forensics-tools-release-el8.rpm >/dev/null
+		fi
 		sed -i 's/enabled=1/enabled=0/g' /etc/yum.repos.d/cert-forensics-tools.repo
 		yum --enablerepo=forensics install -y libvhdi-tools >/dev/null
 		echo -e "\r${OK} Installing libvhdi-tools from forensics repository"
@@ -116,7 +121,12 @@ function InstallDependenciesCentOS {
 	# install
 	echo
 	echo -ne "${PROGRESS} Installing build dependencies, redis server, python, git, nfs-utils, cifs-utils"
-	yum -y install gcc gcc-c++ make openssl-devel redis libpng-devel python git nfs-utils cifs-utils >/dev/null
+	if [[ $OSVERSION == "7" ]]; then
+		yum -y install gcc gcc-c++ make openssl-devel redis libpng-devel python git nfs-utils cifs-utils lvm2 >/dev/null
+	fi
+	if [[ $OSVERSION == "8" ]]; then
+		yum -y install gcc gcc-c++ make openssl-devel redis libpng-devel python3 git nfs-utils cifs-utils lvm2 >/dev/null
+	fi
 	echo -e "\r${OK} Installing build dependencies, redis server, python, git, nfs-utils, cifs-utils"
 
 	echo
@@ -622,8 +632,8 @@ function CheckOS {
 	if [ -f /etc/centos-release ] ; then
 		OSVERSION=$(grep -Eo "[0-9]" /etc/centos-release | head -1)
 		OSNAME="CentOS"
-		if [[ ! $OSVERSION == "7" ]]; then
-			echo -e "${FAIL} Only CentOS 7 supported"
+		if [[ ! $OSVERSION =~ ^(7|8) ]]; then
+			echo -e "${FAIL} Only CentOS 7/8 supported"
 			exit 0
 		fi
 	elif [[ -f /etc/os-release ]]; then

@@ -3,7 +3,7 @@
 
 # In a nutshell
 
-This repo consist of script to install and update [Xen Orchestra](https://xen-orchestra.com/#!/) for CentOS 7/Ubuntu 18/Debian 10
+This repo consist of script to install and update [Xen Orchestra](https://xen-orchestra.com/#!/) for CentOS 8/Ubuntu 18/Debian 10
 
 Installation is done using latest xo-server and xo-web sources by default. With this method Xen-Orchestra has all features unlocked which are normally available only with monthly fee.
 
@@ -62,17 +62,18 @@ notes:
 
 Tool has been tested to work with following distros:
 
-- CentOS 7 (note LVM file level restore issue from below)
+- CentOS 8 (note LVM file level restore issue from below)
 - Debian 10
 - Ubuntu 18.04
 
 Installation works but not tested frequently:
+- CentOS 7
 - Debian 8
 - Debian 9
 - Ubuntu 16.04
 
 In order to use file level restore from delta backups, the service needs to be ran as root.
-CentOS installation is currently not able to do file level restore if the backed up disk contains LVM.
+CentOS installation is currently not able to do file level restore if the backed up disk contains LVM or only sees some of the partitions.
 
 CentOS setup is confirmed to work with fresh minimal installation and SELinux enabled.
 Although script doesn't do any SELinux checks or modifications, so you need to take care of possible changes by yourself according to your system.
