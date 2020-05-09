@@ -149,12 +149,28 @@ function InstallDependenciesDebian {
 
 	# Install necessary dependencies for XO build
 
-	if [[ $OSVERSION =~ (16|18) ]]; then
+	if [[ $OSVERSION =~ (16|18|20) ]]; then
 		echo -ne "${PROGRESS} OS Ubuntu so making sure universe repository is enabled"
 		add-apt-repository universe >/dev/null
 		echo -e "\r${OK} OS Ubuntu so making sure universe repository is enabled"
 		echo
 	fi
+
+	if [[ $OSVERSION =~ (16|18) ]]; then
+                echo -ne "${PROGRESS} Installing Python for Ubuntu 16 and 18"
+                apt-get install -y  python-minimal >/dev/null
+		echo -e "\r${OK} Python installed"
+                echo
+        fi
+
+	if [[ $OSVERSION =~ (20) ]]; then
+                echo -ne "${PROGRESS} Installing Python for Ubuntu 20"
+                apt-get install -y  python2-minimal >/dev/null
+                echo -e "\r${OK} Python installed"
+                echo
+        fi
+
+
 
 	echo
 	echo -ne "${PROGRESS} Running apt-get update"
@@ -225,8 +241,8 @@ function InstallDependenciesDebian {
 
 	# install packages
 	echo
-	echo -ne "${PROGRESS} Installing build dependencies, redis server, python, git, libvhdi-utils, lvm2, nfs-common, cifs-utils"
-	apt-get install -y build-essential redis-server libpng-dev git python-minimal libvhdi-utils lvm2 nfs-common cifs-utils >/dev/null
+	echo -ne "${PROGRESS} Installing build dependencies, redis server, git, libvhdi-utils, lvm2, nfs-common, cifs-utils"
+	apt-get install -y build-essential redis-server libpng-dev git libvhdi-utils lvm2 nfs-common cifs-utils >/dev/null
 	echo -e "\r${OK} Installing build dependencies, redis server, python, git, libvhdi-utils, lvm2, nfs-common, cifs-utils"
 
 	echo
@@ -642,8 +658,8 @@ function CheckOS {
 		if [[ $OSNAME == "Debian" ]] && [[ ! $OSVERSION =~ ^(8|9|10)$ ]]; then
 			echo -e "${FAIL} Only Debian 8/9/10 supported"
 			exit 0
-		elif [[ $OSNAME == "Ubuntu" ]] && [[ ! $OSVERSION =~ ^(16|18)$ ]]; then
-			echo -e "${FAIL} Only Ubuntu 16/18 supported"
+		elif [[ $OSNAME == "Ubuntu" ]] && [[ ! $OSVERSION =~ ^(16|18|20)$ ]]; then
+			echo -e "${FAIL} Only Ubuntu 16/18/20 supported"
 			exit 0
 		fi
 	else
