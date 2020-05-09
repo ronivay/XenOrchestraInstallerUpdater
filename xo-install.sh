@@ -488,6 +488,8 @@ function InstallXO {
                 echo -e "${INFO} Activating modified configuration file"
 		mkdir -p $CONFIGPATH/.config/xo-server
                 mv -f $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml $CONFIGPATH/.config/xo-server/config.toml
+		#fix permissions if service is not running as root
+		chown -R $XOUSER:$XOUSER $CONFIGPATH
 
         fi
 
