@@ -118,15 +118,17 @@ function InstallDependenciesCentOS {
 		echo -e "\r${OK} Installing libvhdi-tools from forensics repository"
 	fi
 
-	# install
+	#determine which python package is needed. CentOS 7 requires python, 8 is python3
+	if [[ $OSVERSION == "8" ]]; then
+	PYTHON="python3"
+	else
+		PYTHON="python"
+	fi
+
+	# install packages
 	echo
 	echo -ne "${PROGRESS} Installing build dependencies, redis server, python, git, nfs-utils, cifs-utils"
-	if [[ $OSVERSION == "7" ]]; then
-		yum -y install gcc gcc-c++ make openssl-devel redis libpng-devel python git nfs-utils cifs-utils lvm2 >/dev/null
-	fi
-	if [[ $OSVERSION == "8" ]]; then
-		yum -y install gcc gcc-c++ make openssl-devel redis libpng-devel python3 git nfs-utils cifs-utils lvm2 >/dev/null
-	fi
+	yum -y install gcc gcc-c++ make openssl-devel redis libpng-devel $PYTHON git nfs-utils cifs-utils lvm2 >/dev/null
 	echo -e "\r${OK} Installing build dependencies, redis server, python, git, nfs-utils, cifs-utils"
 
 	echo
@@ -225,9 +227,9 @@ function InstallDependenciesDebian {
 	
 	#determine which python package is needed. Ubuntu 20 requires python2-minimal, 16 and 18 are python-minimal
 	if [[ $OSVERSION == "20" ]]; then
-				PYTHON="python2-minimal"
-		else
-				PYTHON="python-minimal"
+		PYTHON="python2-minimal"
+	else
+		PYTHON="python-minimal"
 	fi
 
 	# install packages
