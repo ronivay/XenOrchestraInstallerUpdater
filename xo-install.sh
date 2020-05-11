@@ -120,7 +120,7 @@ function InstallDependenciesCentOS {
 
 	#determine which python package is needed. CentOS 7 requires python, 8 is python3
 	if [[ $OSVERSION == "8" ]]; then
-	PYTHON="python3"
+		PYTHON="python3"
 	else
 		PYTHON="python"
 	fi
