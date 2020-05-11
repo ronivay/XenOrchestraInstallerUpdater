@@ -149,7 +149,7 @@ function InstallDependenciesDebian {
 
 	# Install necessary dependencies for XO build
 
-	if [[ $OSVERSION =~ (16|18) ]]; then
+	if [[ $OSVERSION =~ (16|18|20) ]]; then
 		echo -ne "${PROGRESS} OS Ubuntu so making sure universe repository is enabled"
 		add-apt-repository universe >/dev/null
 		echo -e "\r${OK} OS Ubuntu so making sure universe repository is enabled"
@@ -222,11 +222,18 @@ function InstallDependenciesDebian {
 			echo -e "\r${OK} Installing node.js"
 		fi
 	fi
+	
+	#determine which python package is needed. Ubuntu 20 requires python2-minimal, 16 and 18 are python-minimal
+	if [[ $OSVERSION == "20" ]]; then
+				PYTHON="python2-minimal"
+		else
+				PYTHON="python-minimal"
+	fi
 
 	# install packages
 	echo
-	echo -ne "${PROGRESS} Installing build dependencies, redis server, python, git, libvhdi-utils, lvm2, nfs-common, cifs-utils"
-	apt-get install -y build-essential redis-server libpng-dev git python-minimal libvhdi-utils lvm2 nfs-common cifs-utils >/dev/null
+	echo -ne "${PROGRESS} Installing build dependencies, redis server, git, libvhdi-utils, python-minimal, lvm2, nfs-common, cifs-utils"
+	apt-get install -y build-essential redis-server libpng-dev git libvhdi-utils $PYTHON lvm2 nfs-common cifs-utils >/dev/null
 	echo -e "\r${OK} Installing build dependencies, redis server, python, git, libvhdi-utils, lvm2, nfs-common, cifs-utils"
 
 	echo
@@ -472,6 +479,7 @@ function InstallXO {
                 echo -e "${INFO} Activating modified configuration file"
 		mkdir -p $CONFIGPATH/.config/xo-server
                 mv -f $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml $CONFIGPATH/.config/xo-server/config.toml
+		
 
         fi
 
@@ -490,6 +498,8 @@ function InstallXO {
 		fi
 
 		chown -R $XOUSER:$XOUSER /var/lib/xo-server
+		
+		chown -R $XOUSER:$XOUSER $CONFIGPATH/.config/xo-server
 	fi
 
 	# fix to prevent older installations to not update because systemd service is not symlinked anymore
@@ -642,8 +652,8 @@ function CheckOS {
 		if [[ $OSNAME == "Debian" ]] && [[ ! $OSVERSION =~ ^(8|9|10)$ ]]; then
 			echo -e "${FAIL} Only Debian 8/9/10 supported"
 			exit 0
-		elif [[ $OSNAME == "Ubuntu" ]] && [[ ! $OSVERSION =~ ^(16|18)$ ]]; then
-			echo -e "${FAIL} Only Ubuntu 16/18 supported"
+		elif [[ $OSNAME == "Ubuntu" ]] && [[ ! $OSVERSION =~ ^(16|18|20)$ ]]; then
+			echo -e "${FAIL} Only Ubuntu 16/18/20 supported"
 			exit 0
 		fi
 	else
