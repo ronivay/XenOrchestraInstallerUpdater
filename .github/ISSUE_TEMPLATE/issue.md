@@ -8,8 +8,11 @@ assignees: ''
 ---
 
 **OS Version**:
-**Node.js version**:
-**NPM version**:
+**Node.js version**: node -v
+**NPM version**: npm -v
+
+**Server specs**
+amount of vCPUs and RAM on the machine where you attempt to install
 
 **Issue**
 describe the issue and what task you were running (update, install)
