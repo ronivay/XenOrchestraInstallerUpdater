@@ -10,7 +10,7 @@ SAMPLE_CONFIG_FILE="$(dirname $0)/sample.xo-install.cfg"
 CONFIG_FILE="$(dirname $0)/xo-install.cfg"
 
 # Deploy default configuration file if the user doesn't have their own yet.
-if [[ ! -e "$CONFIG_FILE" ]]; then
+if [[ ! -s "$CONFIG_FILE" ]]; then
 	cp $SAMPLE_CONFIG_FILE $CONFIG_FILE
 fi
 
@@ -43,8 +43,13 @@ PROGRESS="[${COLOR_BLUE}..${COLOR_N}]"
 
 # Protocol to use for webserver. If both of the X.509 certificate files exist,
 # then assume that we want to enable HTTPS for the server.
-if [[ -e $PATH_TO_HTTPS_CERT ]] && [[ -e $PATH_TO_HTTPS_KEY ]]; then
-	HTTPS=true
+if [[ $PATH_TO_HTTPS_CERT ]] || [[ $PATH_TO_HTTPS_KEY ]]; then
+	if [[ -s $PATH_TO_HTTPS_CERT ]] && [[ -s $PATH_TO_HTTPS_KEY ]]; then
+		HTTPS=true
+	else
+		HTTPS=false
+		HTTPSFAIL="- certificate or Key doesn't exist or file is empty"
+	fi
 else
 	HTTPS=false
 fi
@@ -78,8 +83,21 @@ function InstallDependenciesCentOS {
 
 	# Install necessary dependencies for XO build
 
-	# only run automated node install if package not found
-	if [[ -z $(rpm -qa | grep ^node) ]]; then
+        #determine which python package is needed. CentOS 7 requires python, 8 is python3
+        if [[ $OSVERSION == "8" ]]; then
+                PYTHON="python3"
+        else
+                PYTHON="python"
+        fi
+
+        # install packages
+        echo
+        echo -ne "${PROGRESS} Installing build dependencies, redis server, python, git, nfs-utils, cifs-utils"
+        yum -y install gcc gcc-c++ make openssl-devel redis libpng-devel $PYTHON git nfs-utils cifs-utils lvm2 >/dev/null
+        echo -e "\r${OK} Installing build dependencies, redis server, python, git, nfs-utils, cifs-utils"
+
+	# only run automated node install if executable not found
+	if [[ -z $(which node) ]]; then
 		echo
 		echo -ne "${PROGRESS} Installing node.js"
 		curl -s -L https://rpm.nodesource.com/setup_12.x | bash - >/dev/null
@@ -87,7 +105,7 @@ function InstallDependenciesCentOS {
 	fi
 
 	# only install yarn repo and package if not found
-	if [[ -z $(rpm -qa | grep yarn) ]]; then
+	if [[ -z $(which yarn) ]] ; then
 		echo
 		echo -ne "${PROGRESS} Installing yarn"
 		curl -s -o /etc/yum.repos.d/yarn.repo https://dl.yarnpkg.com/rpm/yarn.repo >/dev/null && \
@@ -96,7 +114,7 @@ function InstallDependenciesCentOS {
 	fi
 
 	# only install epel-release if doesn't exist
-	if [[ -z $(rpm -qa | grep epel-release) ]]; then
+	if [[ -z $(rpm -q epel-release) ]] ; then
 		echo
 		echo -ne "${PROGRESS} Installing epel-repo"
 		yum -y install epel-release >/dev/null
@@ -104,7 +122,7 @@ function InstallDependenciesCentOS {
 	fi
 
 	# only install libvhdi-tools if vhdimount is not present
-	if [[ -z $(which vhdimount) ]]; then
+	if [[ -z $(which vhdimount) ]] ; then
 		echo
 		echo -ne "${PROGRESS} Installing libvhdi-tools from forensics repository"
 		if [[ $OSVERSION == "7" ]]; then
@@ -117,19 +135,6 @@ function InstallDependenciesCentOS {
 		yum --enablerepo=forensics install -y libvhdi-tools >/dev/null
 		echo -e "\r${OK} Installing libvhdi-tools from forensics repository"
 	fi
-
-	#determine which python package is needed. CentOS 7 requires python, 8 is python3
-	if [[ $OSVERSION == "8" ]]; then
-		PYTHON="python3"
-	else
-		PYTHON="python"
-	fi
-
-	# install packages
-	echo
-	echo -ne "${PROGRESS} Installing build dependencies, redis server, python, git, nfs-utils, cifs-utils"
-	yum -y install gcc gcc-c++ make openssl-devel redis libpng-devel $PYTHON git nfs-utils cifs-utils lvm2 >/dev/null
-	echo -e "\r${OK} Installing build dependencies, redis server, python, git, nfs-utils, cifs-utils"
 
 	echo
 	echo -ne "${PROGRESS} Enabling and starting redis service"
@@ -163,6 +168,19 @@ function InstallDependenciesDebian {
 	apt-get update >/dev/null
 	echo -e "\r${OK} Running apt-get update"
 
+        #determine which python package is needed. Ubuntu 20 requires python2-minimal, 16 and 18 are python-minimal
+        if [[ $OSVERSION == "20" ]]; then
+                PYTHON="python2-minimal"
+        else
+                PYTHON="python-minimal"
+        fi
+
+        # install packages
+        echo
+        echo -ne "${PROGRESS} Installing build dependencies, redis server, git, libvhdi-utils, python-minimal, lvm2, nfs-common, cifs-utils, curl"
+        apt-get install -y build-essential redis-server libpng-dev git libvhdi-utils $PYTHON lvm2 nfs-common cifs-utils curl >/dev/null
+        echo -e "\r${OK} Installing build dependencies, redis server, python, git, libvhdi-utils, lvm2, nfs-common, cifs-utils, curl"
+
 	# Install apt-transport-https and ca-certificates because of yarn https repo url
 	echo
 	echo -ne "${PROGRESS} Installing apt-transport-https and ca-certificates packages to support https repos"
@@ -176,14 +194,6 @@ function InstallDependenciesDebian {
 		echo -e "\r${OK} Debian 10, so installing gnupg also"
 	fi
 
-	# install curl for later tasks if missing
-	if [[ -z $(which curl) ]]; then
-		echo
-		echo -ne "${PROGRESS} Installing curl"
-		apt-get install -y curl >/dev/null
-		echo -e "\r${OK} Installing curl"
-	fi
-
 	# install setcap for non-root port binding if missing
 	if [[ -z $(which setcap) ]]; then
 		echo
@@ -193,7 +203,7 @@ function InstallDependenciesDebian {
 	fi
 
 	# only install yarn repo and package if not found
-	if [[ -z $(dpkg -l | grep yarn) ]]; then
+	if [[ -z $(which yarn) ]]; then
 		echo
 		echo -ne "${PROGRESS} Installing yarn"
 		curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - >/dev/null
@@ -204,8 +214,8 @@ function InstallDependenciesDebian {
 	fi
 
 
-	# only run automated node install if package not found
-	if [[ -z $(dpkg -l | grep node) ]] || [[ -z $(which npm) ]]; then
+	# only run automated node install if executable not found
+	if [[ -z $(which node) ]] || [[ -z $(which npm) ]]; then
 		echo
 		echo -ne "${PROGRESS} Installing node.js"
 		curl -sL https://deb.nodesource.com/setup_12.x | bash - >/dev/null
@@ -216,7 +226,7 @@ function InstallDependenciesDebian {
 	# if we run Debian 10 and have default nodejs v10 installed, then replace it with node 12.x
 	if [[ $OSVERSION == "10" ]]; then
 		NODEV=$(node -v 2>/dev/null| grep -Eo '[0-9.]+' | cut -d'.' -f1)
-		if [[ ! -z $NODEV ]] &&[[ $NODEV < 12 ]]; then
+		if [[ -n $NODEV ]] && [[ $NODEV < 12 ]]; then
 			echo
 			echo -ne "${PROGRESS} Installing node.js"
 			curl -sL https://deb.nodesource.com/setup_12.x | bash - >/dev/null
@@ -225,19 +235,6 @@ function InstallDependenciesDebian {
 		fi
 	fi
 	
-	#determine which python package is needed. Ubuntu 20 requires python2-minimal, 16 and 18 are python-minimal
-	if [[ $OSVERSION == "20" ]]; then
-		PYTHON="python2-minimal"
-	else
-		PYTHON="python-minimal"
-	fi
-
-	# install packages
-	echo
-	echo -ne "${PROGRESS} Installing build dependencies, redis server, git, libvhdi-utils, python-minimal, lvm2, nfs-common, cifs-utils"
-	apt-get install -y build-essential redis-server libpng-dev git libvhdi-utils $PYTHON lvm2 nfs-common cifs-utils >/dev/null
-	echo -e "\r${OK} Installing build dependencies, redis server, python, git, libvhdi-utils, lvm2, nfs-common, cifs-utils"
-
 	echo
 	echo -ne "${PROGRESS} Enabling and starting redis service"
 	/bin/systemctl enable redis-server >/dev/null && /bin/systemctl start redis-server >/dev/null
@@ -275,7 +272,7 @@ function InstallXOPlugins {
 
 	trap ErrorHandling ERR INT
 
-	if [[ "$PLUGINS" ]] && [[ ! -z "$PLUGINS" ]]; then
+	if [[ "$PLUGINS" ]] && [[ -n "$PLUGINS" ]]; then
 
 		if [[ "$PLUGINS" == "all" ]]; then
 			echo
@@ -382,7 +379,7 @@ function InstallXO {
 
 	# Get the commit ID of the currently-installed xen-orchestra (if one
 	# exists).
-	if [[ -L $INSTALLDIR/xo-server ]] && [[ ! -z $(readlink -e $INSTALLDIR/xo-server) ]]; then
+	if [[ -L $INSTALLDIR/xo-server ]] && [[ -n $(readlink -e $INSTALLDIR/xo-server) ]]; then
 		cd $INSTALLDIR/xo-server
 		OLD_REPO_HASH=$(git rev-parse HEAD)
 		OLD_REPO_HASH_SHORT=$(git rev-parse --short HEAD)
@@ -406,7 +403,7 @@ function InstallXO {
 
 	# Now that we know we're going to be building a new xen-orchestra, make
 	# sure there's no already-running xo-server process.
-	if [[ $(ps aux | grep xo-server | grep -v grep) ]]; then
+	if [[ $(pgrep -f xo-server) ]]; then
 		echo
 		echo -ne "${PROGRESS} Shutting down xo-server"
 		/bin/systemctl stop xo-server || { echo -e "${FAIL} failed to stop service, exiting..." ; exit 1; }
@@ -414,7 +411,7 @@ function InstallXO {
 	fi
 
 	# If this isn't a fresh install, then list the upgrade the user is making.
-	if [[ ! -z "$OLD_REPO_HASH" ]]; then
+	if [[ -n "$OLD_REPO_HASH" ]]; then
 		echo
 		echo -e "${INFO} Updating xen-orchestra from '$OLD_REPO_HASH_SHORT' to '$NEW_REPO_HASH_SHORT'"
 	fi
@@ -446,7 +443,7 @@ function InstallXO {
 				NODEBINARY="$(readlink -e $NODEBINARY)"
 			fi
 
-			if [[ ! -z $NODEBINARY ]]; then
+			if [[ -n $NODEBINARY ]]; then
 				echo -ne "${PROGRESS} Attempting to set cap_net_bind_service permission for $NODEBINARY"
 				setcap 'cap_net_bind_service=+ep' $NODEBINARY >/dev/null \
 				&& echo -e "\r${OK} Attempting to set cap_net_bind_service permission for $NODEBINARY" || { echo -e "\r${FAIL} Attempting to set cap_net_bind_service permission for $NODEBINARY" ; echo "	Non-privileged user might not be able to bind to <1024 port. xo-server won't start most likely" ; }
@@ -667,7 +664,7 @@ function CheckOS {
 
 function CheckSystemd {
 
-	if [ -z $(which systemctl) ]; then
+	if [[ -z $(which systemctl) ]]; then
 		echo -e "${FAIL} This tool is designed to work with systemd enabled systems only"
 		exit 0
 	fi
@@ -675,7 +672,7 @@ function CheckSystemd {
 
 function CheckDocker {
 
-	if [ -z $(which docker) ]; then
+	if [[ -z $(which docker) ]]; then
 		echo
 		echo -e "${FAIL} Docker needs to be installed for this to work"
 		exit 0
@@ -685,6 +682,15 @@ function CheckDocker {
 
 function CheckCertificate {
 	if [[ "$HTTPS" == "true" ]]; then
+		if [[ -z $(file -s $PATH_TO_HTTPS_CERT | grep "PEM certificate") ]]; then
+			echo -e "${FAIL} $PATH_TO_HTTPS_CERT doesn't look like PEM certificate file. Please check file or remove HTTPS settings from $CONFIG_FILE and try again"
+			exit 1
+		fi
+		if [[ -z $(file -s $PATH_TO_HTTPS_KEY | grep "PEM RSA private key") ]]; then
+			echo -e "${FAIL} $PATH_TO_HTTPS_KEY doesn't look like PEM RSA private key file. Please check file or remove HTTPS settings from $CONFIG_FILE and try again"
+			exit 1
+		fi
+ 
 		local CERT="$(openssl x509 -modulus -noout -in "$PATH_TO_HTTPS_CERT" | openssl md5)"
 		local KEY="$(openssl rsa -modulus -noout -in "$PATH_TO_HTTPS_KEY" | openssl md5)"
 		if [[ "$CERT" != "$KEY" ]]; then
@@ -744,6 +750,7 @@ else
 fi
 
 echo -e "Port: ${COLOR_WHITE}$PORT${COLOR_N}"
+echo -e "HTTPS: ${COLOR_WHITE}${HTTPS}${COLOR_N} ${COLOR_RED}${HTTPSFAIL}${COLOR_N}"
 echo -e "Git Branch for source: ${COLOR_WHITE}$BRANCH${COLOR_N}"
 echo -e "Following plugins will be installed: ${COLOR_WHITE}"$PLUGINS"${COLOR_N}"
 echo -e "Number of previous installations to preserve: ${COLOR_WHITE}$PRESERVE${COLOR_N}"
@@ -764,7 +771,7 @@ read -p ": " option
 
 		case $option in
 		1)
-			if [[ $(ps aux | grep xo-server | grep -v grep) ]]; then
+			if [[ $(pgrep -f xo-server) ]]; then
 				echo "Looks like xo-server process is already running, consider running update instead. Continue anyway?"
 				read -p "[y/N]: " answer
 					case $answer in
