@@ -682,15 +682,7 @@ function CheckDocker {
 
 function CheckCertificate {
 	if [[ "$HTTPS" == "true" ]]; then
-		if [[ -z $(file -s $PATH_TO_HTTPS_CERT | grep "PEM certificate") ]]; then
-			echo -e "${FAIL} $PATH_TO_HTTPS_CERT doesn't look like PEM certificate file. Please check file or remove HTTPS settings from $CONFIG_FILE and try again"
-			exit 1
-		fi
-		if [[ -z $(file -s $PATH_TO_HTTPS_KEY | grep "PEM RSA private key") ]]; then
-			echo -e "${FAIL} $PATH_TO_HTTPS_KEY doesn't look like PEM RSA private key file. Please check file or remove HTTPS settings from $CONFIG_FILE and try again"
-			exit 1
-		fi
- 
+
 		local CERT="$(openssl x509 -modulus -noout -in "$PATH_TO_HTTPS_CERT" | openssl md5)"
 		local KEY="$(openssl rsa -modulus -noout -in "$PATH_TO_HTTPS_KEY" | openssl md5)"
 		if [[ "$CERT" != "$KEY" ]]; then
