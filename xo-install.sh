@@ -82,9 +82,11 @@ function cmdlog {
 
 function ErrorHandling {
 
+	echo
 	echo -e "${FAIL} Something went wrong, exiting. Check $LOGFILE for more details and use rollback feature if needed"
 
 	if [[ -d $INSTALLDIR/xo-builds/xen-orchestra-$TIME ]]; then
+		echo
 		echo -e "${FAIL} Removing $INSTALLDIR/xo-builds/xen-orchestra-$TIME because of failed installation."
 		cmdlog "rm -rf $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
 		rm -rf $INSTALLDIR/xo-builds/xen-orchestra-$TIME >> $LOGFILE 2>&1
