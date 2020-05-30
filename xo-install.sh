@@ -54,6 +54,9 @@ if [[ $PATH_TO_HTTPS_CERT ]] && [[ $PATH_TO_HTTPS_KEY ]]; then
 		HTTPS=false
 		HTTPSFAIL="- certificate or Key doesn't exist or file is empty"
 	fi
+else
+	HTTPS=false
+	
 fi
 
 # create logpath if doesn't exist
