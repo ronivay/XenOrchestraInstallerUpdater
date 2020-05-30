@@ -22,11 +22,14 @@ PORT=${PORT:-80}
 INSTALLDIR=${INSTALLDIR:-"/opt/xo"}
 BRANCH=${BRANCH:-"master"}
 LOGPATH="${LOGPATH:-$(dirname $0)/logs}"
-LOGFILE="${LOGPATH}/xo-install.log-$(date +%Y%d%m%H%M)"
 AUTOUPDATE=${AUTOUPDATE:-"true"}
 PRESERVE=${PRESERVE:-"3"}
 XOUSER=${XOUSER:-"root"}
 CONFIGPATH="$(getent passwd $XOUSER | cut -d: -f6)"
+
+# set variables not changeable in configfile
+TIME=$(date +%Y%d%m%H%M)
+LOGFILE="${LOGPATH}/xo-install.log-$TIME"
 
 # Set path where new source is cloned/pulled
 XO_SRC_DIR="$INSTALLDIR/xo-src/xen-orchestra"
@@ -352,8 +355,6 @@ function InstallXO {
 	set -e
 
 	trap ErrorHandling ERR INT
-
-	TIME=$(date +%Y%d%m%H%M)
 
 	# Create user if doesn't exist (if defined)
 
