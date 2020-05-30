@@ -21,7 +21,7 @@ source $CONFIG_FILE
 PORT=${PORT:-80}
 INSTALLDIR=${INSTALLDIR:-"/opt/xo"}
 BRANCH=${BRANCH:-"master"}
-LOGPATH="${LOGPATH}-"$(dirname "$(realpath $0)")/logs""
+LOGPATH=${LOGPATH:-$(dirname "$(realpath $0)")/logs}
 AUTOUPDATE=${AUTOUPDATE:-"true"}
 PRESERVE=${PRESERVE:-"3"}
 XOUSER=${XOUSER:-"root"}
