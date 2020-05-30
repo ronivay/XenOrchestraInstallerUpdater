@@ -374,6 +374,7 @@ function InstallXO {
 
 	# Create installation directory if doesn't exist already
 	if [[ ! -d "$INSTALLDIR" ]] ; then
+		echo
 		echo -ne "${PROGRESS} Creating missing basedir to $INSTALLDIR"
 		cmdlog "mkdir -p \"$INSTALLDIR\""
 		mkdir -p "$INSTALLDIR"
@@ -382,6 +383,7 @@ function InstallXO {
 
 	# Create missing xo-builds directory if doesn't exist already
 	if [[ ! -d "$INSTALLDIR/xo-builds" ]]; then
+		echo
 		echo -ne "${PROGRESS} Creating missing xo-builds directory to $INSTALLDIR/xo-builds"
 		cmdlog "mkdir \"$INSTALLDIR/xo-builds\""
 		mkdir "$INSTALLDIR/xo-builds"
@@ -390,7 +392,6 @@ function InstallXO {
 
 	echo
 	echo -e "${INFO} Fetching Xen Orchestra source code"
-	echo
 	if [[ ! -d "$XO_SRC_DIR" ]]; then
 		cmdlog "mkdir -p \"$XO_SRC_DIR\""
 		mkdir -p "$XO_SRC_DIR"
@@ -496,6 +497,7 @@ function InstallXO {
 	fi
 
 	echo
+	echo
 	echo -e "${INFO} xo-server and xo-web build quite a while. Grab a cup of coffee and lay back"
 	echo
 	echo -ne "${PROGRESS} Running installation"
@@ -510,7 +512,6 @@ function InstallXO {
 	echo -e "${INFO} Fixing binary path in systemd service configuration file"
 	cmdlog "sed -i \"s#ExecStart=.*#ExecStart=$INSTALLDIR\/xo-server\/bin\/xo-server#\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service"
 	sed -i "s#ExecStart=.*#ExecStart=$INSTALLDIR\/xo-server\/bin\/xo-server#" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service
-	echo
 	echo -e "${INFO} Adding WorkingDirectory parameter to systemd service configuration file"
 	cmdlog "sed -i \"/ExecStart=.*/a WorkingDirectory=$INSTALLDIR/xo-server\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service"
 	sed -i "/ExecStart=.*/a WorkingDirectory=$INSTALLDIR/xo-server" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service >>$LOGFILE 2>&1
