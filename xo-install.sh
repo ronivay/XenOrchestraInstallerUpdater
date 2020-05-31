@@ -98,6 +98,8 @@ function printinfo {
 
 function ErrorHandling {
 
+	set -eu
+
 	echo
 	printfail "Something went wrong, exiting. Check $LOGFILE for more details and use rollback feature if needed"
 
@@ -111,7 +113,7 @@ function ErrorHandling {
 
 function InstallDependenciesCentOS {
 
-	set -e
+	set -euo pipefail
 
 	trap ErrorHandling ERR INT
 
@@ -198,7 +200,7 @@ function InstallDependenciesCentOS {
 
 function InstallDependenciesDebian {
 
-	set -e
+	set -euo pipefail
 
 	trap ErrorHandling ERR INT
 
@@ -338,7 +340,7 @@ function UpdateNodeYarn {
 
 function InstallXOPlugins {
 
-	set -e
+	set -euo pipefail
 
 	trap ErrorHandling ERR INT
 
@@ -373,7 +375,7 @@ function InstallXOPlugins {
 
 function InstallXO {
 
-	set -e
+	set -euo pipefail
 
 	trap ErrorHandling ERR INT
 
@@ -641,7 +643,7 @@ function InstallXO {
 	/bin/systemctl start xo-server >>$LOGFILE 2>&1
 
 	# no need to exit/trap on errors anymore
-	set +e
+	set +eo pipefail
 	trap - ERR INT
 
 	timeout 60 bash <<-"EOF"
@@ -673,6 +675,8 @@ function InstallXO {
 function UpdateXO {
 
 	InstallXO
+
+	set -euo pipefail
 
 	if [[ "$PRESERVE" != "0" ]]; then
 
@@ -722,6 +726,8 @@ function HandleArgs {
 }
 
 function RollBackInstallation {
+
+	set -euo pipefail
 
 	INSTALLATIONS=($(find $INSTALLDIR/xo-builds/ -maxdepth 1 -type d -name "xen-orchestra-*" 2>/dev/null))
 
