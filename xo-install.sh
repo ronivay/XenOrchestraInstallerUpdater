@@ -361,8 +361,8 @@ function InstallXOPlugins {
 			done
 		fi
 
-		cmdlog "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn >/dev/null && yarn build"
-		cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn >/dev/null && yarn build >>$LOGFILE 2>&1
+		cmdlog "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn && yarn build"
+		cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn >>$LOGFILE 2>&1 && yarn build >>$LOGFILE 2>&1
 		printok "Installing plugins"
 	else
 		echo
