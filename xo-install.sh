@@ -61,8 +61,7 @@ fi
 
 # create logpath if doesn't exist
 if [[ ! -d $LOGPATH ]]; then
-	cmdlog "mkdir -p $LOGPATH"
-	mkdir -p $LOGPATH >> $LOGFILE 2>&1
+	mkdir -p $LOGPATH
 fi
 
 function CheckUser {
