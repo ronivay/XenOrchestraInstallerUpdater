@@ -835,13 +835,47 @@ function CheckCertificate {
 function CheckMemory {
 	SYSMEM=$(grep MemTotal /proc/meminfo | awk '{print $2}')
 
-	if [[ $SYSMEM < 3000000 ]]; then
+	if [[ $SYSMEM -lt 3000000 ]]; then
 		echo
-        	echo -e "${COLOR_RED}WARNING: you have less than 3GB of RAM in your system. Installation might run out of memory${COLOR_N}"
-        	echo
+		echo -e "${COLOR_RED}WARNING: you have less than 3GB of RAM in your system. Installation might run out of memory, continue anyway?${COLOR_N}"
+		echo
+		read -p "y/N: " answer
+		case $answer in
+			y)
+				:
+				;;
+			n)
+				exit 0
+				;;
+			*)
+				exit 0
+				;;
+		esac
 	fi
 
 }	
+
+function CheckDiskFree {
+	FREEDISK=$(df -P -k ${INSTALLDIR%/*} | tail -1 | awk '{print $4}')
+
+	if [[ $FREEDISK -lt 1048576 ]]; then
+		echo
+		echo -e "${COLOR_RED}free disk space in ${INSTALLDIR%/*} seems to be less than 1GB. Install/update will most likely fail, continue anyway?${COLOR_N}"
+		echo
+		read -p "y/N: " answer
+			case $answer in
+			y)
+				:
+				;;
+			n)
+				exit 0
+				;;
+			*)
+				exit 0
+				;;
+		esac
+	fi
+}
 
 function PullDockerImage {
 
