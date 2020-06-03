@@ -26,6 +26,7 @@ AUTOUPDATE=${AUTOUPDATE:-"true"}
 PRESERVE=${PRESERVE:-"3"}
 XOUSER=${XOUSER:-"root"}
 CONFIGPATH="$(getent passwd $XOUSER | cut -d: -f6)"
+PLUGINS="${PLUGINS:-"none"}"
 
 # set variables not changeable in configfile
 TIME=$(date +%Y%d%m%H%M)
@@ -344,7 +345,7 @@ function InstallXOPlugins {
 
 	trap ErrorHandling ERR INT
 
-	if [[ "$PLUGINS" ]] && [[ -n "$PLUGINS" ]]; then
+	if [[ -n "$PLUGINS" ]] && [[ "$PLUGINS" != "none" ]]; then
 
 		if [[ "$PLUGINS" == "all" ]]; then
 			echo
