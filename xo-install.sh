@@ -616,7 +616,7 @@ function InstallXO {
 		cmdlog "chown -R $XOUSER:$XOUSER /var/lib/xo-server"
 		chown -R $XOUSER:$XOUSER /var/lib/xo-server >>$LOGFILE 2>&1
 		
-		ccmdlog "chown -R $XOUSER:$XOUSER $CONFIGPATH/.config/xo-server"
+		cmdlog "chown -R $XOUSER:$XOUSER $CONFIGPATH/.config/xo-server"
 		chown -R $XOUSER:$XOUSER $CONFIGPATH/.config/xo-server >>$LOGFILE 2>&1
 	fi
 
