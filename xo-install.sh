@@ -106,7 +106,7 @@ function ErrorHandling {
 
 	if [[ -d $INSTALLDIR/xo-builds/xen-orchestra-$TIME ]]; then
 		echo
-		prinfail "Removing $INSTALLDIR/xo-builds/xen-orchestra-$TIME because of failed installation."
+		printfail "Removing $INSTALLDIR/xo-builds/xen-orchestra-$TIME because of failed installation."
 		cmdlog "rm -rf $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
 		rm -rf $INSTALLDIR/xo-builds/xen-orchestra-$TIME >> $LOGFILE 2>&1
 	fi
