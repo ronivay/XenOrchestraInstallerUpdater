@@ -27,6 +27,7 @@ PRESERVE=${PRESERVE:-"3"}
 XOUSER=${XOUSER:-"root"}
 CONFIGPATH="$(getent passwd $XOUSER | cut -d: -f6)"
 PLUGINS="${PLUGINS:-"none"}"
+REPOSITORY="${REPOSITORY:-"https://github.com/vatesfr/xen-orchestra"}"
 
 # set variables not changeable in configfile
 TIME=$(date +%Y%d%m%H%M)
@@ -416,8 +417,8 @@ function InstallXO {
 	if [[ ! -d "$XO_SRC_DIR" ]]; then
 		cmdlog "mkdir -p \"$XO_SRC_DIR\""
 		mkdir -p "$XO_SRC_DIR"
-		cmdlog "git clone https://github.com/vatesfr/xen-orchestra \"$XO_SRC_DIR\""
-		git clone https://github.com/vatesfr/xen-orchestra "$XO_SRC_DIR" >>$LOGFILE 2>&1
+		cmdlog "git clone \"${REPOSITORY}\" \"$XO_SRC_DIR\""
+		git clone "${REPOSITORY}" "$XO_SRC_DIR" >>$LOGFILE 2>&1
 	else
 		cmdlog "cd \"$XO_SRC_DIR\""
 		cd "$XO_SRC_DIR" >>$LOGFILE 2>&1
