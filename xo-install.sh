@@ -32,6 +32,7 @@ REPOSITORY="${REPOSITORY:-"https://github.com/vatesfr/xen-orchestra"}"
 # set variables not changeable in configfile
 TIME=$(date +%Y%d%m%H%M)
 LOGFILE="${LOGPATH}/xo-install.log-$TIME"
+NODEVERSION="12"
 
 # Set path where new source is cloned/pulled
 XO_SRC_DIR="$INSTALLDIR/xo-src/xen-orchestra"
@@ -140,8 +141,8 @@ function InstallDependenciesCentOS {
 	if [[ -z $(which node 2>>$LOGFILE) ]]; then
 		echo
 		printprog "Installing node.js"
-		cmdlog "curl -s -L https://rpm.nodesource.com/setup_12.x | bash -"
-		curl -s -L https://rpm.nodesource.com/setup_12.x | bash - >>$LOGFILE 2>&1
+		cmdlog "curl -s -L https://rpm.nodesource.com/setup_${NODEVERSION}.x | bash -"
+		curl -s -L https://rpm.nodesource.com/setup_${NODEVERSION}.x | bash - >>$LOGFILE 2>&1
 		printok "Installing node.js"
 	fi
 
@@ -268,21 +269,21 @@ function InstallDependenciesDebian {
 	if [[ -z $(which node 2>>$LOGFILE) ]] || [[ -z $(which npm 2>>$LOGFILE) ]]; then
 		echo
 		printprog "Installing node.js"
-		cmdlog "curl -sL https://deb.nodesource.com/setup_12.x | bash -"
-		curl -sL https://deb.nodesource.com/setup_12.x | bash - >>$LOGFILE 2>&1
+		cmdlog "curl -sL https://deb.nodesource.com/setup_${NODEVERSION}.x | bash -"
+		curl -sL https://deb.nodesource.com/setup_${NODEVERSION}.x | bash - >>$LOGFILE 2>&1
 		cmdlog "apt-get install -y nodejs"
 		apt-get install -y nodejs >>$LOGFILE 2>&1
 		printok "Installing node.js"
 	fi
 
-	# if we run Debian 10 and have default nodejs v10 installed, then replace it with node 12.x
+	# if we run Debian 10 and have default nodejs v10 installed, then replace it with newer
 	if [[ $OSVERSION == "10" ]]; then
 		NODEV=$(node -v 2>/dev/null| grep -Eo '[0-9.]+' | cut -d'.' -f1)
-		if [[ -n $NODEV ]] && [[ $NODEV -lt 12 ]]; then
+		if [[ -n $NODEV ]] && [[ $NODEV -lt ${NODEVERSION} ]]; then
 			echo
 			printprog "Installing node.js"
-			cmdlog "curl -sL https://deb.nodesource.com/setup_12.x | bash -"
-			curl -sL https://deb.nodesource.com/setup_12.x | bash - >>$LOGFILE 2>&1
+			cmdlog "curl -sL https://deb.nodesource.com/setup_${NODEVERSION}.x | bash -"
+			curl -sL https://deb.nodesource.com/setup_${NODEVERSION}.x | bash - >>$LOGFILE 2>&1
 			cmdlog "apt-get install -y nodejs"
 			apt-get install -y nodejs >>$LOGFILE 2>&1
 			printok "Installing node.js"
@@ -327,16 +328,16 @@ function UpdateNodeYarn {
 			echo
 			printinfo "Checking current node.js version"
 			NODEV=$(node -v 2>/dev/null| grep -Eo '[0-9.]+' | cut -d'.' -f1)
-			if [[ -n $NODEV ]] && [[ $NODEV -lt 12 ]]; then
+			if [[ -n $NODEV ]] && [[ $NODEV -lt ${NODEVERSION} ]]; then
 				echo
-				printprog "node.js version is $NODEV, upgrading to 12.x"
-				cmdlog "curl -sL https://rpm.nodesource.com/setup_12.x | bash -"
-				curl -sL https://rpm.nodesource.com/setup_12.x | bash - >>$LOGFILE 2>&1
+				printprog "node.js version is $NODEV, upgrading to ${NODEVERSION}.x"
+				cmdlog "curl -sL https://rpm.nodesource.com/setup_${NODEVERSION}.x | bash -"
+				curl -sL https://rpm.nodesource.com/setup_${NODEVERSION}.x | bash - >>$LOGFILE 2>&1
 				cmdlog "yum clean all"
 				yum clean all >> $LOGFILE 2>&1
 				cmdlog "yum install -y nodejs"
 				yum install -y nodejs >>LOGFILE 2>&1
-				printok "node.js version is $NODEV, upgrading to 12.x"
+				printok "node.js version is $NODEV, upgrading to ${NODEVERSION}.x"
 			else
 				echo
 				printprog "node.js version already on $NODEV, checking updates"
@@ -348,14 +349,14 @@ function UpdateNodeYarn {
 			echo
 			printinfo "Checking current node.js version"
 			NODEV=$(node -v 2>/dev/null| grep -Eo '[0-9.]+' | cut -d'.' -f1)
-			if [[ -n $NODEV ]] && [[ $NODEV -lt 12 ]]; then
+			if [[ -n $NODEV ]] && [[ $NODEV -lt ${NODEVERSION} ]]; then
 				echo
-				printprog "node.js version is $NODEV, upgrading to 12.x"
-				cmdlog "curl -sL https://deb.nodesource.com/setup_12.x | bash -"
-				curl -sL https://deb.nodesource.com/setup_12.x | bash - >>$LOGFILE 2>&1
+				printprog "node.js version is $NODEV, upgrading to ${NODEVERSION}.x"
+				cmdlog "curl -sL https://deb.nodesource.com/setup_${NODEVERSION}.x | bash -"
+				curl -sL https://deb.nodesource.com/setup_${NODEVERSION}.x | bash - >>$LOGFILE 2>&1
 				cmdlog "apt-get install -y nodejs"
 				apt-get install -y nodejs >>$LOGFILE 2>&1
-				printok	"node.js version is $NODEV, upgrading to 12.x"
+				printok	"node.js version is $NODEV, upgrading to ${NODEVERSION}.x"
 			else
 				echo
 				printprog "node.js version already on $NODEV, checking updates"
