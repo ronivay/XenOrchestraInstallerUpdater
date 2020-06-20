@@ -261,22 +261,6 @@ function InstallDependenciesDebian {
 		printok "Installing setcap"
 	fi
 
-	# only install yarn repo and package if not found
-	cmdlog "which yarn"
-	if [[ -z $(which yarn 2>>$LOGFILE) ]]; then
-		echo
-		printprog "Installing yarn"
-		cmdlog "curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add -"
-		curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - >>$LOGFILE 2>&1
-		cmdlog "echo \"deb https://dl.yarnpkg.com/debian/ stable main\" | tee /etc/apt/sources.list.d/yarn.list"
-		echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list >>$LOGFILE 2>&1
-		cmdlog "apt-get update"
-		apt-get update >>$LOGFILE 2>&1
-		cmdlog "apt-get install -y yarn"
-		apt-get install -y yarn >>$LOGFILE 2>&1
-		printok "Installing yarn"
-	fi
-
 
 	# only run automated node install if executable not found
 	cmdlog "which node"
@@ -294,7 +278,7 @@ function InstallDependenciesDebian {
 	# if we run Debian 10 and have default nodejs v10 installed, then replace it with node 12.x
 	if [[ $OSVERSION == "10" ]]; then
 		NODEV=$(node -v 2>/dev/null| grep -Eo '[0-9.]+' | cut -d'.' -f1)
-		if [[ -n $NODEV ]] && [[ $NODEV < 12 ]]; then
+		if [[ -n $NODEV ]] && [[ $NODEV -lt 12 ]]; then
 			echo
 			printprog "Installing node.js"
 			cmdlog "curl -sL https://deb.nodesource.com/setup_12.x | bash -"
@@ -304,7 +288,23 @@ function InstallDependenciesDebian {
 			printok "Installing node.js"
 		fi
 	fi
-	
+
+	# only install yarn repo and package if not found
+	cmdlog "which yarn"
+	if [[ -z $(which yarn 2>>$LOGFILE) ]]; then
+		echo
+		printprog "Installing yarn"
+		cmdlog "curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add -"
+		curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - >>$LOGFILE 2>&1
+		cmdlog "echo \"deb https://dl.yarnpkg.com/debian/ stable main\" | tee /etc/apt/sources.list.d/yarn.list"
+		echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list >>$LOGFILE 2>&1
+		cmdlog "apt-get update"
+		apt-get update >>$LOGFILE 2>&1
+		cmdlog "apt-get install -y yarn"
+		apt-get install -y yarn >>$LOGFILE 2>&1
+		printok "Installing yarn"
+	fi
+
 	echo
 	printprog "Enabling and starting redis service"
 	cmdlog "/bin/systemctl enable redis-server && /bin/systemctl start redis-server"
@@ -325,19 +325,46 @@ function UpdateNodeYarn {
 
 		if [ $OSNAME == "CentOS" ]; then
 			echo
-			printprog "Checking updates for nodejs and yarn"
-			cmdlog "yum update -y nodejs yarn"
-			yum update -y nodejs yarn >>$LOGFILE 2>&1
-			printok "Checking updates for nodejs and yarn"
+			printinfo "Checking current node.js version"
+			NODEV=$(node -v 2>/dev/null| grep -Eo '[0-9.]+' | cut -d'.' -f1)
+			if [[ -n $NODEV ]] && [[ $NODEV -lt 12 ]]; then
+				echo
+				printprog "node.js version is $NODEV, upgrading to 12.x"
+				cmdlog "curl -sL https://rpm.nodesource.com/setup_12.x | bash -"
+				curl -sL https://rpm.nodesource.com/setup_12.x | bash - >>$LOGFILE 2>&1
+				cmdlog "yum clean all"
+				yum clean all >> $LOGFILE 2>&1
+				cmdlog "yum install -y nodejs"
+				yum install -y nodejs >>LOGFILE 2>&1
+				printok "node.js version is $NODEV, upgrading to 12.x"
+			else
+				echo
+				printprog "node.js version already on $NODEV, checking updates"
+				cmdlog "yum update -y nodejs yarn"
+				yum update -y nodejs yarn >>$LOGFILE 2>&1
+				printok "node.js version already on $NODEV, checking updates"
+			fi
 		else
 			echo
-			printprog "Checking updates for nodejs and yarn"
-			cmdlog "apt-get install -y --only-upgrade nodejs yarn"
-			apt-get install -y --only-upgrade nodejs yarn >>$LOGFILE 2>&1
-			printok "Checking updates for nodejs and yarn"
+			printinfo "Checking current node.js version"
+			NODEV=$(node -v 2>/dev/null| grep -Eo '[0-9.]+' | cut -d'.' -f1)
+			if [[ -n $NODEV ]] && [[ $NODEV -lt 12 ]]; then
+				echo
+				printprog "node.js version is $NODEV, upgrading to 12.x"
+				cmdlog "curl -sL https://deb.nodesource.com/setup_12.x | bash -"
+				curl -sL https://deb.nodesource.com/setup_12.x | bash - >>$LOGFILE 2>&1
+				cmdlog "apt-get install -y nodejs"
+				apt-get install -y nodejs >>$LOGFILE 2>&1
+				printok	"node.js version is $NODEV, upgrading to 12.x"
+			else
+				echo
+				printprog "node.js version already on $NODEV, checking updates"
+				cmdlog "apt-get install -y --only-upgrade nodejs yarn"
+				apt-get install -y --only-upgrade nodejs yarn >>$LOGFILE 2>&1
+				printok "node.js version already on $NODEV, checking updates"
+			fi
 		fi
 	fi
-
 }
 
 function InstallXOPlugins {
