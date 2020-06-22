@@ -726,18 +726,15 @@ function HandleArgs {
 
 	case "$1" in
 		--update)
-			CheckMemory
 			UpdateNodeYarn update
 			UpdateXO
 			;;
 		--install)
 			if [ $OSNAME == "CentOS" ]; then
-				CheckMemory
 				InstallDependenciesCentOS
 				InstallXO
 				exit 0
 			else
-				CheckMemory
 				InstallDependenciesDebian
 				InstallXO
 				exit 0
@@ -748,6 +745,7 @@ function HandleArgs {
 			exit 0
 			;;
 		*)
+			CheckDiskFree
 			CheckMemory
 			StartUpScreen
 			;;
@@ -1023,6 +1021,7 @@ if [[ $# == "1" ]]; then
 	HandleArgs "$1"
 	exit 0
 else
+	CheckDiskFree
 	CheckMemory
 	StartUpScreen
 fi
