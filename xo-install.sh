@@ -144,6 +144,8 @@ function InstallDependenciesCentOS {
 		cmdlog "curl -s -L https://rpm.nodesource.com/setup_${NODEVERSION}.x | bash -"
 		curl -s -L https://rpm.nodesource.com/setup_${NODEVERSION}.x | bash - >>$LOGFILE 2>&1
 		printok "Installing node.js"
+	else
+		UpdateNodeYarn install
 	fi
 
 	# only install yarn repo and package if not found
@@ -274,20 +276,8 @@ function InstallDependenciesDebian {
 		cmdlog "apt-get install -y nodejs"
 		apt-get install -y nodejs >>$LOGFILE 2>&1
 		printok "Installing node.js"
-	fi
-
-	# if we run Debian 10 and have default nodejs v10 installed, then replace it with newer
-	if [[ $OSVERSION == "10" ]]; then
-		NODEV=$(node -v 2>/dev/null| grep -Eo '[0-9.]+' | cut -d'.' -f1)
-		if [[ -n $NODEV ]] && [[ $NODEV -lt ${NODEVERSION} ]]; then
-			echo
-			printprog "Installing node.js"
-			cmdlog "curl -sL https://deb.nodesource.com/setup_${NODEVERSION}.x | bash -"
-			curl -sL https://deb.nodesource.com/setup_${NODEVERSION}.x | bash - >>$LOGFILE 2>&1
-			cmdlog "apt-get install -y nodejs"
-			apt-get install -y nodejs >>$LOGFILE 2>&1
-			printok "Installing node.js"
-		fi
+	else
+		UpdateNodeYarn install
 	fi
 
 	# only install yarn repo and package if not found
@@ -339,11 +329,16 @@ function UpdateNodeYarn {
 				yum install -y nodejs >>LOGFILE 2>&1
 				printok "node.js version is $NODEV, upgrading to ${NODEVERSION}.x"
 			else
-				echo
-				printprog "node.js version already on $NODEV, checking updates"
-				cmdlog "yum update -y nodejs yarn"
-				yum update -y nodejs yarn >>$LOGFILE 2>&1
-				printok "node.js version already on $NODEV, checking updates"
+				if [[ $1 == "update" ]]; then
+					echo
+					printprog "node.js version already on $NODEV, checking updates"
+					cmdlog "yum update -y nodejs yarn"
+					yum update -y nodejs yarn >>$LOGFILE 2>&1
+					printok "node.js version already on $NODEV, checking updates"
+				elif [[ $1 == "install" ]]; then
+					echo
+					printinfo "node.js version already on $NODEV"
+				fi
 			fi
 		else
 			echo
@@ -358,11 +353,16 @@ function UpdateNodeYarn {
 				apt-get install -y nodejs >>$LOGFILE 2>&1
 				printok	"node.js version is $NODEV, upgrading to ${NODEVERSION}.x"
 			else
-				echo
-				printprog "node.js version already on $NODEV, checking updates"
-				cmdlog "apt-get install -y --only-upgrade nodejs yarn"
-				apt-get install -y --only-upgrade nodejs yarn >>$LOGFILE 2>&1
-				printok "node.js version already on $NODEV, checking updates"
+				if [[ $1 == "update" ]]; then
+					echo
+					printprog "node.js version already on $NODEV, checking updates"
+					cmdlog "apt-get install -y --only-upgrade nodejs yarn"
+					apt-get install -y --only-upgrade nodejs yarn >>$LOGFILE 2>&1
+					printok "node.js version already on $NODEV, checking updates"
+				elif [[ $1 == "install" ]]; then
+					echo
+					printinfo "node.js version already on $NODEV"
+				fi
 			fi
 		fi
 	fi
@@ -727,7 +727,7 @@ function HandleArgs {
 	case "$1" in
 		--update)
 			CheckMemory
-			UpdateNodeYarn
+			UpdateNodeYarn update
 			UpdateXO
 			;;
 		--install)
@@ -989,7 +989,7 @@ read -p ": " option
 			fi
 		;;
 		2)
-			UpdateNodeYarn
+			UpdateNodeYarn update
 			UpdateXO
 			exit 0
 		;;
