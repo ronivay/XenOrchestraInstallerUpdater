@@ -234,7 +234,7 @@ function InstallDependenciesDebian {
 
 	# install packages
 	echo
-	printprog "Installing build dependencies, redis server, git, libvhdi-utils, python-minimal, lvm2, nfs-common, cifs-utils, curl"
+	printprog "Installing build dependencies, redis server, python, git, libvhdi-utils, lvm2, nfs-common, cifs-utils, curl"
 	cmdlog "apt-get install -y build-essential redis-server libpng-dev git libvhdi-utils $PYTHON lvm2 nfs-common cifs-utils curl"
 	apt-get install -y build-essential redis-server libpng-dev git libvhdi-utils $PYTHON lvm2 nfs-common cifs-utils curl >>$LOGFILE 2>&1
 	printok "Installing build dependencies, redis server, python, git, libvhdi-utils, lvm2, nfs-common, cifs-utils, curl"
