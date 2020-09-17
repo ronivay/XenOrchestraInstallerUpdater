@@ -132,7 +132,7 @@ If you need to import an appliance directly to your host, you may use xo-applian
 Run on your Xenserver/XCP-ng host as root:
 
 ```
-bash -c "$(curl https://raw.githubusercontent.com/ronivay/XenOrchestraInstallerUpdater/master/xo-appliance.sh)"
+bash -c "$(curl -s https://raw.githubusercontent.com/ronivay/XenOrchestraInstallerUpdater/master/xo-appliance.sh)"
 ```
 
 Default username for UI is admin@admin.net with password admin
