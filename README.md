@@ -3,7 +3,7 @@
 
 # In a nutshell
 
-This repo consist of script to install and update [Xen Orchestra](https://xen-orchestra.com/#!/) for CentOS 8/Ubuntu 18/Debian 10
+This repo consist of script to install and update [Xen Orchestra](https://xen-orchestra.com/#!/) for CentOS 8/Ubuntu 18/Debian 10. If you find it difficult to create a VM on your fresh Xenserver/XCP-ng installation, take a look at the appliance method from the end of this README.
 
 Installation is done using latest xo-server and xo-web sources by default. With this method Xen-Orchestra has all features unlocked which are normally available only with monthly fee.
 
@@ -124,3 +124,24 @@ Debian/Ubuntu:
 - cifs-utils
 - gnupg (debian 10)
 ```
+
+# Appliance
+
+If you need to import an appliance directly to your host, you may use xo-appliance.sh script for this. It'll download a prebuilt image which has Xen Orchestra and XenOrchestraInstallerUpdater installed.
+
+Run on your Xenserver/XCP-ng host as root:
+
+```
+curl https://raw.githubusercontent.com/ronivay/XenOrchestraInstallerUpdater/master/xo-appliance.sh | bash
+```
+
+Default username for UI is admin@admin.net with password admin
+
+SSH is accessible with username xo with password xopass
+
+Remember to change both password before putting the VM to actual use.
+
+Xen Orchestra is installed to /opt/xo, it uses self-signed certificates from /opt/ssl which you can replace if you wish. Installation script is at /opt/XenOrchestraInstallerUpdater which you can use to update existing installation in the future.
+
+This image is updated weekly. Latest build date and MD5 checksum can be checked from https://xo-appliance.yawn.fi/downloads/image.txt
+
