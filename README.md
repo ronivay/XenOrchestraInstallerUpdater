@@ -139,9 +139,13 @@ Default username for UI is admin@admin.net with password admin
 
 SSH is accessible with username xo with password xopass
 
-Remember to change both password before putting the VM to actual use.
+Remember to change both passwords before putting the VM to actual use.
 
 Xen Orchestra is installed to /opt/xo, it uses self-signed certificates from /opt/ssl which you can replace if you wish. Installation script is at /opt/XenOrchestraInstallerUpdater which you can use to update existing installation in the future.
+
+xo-server runs as a systemd service.
+
+xo user has full sudo access. Xen Orchestra updates etc should be ran with sudo.
 
 This image is updated weekly. Latest build date and MD5 checksum can be checked from https://xo-appliance.yawn.fi/downloads/image.txt
 
