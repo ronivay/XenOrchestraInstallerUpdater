@@ -37,7 +37,7 @@ quick option to rollback (option 4):
 ./xo-install.sh --rollback
 ```
 
-Tool makes some checks and offers options:
+Script makes some checks and offers options:
 
 1. Autoinstall
  - Installs all dependencies (necessary packages and Xen-Orchestra itself). Doesn't do firewall changes, so make sure you allow access to port specified in xo-install.cfg.
@@ -60,7 +60,7 @@ notes:
 
 ## Notes
 
-Tool has been tested to work with following distros:
+Script has been tested to work with following distros:
 
 - CentOS 8 (note LVM file level restore issue from below)
 - Debian 10
@@ -79,8 +79,8 @@ CentOS installation is currently not able to do file level restore if the backed
 CentOS setup is confirmed to work with fresh minimal installation and SELinux enabled.
 Although script doesn't do any SELinux checks or modifications, so you need to take care of possible changes by yourself according to your system.
 
-Tool makes all necessary changes required for Xen-Orchestra to run (including packages, user creation, permissions). Please evaluate script if needed.
-I take no responsibility of possible damage caused by this tool.
+Script makes all necessary changes required for Xen-Orchestra to run (including packages, user creation, permissions). Please evaluate script if needed.
+I take no responsibility of possible damage caused by this script.
 
 Below is a list of packages that will be installed if missing.
 
@@ -127,7 +127,7 @@ Debian/Ubuntu:
 
 # Appliance
 
-If you need to import an appliance directly to your host, you may use xo-appliance.sh script for this. It'll download a prebuilt image which has Xen Orchestra and XenOrchestraInstallerUpdater installed.
+If you need to import an appliance directly to your host, you may use xo-appliance.sh script for this. It'll download a prebuilt Debian 10 image which has Xen Orchestra and XenOrchestraInstallerUpdater installed.
 
 Run on your Xenserver/XCP-ng host as root:
 
