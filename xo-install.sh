@@ -399,6 +399,10 @@ function InstallXO {
 		/usr/bin/sed -i "s%#mountsDir = '/run/xo-server/mounts'%mountsDir = '$INSTALLDIR/remotes/mounts'%" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml
 		echo "done"
 		
+		echo -n "Adding sudo command to allow mounting partitions as non-root for file-level restore..."
+		/usr/bin/sed -i "s%execa('mount'%execa('sudo mount'%" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/src/xo-mixins/backup.js
+		echo "done"
+		
 		if [[ ! -z "/usr/bin/sudo" ]]; then
 			echo -n "Setting user to use sudo... "
 			/usr/bin/sed -i 's/#useSudo = false/useSudo = true/' $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml
