@@ -105,6 +105,11 @@ function InstallDependenciesCentOS {
 	echo -n "Installing build dependencies, redis server, python, git, nfs-utils..."
 	yum -y install gcc gcc-c++ make openssl-devel redis libpng-devel python git nfs-utils >/dev/null
 	echo "done"
+	
+	echo
+	echo -n "Installing fuse to get fusermount..."
+	yum -y install fuse >/dev/null
+	echo "done"
 
 	echo
 	echo -n "Enabling and starting redis service..."
