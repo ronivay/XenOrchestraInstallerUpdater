@@ -400,7 +400,7 @@ function InstallXO {
 		echo "done"
 		
 		echo -n "Adding sudo command to allow mounting partitions as non-root for file-level restore..."
-		/usr/bin/sed -i "s%execa('mount'%execa('sudo mount'%" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/src/xo-mixins/backup.js
+		/usr/bin/sed -i "s%execa('mount'%execa('sudo mount'%" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/src/xo-mixins/backups.js
 		echo "done"
 		
 		if [[ ! -z "/usr/bin/sudo" ]]; then
