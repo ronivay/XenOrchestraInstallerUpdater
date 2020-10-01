@@ -185,6 +185,11 @@ function InstallDependenciesDebian {
 	echo -n "Installing build dependencies, redis server, python, git, libvhdi-utils, lvm2, nfs-common..."
 	apt-get install -y build-essential redis-server libpng-dev git python-minimal libvhdi-utils lvm2 nfs-common >/dev/null
 	echo "done"
+	
+	echo
+	echo -n "Installing fuse to get fusermount..."
+	apt-get install -y install fuse >/dev/null
+	echo "done"
 
 	echo
 	echo -n "Enabling and starting redis service..."
