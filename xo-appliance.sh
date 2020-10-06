@@ -142,7 +142,7 @@ function VMImport {
 		echo "VM Started successfully"
 		echo
 		echo "You can access Xen Orchestra at https://$ip and via SSH at $ip"
-		echo "Default credentials for UI: admin@admin/admin"
+		echo "Default credentials for UI: admin@admin.net/admin"
 		echo "Default credentials for SSH: xo/xopass"
 		echo
 		echo "Remember to change both passwords before putting VM to use!"
@@ -151,7 +151,7 @@ function VMImport {
 		echo "VM started but we couldn't fetch it's ip-address from xentools"
 		echo
 		echo "Check VM status/ip-address manually. If VM started correctly, it should have Web UI and SSH accessible at it's ip-address"
-		echo "Default credentials for UI: admin@admin/admin"
+		echo "Default credentials for UI: admin@admin.net/admin"
 		echo "Default credentials for SSH: xo/xopass"
 		echo 
 		echo "Remember to change both passwords before putting VM to use!"
