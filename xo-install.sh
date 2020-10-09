@@ -811,6 +811,11 @@ function CheckOS {
 			printfail "Only CentOS 7/8 supported"
 			exit 0
 		fi
+		cmdlog "which xe"
+		if [[ $(which xe 2>>$LOGFILE) ]]; then
+			printfail "xe binary found, don't try to run install on xcp-ng/xenserver host. use xo-appliance.sh instead"
+			exit 1
+		fi
 	elif [[ -f /etc/os-release ]]; then
 		OSVERSION=$(grep ^VERSION_ID /etc/os-release | cut -d'=' -f2 | grep -Eo "[0-9]{1,2}" | head -1)
 		OSNAME=$(grep ^NAME /etc/os-release | cut -d'=' -f2 | sed 's/"//g' | awk '{print $1}')
