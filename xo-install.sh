@@ -73,7 +73,7 @@ function CheckUser {
 
 	if [[ ! "$(id -u)" == "0" ]]; then
 		printfail "This script needs to be ran as root"
-		exit 0
+		exit 1
 	fi
 
 }
@@ -809,7 +809,7 @@ function CheckOS {
 		OSNAME="CentOS"
 		if [[ ! $OSVERSION =~ ^(7|8) ]]; then
 			printfail "Only CentOS 7/8 supported"
-			exit 0
+			exit 1
 		fi
 		cmdlog "which xe"
 		if [[ $(which xe 2>>$LOGFILE) ]]; then
@@ -821,14 +821,14 @@ function CheckOS {
 		OSNAME=$(grep ^NAME /etc/os-release | cut -d'=' -f2 | sed 's/"//g' | awk '{print $1}')
 		if [[ $OSNAME == "Debian" ]] && [[ ! $OSVERSION =~ ^(8|9|10)$ ]]; then
 			printfail "Only Debian 8/9/10 supported"
-			exit 0
+			exit 1
 		elif [[ $OSNAME == "Ubuntu" ]] && [[ ! $OSVERSION =~ ^(16|18|20)$ ]]; then
 			printfail "Only Ubuntu 16/18/20 supported"
-			exit 0
+			exit 1
 		fi
 	else
 		printfail "Only CentOS 7 / Ubuntu 16/18 and Debian 8/9 supported"
-		exit 0
+		exit 1
 	fi
 
 }
@@ -837,7 +837,7 @@ function CheckSystemd {
 
 	if [[ -z $(which systemctl) ]]; then
 		printfail "This tool is designed to work with systemd enabled systems only"
-		exit 0
+		exit 1
 	fi
 }
 
@@ -846,7 +846,7 @@ function CheckDocker {
 	if [[ -z $(which docker) ]]; then
 		echo
 		printfail "Docker needs to be installed for this to work"
-		exit 0
+		exit 1
 	fi
 
 }
