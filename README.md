@@ -147,5 +147,5 @@ xo-server runs as a systemd service.
 
 xo user has full sudo access. Xen Orchestra updates etc should be ran with sudo.
 
-This image is updated weekly. Latest build date and MD5 checksum can be checked from https://xo-appliance.yawn.fi/downloads/image.txt
+This image is updated weekly. Latest build date and MD5 checksum can be checked from [here](https://xo-appliance.yawn.fi/downloads/image.txt)
 
