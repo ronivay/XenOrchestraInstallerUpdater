@@ -112,6 +112,8 @@ function ErrorHandling {
 		cmdlog "rm -rf $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
 		rm -rf $INSTALLDIR/xo-builds/xen-orchestra-$TIME >> $LOGFILE 2>&1
 	fi
+
+	exit 1
 }
 
 function InstallDependenciesCentOS {
