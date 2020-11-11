@@ -545,7 +545,10 @@ function InstallXO {
 	# If this isn't a fresh install, then list the upgrade the user is making.
 	if [[ -n "$OLD_REPO_HASH" ]]; then
 		echo
+		TASK="Update"
 		printinfo "Updating xen-orchestra from '$OLD_REPO_HASH_SHORT' to '$NEW_REPO_HASH_SHORT'"
+	else
+		TASK="Installation"
 	fi
 
 	echo
@@ -688,15 +691,21 @@ function InstallXO {
 	if [[ $(journalctl -u xo-server | sed -n 'H; /Starting XO Server/h; ${g;p;}' | grep "https\{0,1\}:\/\/\[::\]:$PORT") ]]; then
 		echo
 		echo -e "	${COLOR_GREEN}WebUI started in port $PORT. Make sure you have firewall rules in place to allow access.${COLOR_N}"
-		echo -e "	${COLOR_GREEN}Default username: admin@admin.net password: admin${COLOR_N}"
+		if [[ "$TASK" == "Installation" ]]; then
+			echo -e "	${COLOR_GREEN}Default username: admin@admin.net password: admin${COLOR_N}"
+		fi
 		echo
-		printinfo "Installation successful. Enabling xo-server service to start on reboot"
+		printinfo "$TASK successful. Enabling xo-server service to start on reboot"
+		echo "" >> $LOGFILE
+		echo "$TASK succesful" >> $LOGFILE
 		cmdlog "/bin/systemctl enable xo-server"
 		echo
 		/bin/systemctl enable xo-server >>$LOGFILE 2>&1
 	else
 		echo
-		printfail "Installation completed, but looks like there was a problem when starting xo-server/reading journalctl. Please see logs for more details"
+		printfail "$TASK completed, but looks like there was a problem when starting xo-server/reading journalctl. Please see logs for more details"
+		echo "" >> $LOGFILE
+		echo "$TASK failed" >> $LOGFILE
 		echo "xo-server service log:" >> $LOGFILE
 		echo "" >> $LOGFILE
 		journalctl -u xo-server -n 100 >> $LOGFILE
