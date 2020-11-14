@@ -149,3 +149,4 @@ xo user has full sudo access. Xen Orchestra updates etc should be ran with sudo.
 
 This image is updated weekly. Latest build date and MD5 checksum can be checked from [here](https://xo-appliance.yawn.fi/downloads/image.txt)
 
+Built and tested on XCP-ng 7.x
