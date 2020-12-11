@@ -30,7 +30,8 @@ PLUGINS="${PLUGINS:-"none"}"
 REPOSITORY="${REPOSITORY:-"https://github.com/vatesfr/xen-orchestra"}"
 
 # set variables not changeable in configfile
-TIME=$(date +%Y%d%m%H%M)
+TIME=$(date +%Y%m%d%H%M)
+LOGTIME=$(date "+%Y-%m-%d %H:%M:%S")
 LOGFILE="${LOGPATH}/xo-install.log-$TIME"
 NODEVERSION="12"
 
@@ -681,14 +682,17 @@ function InstallXO {
 	set +eo pipefail
 	trap - ERR INT
 
-	timeout 60 bash <<-"EOF"
-		while [[ -z $(journalctl -u xo-server | sed -n 'H; /Starting XO Server/h; ${g;p;}' | grep "https\{0,1\}:\/\/\[::\]:$PORT") ]]; do
-			echo  "	waiting for port to be open"
-			sleep 10
-		done
-	EOF
+	count=0
+	limit=6
+	servicestatus="$(journalctl --since "$LOGTIME" -u xo-server | sed -n 'H; /Starting XO Server/h; ${g;p;}' | grep "https\{0,1\}:\/\/\[::\]:$PORT")"
+	while [[ -z "$servicestatus" ]] && [[ "$count" -lt "$limit" ]]; do
+		echo " waiting for port to be open"
+		sleep 10
+		servicestatus="$(journalctl --since "$LOGTIME" -u xo-server | sed -n 'H; /Starting XO Server/h; ${g;p;}' | grep "https\{0,1\}:\/\/\[::\]:$PORT")"
+		(( count++ ))
+	done
 
-	if [[ $(journalctl -u xo-server | sed -n 'H; /Starting XO Server/h; ${g;p;}' | grep "https\{0,1\}:\/\/\[::\]:$PORT") ]]; then
+	if [[ ! -z "$servicestatus" ]]; then
 		echo
 		echo -e "	${COLOR_GREEN}WebUI started in port $PORT. Make sure you have firewall rules in place to allow access.${COLOR_N}"
 		if [[ "$TASK" == "Installation" ]]; then
@@ -708,7 +712,7 @@ function InstallXO {
 		echo "$TASK failed" >> $LOGFILE
 		echo "xo-server service log:" >> $LOGFILE
 		echo "" >> $LOGFILE
-		journalctl -u xo-server -n 100 >> $LOGFILE
+		journalctl --since "$LOGTIME" -u xo-server >> $LOGFILE
 		echo
 		echo "Control xo-server service with systemctl for stop/start/restart etc."
 		exit 1
