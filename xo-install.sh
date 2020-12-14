@@ -125,18 +125,11 @@ function InstallDependenciesCentOS {
 
 	# Install necessary dependencies for XO build
 
-	#determine which python package is needed. CentOS 7 requires python, 8 is python3
-	if [[ $OSVERSION == "8" ]]; then
-		PYTHON="python3"
-	else
-		PYTHON="python"
-	fi
-
 	# install packages
 	echo
 	printprog "Installing build dependencies, redis server, python, git, nfs-utils, cifs-utils"
-	cmdlog "yum -y install gcc gcc-c++ make openssl-devel redis libpng-devel $PYTHON git nfs-utils cifs-utils lvm2"
-	yum -y install gcc gcc-c++ make openssl-devel redis libpng-devel $PYTHON git nfs-utils cifs-utils lvm2 >>$LOGFILE 2>&1
+	cmdlog "yum -y install gcc gcc-c++ make openssl-devel redis libpng-devel python3 git nfs-utils cifs-utils lvm2"
+	yum -y install gcc gcc-c++ make openssl-devel redis libpng-devel python3 git nfs-utils cifs-utils lvm2 >>$LOGFILE 2>&1
 	printok "Installing build dependencies, redis server, python, git, nfs-utils, cifs-utils"
 
 	# only run automated node install if executable not found
@@ -822,8 +815,8 @@ function CheckOS {
 	if [ -f /etc/centos-release ] ; then
 		OSVERSION=$(grep -Eo "[0-9]" /etc/centos-release | head -1)
 		OSNAME="CentOS"
-		if [[ ! $OSVERSION =~ ^(7|8) ]]; then
-			printfail "Only CentOS 7/8 supported"
+		if [[ $OSVERSION != "8" ]]; then
+			printfail "Only CentOS 8 supported"
 			exit 1
 		fi
 		cmdlog "which xe"
@@ -842,7 +835,7 @@ function CheckOS {
 			exit 1
 		fi
 	else
-		printfail "Only CentOS 7 / Ubuntu 16/18 and Debian 8/9 supported"
+		printfail "Only CentOS 8 / Ubuntu 16/18 and Debian 8/9 supported"
 		exit 1
 	fi
 

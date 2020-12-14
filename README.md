@@ -67,7 +67,6 @@ Script has been tested to work with following distros:
 - Ubuntu 18.04
 
 Installation works but not tested frequently:
-- CentOS 7
 - Debian 8
 - Debian 9
 - Ubuntu 16.04
@@ -97,7 +96,7 @@ CentOS:
 - openssl-devel
 - redis
 - libpng-devel
-- python
+- python3
 - git
 - nfs-utils
 - libvhdi-tools
