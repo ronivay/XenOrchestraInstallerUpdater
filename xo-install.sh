@@ -183,7 +183,7 @@ function InstallDependenciesDebian {
 	# install packages
 	echo
 	echo -n "Installing build dependencies, redis server, python, git, libvhdi-utils, lvm2, nfs-common..."
-	apt-get install -y build-essential redis-server libpng-dev git python-minimal libvhdi-utils lvm2 nfs-common >/dev/null
+	apt-get install -y build-essential redis-server libpng-dev git python-minimal libvhdi-utils lvm2 nfs-common gnupg >/dev/null
 	echo "done"
 	
 	echo
