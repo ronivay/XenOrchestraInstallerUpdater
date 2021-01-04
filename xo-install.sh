@@ -626,8 +626,8 @@ function CheckOS {
 	elif [[ -f /etc/os-release ]]; then
 		OSVERSION=$(grep ^VERSION_ID /etc/os-release | cut -d'=' -f2 | grep -Eo "[0-9]{1,2}" | head -1)
 		OSNAME=$(grep ^NAME /etc/os-release | cut -d'=' -f2 | sed 's/"//g' | awk '{print $1}')
-		if [[ $OSNAME == "Debian" ]] && [[ ! $OSVERSION =~ ^(8|9)$ ]]; then
-			echo "Only Debian 8/9 supported"
+		if [[ $OSNAME == "Debian" ]] && [[ ! $OSVERSION =~ ^(8|9|10)$ ]]; then
+			echo "Only Debian 8/9/10 supported"
 			exit 0
 		elif [[ $OSNAME == "Ubuntu" ]] && [[ ! $OSVERSION =~ ^(16|18)$ ]]; then
 			echo "Only Ubuntu 16/18 supported"
