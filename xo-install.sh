@@ -411,8 +411,8 @@ function InstallXO {
 		if [[ -z $(getent passwd $XOUSER) ]]; then
 			echo
 			printprog "Creating missing $XOUSER user"
-			cmdlog "useradd -s /sbin/nologin $XOUSER"
-			useradd -s /sbin/nologin $XOUSER >>$LOGFILE 2>&1
+			cmdlog "useradd -s /sbin/nologin -m $XOUSER"
+			useradd -s /sbin/nologin -m $XOUSER >>$LOGFILE 2>&1
 			printok "Creating missing $XOUSER user"
 			sleep 2
 		fi
