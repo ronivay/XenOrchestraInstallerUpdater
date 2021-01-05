@@ -10,3 +10,4 @@ tests/*
 !tests/Debian/Vagrantfile
 !tests/run-tests.sh
 !tests/README.md
+logs/*

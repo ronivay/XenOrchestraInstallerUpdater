@@ -3,11 +3,11 @@
 
 # In a nutshell
 
-This repo consist of script to install and update [Xen Orchestra](https://xen-orchestra.com/#!/) for CentOS 7/Ubuntu 18/Debian 9
+This repo consist of script to install and update [Xen Orchestra](https://xen-orchestra.com/#!/) for CentOS 8/Ubuntu 18/Debian 10. If you find it difficult to create a VM on your fresh Xenserver/XCP-ng installation, take a look at the appliance method from the end of this README.
 
 Installation is done using latest xo-server and xo-web sources by default. With this method Xen-Orchestra has all features unlocked which are normally available only with monthly fee.
 
-Optional plugins can be installed. They are included in XO repository, but not installed by default. Check list from [Xen Orchestra plugins](https://github.com/vatesfr/xen-orchestra/tree/master/packages) and edit xo-install.cfg accordingly.
+Optional plugins are available and all of them will be installed by default by this script. If you need only specific ones, check list from [Xen Orchestra plugins](https://github.com/vatesfr/xen-orchestra/tree/master/packages) and edit xo-install.cfg accordingly.
 
 Xen-Orchestra is a great project and i strongly encourage you to consider the supported version of their product.
 
@@ -15,6 +15,10 @@ Paid version comes with pro support and appliance and is the suggested option fo
 
 
 # Instructions
+
+### platform
+
+Suggested platform is a VM with fresh install of any of the supported OS. You should put at least 3GB of RAM to the machine, but preferably 2vCPU/4GB RAM. Otherwise you may encounter OOM error during installation because of running out of memory.
 
 ### script
 Clone this repository, copy sample.xo-install.cfg as xo-install.cfg and edit variables to suit your preferences and run xo-install.sh as root. Sample configuration will be copied as xo-install.cfg
@@ -33,7 +37,7 @@ quick option to rollback (option 4):
 ./xo-install.sh --rollback
 ```
 
-Tool makes some checks and offers options:
+Script makes some checks and offers options:
 
 1. Autoinstall
  - Installs all dependencies (necessary packages and Xen-Orchestra itself). Doesn't do firewall changes, so make sure you allow access to port specified in xo-install.cfg.
@@ -56,24 +60,26 @@ notes:
 
 ## Notes
 
-Tool has been tested to work with following distros:
+Script has been tested to work with following distros:
 
-- CentOS 7 (note LVM file level restore issue from below)
-- Debian 9
+- CentOS 8 (note LVM file level restore issue from below)
+- Debian 10
 - Ubuntu 18.04
 
 Installation works but not tested frequently:
 - Debian 8
+- Debian 9
 - Ubuntu 16.04
+- Ubuntu 20.04
 
 In order to use file level restore from delta backups, the service needs to be ran as root.
-CentOS installation is currently not able to do file level restore if the backed up disk contains LVM.
+CentOS installation is currently not able to do file level restore if the backed up disk contains LVM or only sees some of the partitions.
 
 CentOS setup is confirmed to work with fresh minimal installation and SELinux enabled.
 Although script doesn't do any SELinux checks or modifications, so you need to take care of possible changes by yourself according to your system.
 
-Tool makes all necessary changes required for Xen-Orchestra to run (including packages, user creation, permissions). Please evaluate script if needed.
-I take no responsibility of possible damage caused by this tool.
+Script makes all necessary changes required for Xen-Orchestra to run (including packages, user creation, permissions). Please evaluate script if needed.
+I take no responsibility of possible damage caused by this script.
 
 Below is a list of packages that will be installed if missing.
 
@@ -81,7 +87,7 @@ Below is a list of packages that will be installed if missing.
 CentOS:
 - curl
 - epel-release
-- nodejs (v8)
+- nodejs (v12)
 - npm (v3)
 - yarn
 - gcc
@@ -90,10 +96,12 @@ CentOS:
 - openssl-devel
 - redis
 - libpng-devel
-- python
+- python3
 - git
 - nfs-utils
 - libvhdi-tools
+- cifs-utils
+- lvm2
 
 Debian/Ubuntu:
 - apt-transport-https
@@ -101,14 +109,43 @@ Debian/Ubuntu:
 - libcap2-bin
 - curl
 - yarn
-- nodejs (v8)
+- nodejs (v12) (possible debian 10 default nodejs v10 will be replaced)
 - npm (v3)
 - build-essential
 - redis-server
 - libpng-dev
 - git
 - python-minimal
+- python2-minimal (Ubuntu 20 only, replaces python-minimal)
 - libvhdi-utils
 - lvm2
 - nfs-common
+- cifs-utils
+- gnupg (debian 10)
 ```
+
+# Appliance
+
+If you need to import an appliance directly to your host, you may use xo-appliance.sh script for this. It'll download a prebuilt Debian 10 image which has Xen Orchestra and XenOrchestraInstallerUpdater installed.
+
+Run on your Xenserver/XCP-ng host as root:
+
+```
+bash -c "$(curl -s https://raw.githubusercontent.com/ronivay/XenOrchestraInstallerUpdater/master/xo-appliance.sh)"
+```
+
+Default username for UI is admin@admin.net with password admin
+
+SSH is accessible with username xo with password xopass
+
+Remember to change both passwords before putting the VM to actual use.
+
+Xen Orchestra is installed to /opt/xo, it uses self-signed certificates from /opt/ssl which you can replace if you wish. Installation script is at /opt/XenOrchestraInstallerUpdater which you can use to update existing installation in the future.
+
+xo-server runs as a systemd service.
+
+xo user has full sudo access. Xen Orchestra updates etc should be ran with sudo.
+
+This image is updated weekly. Latest build date and MD5 checksum can be checked from [here](https://xo-appliance.yawn.fi/downloads/image.txt)
+
+Built and tested on XCP-ng 7.x
