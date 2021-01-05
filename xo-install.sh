@@ -25,7 +25,7 @@ LOGPATH=${LOGPATH:-$(dirname "$(realpath $0)")/logs}
 AUTOUPDATE=${AUTOUPDATE:-"true"}
 PRESERVE=${PRESERVE:-"3"}
 XOUSER=${XOUSER:-"root"}
-CONFIGPATH="$(getent passwd $XOUSER | cut -d: -f6)"
+CONFIGPATH="/etc/xo-server"
 PLUGINS="${PLUGINS:-"none"}"
 REPOSITORY="${REPOSITORY:-"https://github.com/vatesfr/xen-orchestra"}"
 
@@ -546,6 +546,7 @@ function InstallXO {
 		TASK="Installation"
 	fi
 	
+	echo
 	printinfo "Removing open-source warning and banner"
 	cmdlog "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
 	cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME
@@ -596,7 +597,7 @@ function InstallXO {
 		fi		
 	fi
 
-	if [[ ! -f $CONFIGPATH/.config/xo-server/config.toml ]] || [[ "$CONFIGUPDATE" == "true" ]]; then
+	if [[ ! -f $CONFIGPATH/xo-server/config.toml ]] || [[ "$CONFIGUPDATE" == "true" ]]; then
 		printinfo "Fixing relative path to xo-web installation in xo-server configuration file"
 		INSTALLDIRESC=$(echo $INSTALLDIR | sed 's/\//\\\//g')
 		cmdlog "sed -i \"s/#'\/any\/url' = '\/path\/to\/directory'/'\/' = '$INSTALLDIRESC\/xo-web\/dist\/'/\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
@@ -639,10 +640,10 @@ function InstallXO {
 		fi
 
 		printinfo "Activating modified configuration file"
-		cmdlog "mkdir -p $CONFIGPATH/.config/xo-server"
-		mkdir -p $CONFIGPATH/.config/xo-server
-		cmdlog "mv -f $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml $CONFIGPATH/.config/xo-server/config.toml"
-		mv -f $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml $CONFIGPATH/.config/xo-server/config.toml
+		cmdlog "mkdir -p $CONFIGPATH/xo-server"
+		mkdir -p $CONFIGPATH/xo-server
+		cmdlog "mv -f $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml $CONFIGPATH/xo-server/config.toml"
+		mv -f $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml $CONFIGPATH/xo-server/config.toml
 	fi
 
 	echo
@@ -677,8 +678,8 @@ function InstallXO {
 		cmdlog "chown -R $XOUSER:$XOUSER /var/lib/xo-server"
 		chown -R $XOUSER:$XOUSER /var/lib/xo-server >>$LOGFILE 2>&1
 		
-		cmdlog "chown -R $XOUSER:$XOUSER $CONFIGPATH/.config/xo-server"
-		chown -R $XOUSER:$XOUSER $CONFIGPATH/.config/xo-server >>$LOGFILE 2>&1
+		cmdlog "chown -R $XOUSER:$XOUSER $CONFIGPATH/xo-server"
+		chown -R $XOUSER:$XOUSER $CONFIGPATH/xo-server >>$LOGFILE 2>&1
 	fi
 
 	# fix to prevent older installations to not update because systemd service is not symlinked anymore
@@ -995,7 +996,7 @@ echo -e "Node.js and yarn auto update: ${COLOR_WHITE}$AUTOUPDATE${COLOR_N}"
 echo
 echo -e "Errorlog is stored to ${COLOR_WHITE}$LOGFILE${COLOR_N} for debug purposes"
 echo
-echo -e "Xen Orchestra configuration will be stored to ${COLOR_WHITE}$CONFIGPATH/.config/xo-server/config.toml${COLOR_N}, if you don't want it to be replaced with every update, set ${COLOR_WHITE}CONFIGUPDATE${COLOR_N} to false in ${COLOR_WHITE}xo-install.cfg${COLOR_N}"
+echo -e "Xen Orchestra configuration will be stored to ${COLOR_WHITE}$CONFIGPATH/xo-server/config.toml${COLOR_N} --- if you don't want it to be replaced with every update, set ${COLOR_WHITE}CONFIGUPDATE${COLOR_N} to false in ${COLOR_WHITE}xo-install.cfg${COLOR_N}"
 echo "-----------------------------------------"
 
 echo
