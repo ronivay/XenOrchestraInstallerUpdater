@@ -661,11 +661,6 @@ function InstallXO {
 	fi
 
 	if [[ ! -f $CONFIGPATH/xo-server/config.toml ]] || [[ "$CONFIGUPDATE" == "true" ]]; then
-		printinfo "Fixing relative path to xo-web installation in xo-server configuration file"
-		INSTALLDIRESC=$(echo $INSTALLDIR | sed 's/\//\\\//g')
-		cmdlog "sed -i \"s/#'\/any\/url' = '\/path\/to\/directory'/'\/' = '$INSTALLDIRESC\/xo-web\/dist\/'/\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
-		sed -i "s/#'\/any\/url' = '\/path\/to\/directory'/'\/' = '$INSTALLDIRESC\/xo-web\/dist\/'/" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml >>$LOGFILE 2>&1
-		sleep 2
 		if [[ $PORT != "80" ]]; then
 			echo
 			printprog "Changing port in xo-server configuration file"
@@ -766,7 +761,7 @@ function InstallXO {
 	sleep 2
 
 	echo
-	printprog "Starting xo-server..."
+	printprog "Starting xo-server"
 	cmdlog "/bin/systemctl start xo-server"
 	/bin/systemctl start xo-server >>$LOGFILE 2>&1
 	printok "Starting xo-server"
@@ -801,7 +796,6 @@ function InstallXO {
 		cmdlog "/bin/systemctl enable xo-server"
 		/bin/systemctl enable xo-server >>$LOGFILE 2>&1
 		printok "Enabling xo-server service to start on reboot"
-		echo
 	else
 		echo
 		printfail "$TASK completed, but looks like there was a problem when starting xo-server/reading journalctl. Please see logs for more details"
