@@ -466,7 +466,7 @@ function InstallXO {
 	fi
 
 	echo
-	printinfo "Fetching Xen Orchestra source code"
+	printprog "Fetching Xen Orchestra source code"
 	if [[ ! -d "$XO_SRC_DIR" ]]; then
 		cmdlog "mkdir -p \"$XO_SRC_DIR\""
 		mkdir -p "$XO_SRC_DIR"
@@ -480,38 +480,38 @@ function InstallXO {
 		cd $(dirname $0) >>$LOGFILE 2>&1
 		cmdlog "cd $(dirname $0)"
 	fi
+	printprog "Fetching Xen Orchestra source code"
 
 	# Deploy the latest xen-orchestra source to the new install directory.
 	echo
-	printinfo "Creating install directory: $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
+	printprog "Creating install directory: $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
 	cmdlog "rm -rf \"$INSTALLDIR/xo-builds/xen-orchestra-$TIME\""
 	rm -rf "$INSTALLDIR/xo-builds/xen-orchestra-$TIME" >>$LOGFILE 2>&1
 	cmdlog "cp -r \"$XO_SRC_DIR" "$INSTALLDIR/xo-builds/xen-orchestra-$TIME\""
 	cp -r "$XO_SRC_DIR" "$INSTALLDIR/xo-builds/xen-orchestra-$TIME" >>$LOGFILE 2>&1
+	printprog "Creating install directory: $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
 
 	if [[ "$BRANCH" == "release" ]]; then
+		echo
+		printprog "Checking out latest tagged release '$TAG'"
 		cmdlog "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
 		cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME
 		TAG=$(git describe --tags $(git rev-list --tags --max-count=1))
-
-		echo
-		printinfo "Checking out latest tagged release '$TAG'"
-
 		cmdlog "git checkout $TAG"
 		git checkout $TAG >>$LOGFILE 2>&1
 		cmdlog "cd $(dirname $0)"
 		cd $(dirname $0)
-		echo "done"
+		printok "Checking out latest tagged release '$TAG'"
 	elif [[ "$BRANCH" != "master" ]]; then
 		echo
-		printinfo "Checking out source code from branch '$BRANCH'"
-
+		printprog "Checking out source code from branch '$BRANCH'"
 		cmdlog "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
 		cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME >>$LOGFILE 2>&1
 		cmdlog "git checkout $BRANCH"
 		git checkout $BRANCH >>$LOGFILE 2>&1
 		cmdlog "cd $(dirname $0)"
 		cd $(dirname $0) >>$LOGFILE 2>&1
+		printok "Checking out source code from branch '$BRANCH'"
 	fi
 
 	# Check if the new repo is any different from the currently-installed
@@ -550,9 +550,11 @@ function InstallXO {
 	if [[ "$NEW_REPO_HASH" == "$OLD_REPO_HASH" ]]; then
 		echo
 		printinfo "No changes to xen-orchestra since previous install. Skipping xo-server and xo-web build."
-		printinfo "Cleaning up install directory: $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
+		echo
+		printprog "Cleaning up install directory: $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
 		cmdlog "rm -rf $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
 		rm -rf $INSTALLDIR/xo-builds/xen-orchestra-$TIME >>$LOGFILE 2>&1
+		printok "Cleaning up install directory: $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
 		return 0
 	fi
 
@@ -576,11 +578,12 @@ function InstallXO {
 	fi
 	
 	echo
-	printinfo "Removing open-source warning and banner"
+	printprog "Removing open-source warning and banner"
 	cmdlog "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
 	cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME
 	cmdlog "/usr/bin/sed -i 's/+process.env.XOA_PLAN === 5/false/' packages/xo-web/src/xo-app/index.js"
 	/usr/bin/sed -i 's/plan === 'Community'/false/' packages/xo-web/src/xo-app/index.js >/dev/null 2>&1
+	printok "Removing open-source warning and banner"
 	
 	if [[ "$XOUSER" != "root" ]]; then
 		echo
@@ -590,13 +593,17 @@ function InstallXO {
 		printok "Adding sudo to mount command to allow mounting partitions as non-root user"
 
 		if [[ ! -z "/usr/bin/sudo" ]]; then
-			printinfo "Setting use sudo option in config file"
+			echo
+			printprog "Setting use sudo option in config file"
 			cmdlog "/usr/bin/sed -i 's/#useSudo = false/useSudo = true/' $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
 			/usr/bin/sed -i 's/#useSudo = false/useSudo = true/' $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml
+			printok "Setting use sudo option in config file"
 			if [[ ! -e "/etc/sudoers.d/$XOUSER" ]]; then
-				printinfo "Adding permissions to sudoers file for $XOUSER"
+				echo
+				printprog "Adding permissions to sudoers file for $XOUSER"
 				cmdlog "echo \"$XOUSER  ALL=NOPASSWD:/bin/mount, NOPASSWD:/bin/umount, NOPASSWD:/bin/mkdir, NOPASSWD:/bin/findmnt\" > /etc/sudoers.d/$XOUSER"
 				echo "$XOUSER  ALL=NOPASSWD:/bin/mount, NOPASSWD:/bin/umount, NOPASSWD:/bin/mkdir, NOPASSWD:/bin/findmnt" > /etc/sudoers.d/$XOUSER
+				printok "Adding permissions to sudoers file for $XOUSER"
 			fi
 		fi
 	fi
@@ -687,21 +694,27 @@ function InstallXO {
 			printok "Updating mounts dir in config file"			
 		fi
 
-		printinfo "Activating modified configuration file"
+		echo
+		printprog "Activating modified configuration file"
 		cmdlog "mkdir -p $CONFIGPATH/xo-server"
 		mkdir -p $CONFIGPATH/xo-server
 		cmdlog "mv -f $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml $CONFIGPATH/xo-server/config.toml"
 		mv -f $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml $CONFIGPATH/xo-server/config.toml
+		printok "Activating modified configuration file"
 	fi
 
 	echo
-	printinfo "Symlinking fresh xo-server install/update to $INSTALLDIR/xo-server"
+	printprog "Symlinking fresh xo-server install/update to $INSTALLDIR/xo-server"
 	cmdlog "ln -sfn $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server $INSTALLDIR/xo-server"
 	ln -sfn $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server $INSTALLDIR/xo-server >>$LOGFILE 2>&1
+	printok "Symlinking fresh xo-server install/update to $INSTALLDIR/xo-server"
 	sleep 2
-	printinfo "Symlinking fresh xo-web install/update to $INSTALLDIR/xo-web"
+	
+	echo
+	printprog "Symlinking fresh xo-web install/update to $INSTALLDIR/xo-web"
 	cmdlog "ln -sfn $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-web $INSTALLDIR/xo-web"
 	ln -sfn $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-web $INSTALLDIR/xo-web >>$LOGFILE 2>&1
+	printok "Symlinking fresh xo-web install/update to $INSTALLDIR/xo-web"
 
 	if [[ "$XOUSER" != "root" ]]; then
 		cmdlog "chown -R $XOUSER:$XOUSER $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
@@ -737,21 +750,24 @@ function InstallXO {
 	fi
 
 	echo
-	printinfo "Replacing systemd service configuration file"
-
+	printprog "Replacing systemd service configuration file"
 	cmdlog "/bin/cp -f $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service /etc/systemd/system/xo-server.service"
 	/bin/cp -f $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service /etc/systemd/system/xo-server.service >>$LOGFILE 2>&1
+	printok "Replacing systemd service configuration file"
 	sleep 2
-	printinfo "Reloading systemd configuration"
+	
 	echo
+	printprog "Reloading systemd configuration"
 	cmdlog "/bin/systemctl daemon-reload"
 	/bin/systemctl daemon-reload >>$LOGFILE 2>&1
+	printok "Reloading systemd configuration"
 	sleep 2
 
 	echo
-	printinfo "Starting xo-server..."
+	printprog "Starting xo-server..."
 	cmdlog "/bin/systemctl start xo-server"
 	/bin/systemctl start xo-server >>$LOGFILE 2>&1
+	printok "Starting xo-server"
 
 	# no need to exit/trap on errors anymore
 	set +eo pipefail
@@ -761,7 +777,7 @@ function InstallXO {
 	limit=6
 	servicestatus="$(journalctl --since "$LOGTIME" -u xo-server | sed -n 'H; /Starting XO Server/h; ${g;p;}' | grep "https\{0,1\}:\/\/\[::\]:$PORT")"
 	while [[ -z "$servicestatus" ]] && [[ "$count" -lt "$limit" ]]; do
-		echo " waiting for port to be open"
+		printinfo "Waiting for port to be open..."
 		sleep 10
 		servicestatus="$(journalctl --since "$LOGTIME" -u xo-server | sed -n 'H; /Starting XO Server/h; ${g;p;}' | grep "https\{0,1\}:\/\/\[::\]:$PORT")"
 		(( count++ ))
@@ -774,12 +790,16 @@ function InstallXO {
 			echo -e "	${COLOR_GREEN}Default username: admin@admin.net password: admin${COLOR_N}"
 		fi
 		echo
-		printinfo "$TASK successful. Enabling xo-server service to start on reboot"
+		printinfo "$TASK successful"
 		echo "" >> $LOGFILE
 		echo "$TASK succesful" >> $LOGFILE
-		cmdlog "/bin/systemctl enable xo-server"
+		
 		echo
+		printprog "Enabling xo-server service to start on reboot"
+		cmdlog "/bin/systemctl enable xo-server"
 		/bin/systemctl enable xo-server >>$LOGFILE 2>&1
+		printok "Enabling xo-server service to start on reboot"
+		echo
 	else
 		echo
 		printfail "$TASK completed, but looks like there was a problem when starting xo-server/reading journalctl. Please see logs for more details"
@@ -865,23 +885,34 @@ function RollBackInstallation {
 		case $INSTALLATION in
 			*xen-orchestra*)
 				echo
-				printinfo "Setting $INSTALLDIR/xo-server symlink to $INSTALLATION/packages/xo-server"
+				printprog "Setting $INSTALLDIR/xo-server symlink to $INSTALLATION/packages/xo-server"
 				cmdlog "ln -sfn $INSTALLATION/packages/xo-server $INSTALLDIR/xo-server"
 				ln -sfn $INSTALLATION/packages/xo-server $INSTALLDIR/xo-server >>$LOGFILE 2>&1
-				printinfo "Setting $INSTALLDIR/xo-web symlink to $INSTALLATION/packages/xo-web"
+				printok "Setting $INSTALLDIR/xo-server symlink to $INSTALLATION/packages/xo-server"
+				
+				echo
+				printprog "Setting $INSTALLDIR/xo-web symlink to $INSTALLATION/packages/xo-web"
 				cmdlog "ln -sfn $INSTALLATION/packages/xo-web $INSTALLDIR/xo-web" 
 				ln -sfn $INSTALLATION/packages/xo-web $INSTALLDIR/xo-web >>$LOGFILE 2>&1
+				printok "Setting $INSTALLDIR/xo-web symlink to $INSTALLATION/packages/xo-web"
+				
 				echo
-				printinfo "Replacing xo.server.service systemd configuration file"
+				printprog "Replacing xo.server.service systemd configuration file"
 				cmdlog "/bin/cp -f $INSTALLATION/packages/xo-server/xo-server.service /etc/systemd/system/xo-server.service"
 				/bin/cp -f $INSTALLATION/packages/xo-server/xo-server.service /etc/systemd/system/xo-server.service >>$LOGFILE 2>&1
+				printok "Replacing xo.server.service systemd configuration file"
+				
+				echo
+				printprog "Reloading systemd configuration"
 				cmdlog "/bin/systemctl daemon-reload"
 				/bin/systemctl daemon-reload >>$LOGFILE 2>&1
+				printok "Reloading systemd configuration"
+				
 				echo
-				printinfo "Restarting xo-server..."
+				printprog "Restarting xo-server"
 				cmdlog "/bin/systemctl restart xo-server"
 				/bin/systemctl restart xo-server >>$LOGFILE 2>&1
-				echo
+				printok "Restarting xo-server"
 				break
 			;;
 			*)
