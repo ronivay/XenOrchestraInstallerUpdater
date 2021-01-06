@@ -184,6 +184,16 @@ function InstallDependenciesCentOS {
 		yum --enablerepo=forensics install -y libvhdi-tools >>$LOGFILE 2>&1
 		printok "Installing libvhdi-tools from forensics repository"
 	fi
+	
+	# install fuse for non-root file system mounting
+	cmdlog "which fusermount"
+	if [[ -z $(which fusermount 2>>$LOGFILE) ]]; then
+		echo
+		printprog "Installing fuse"
+		cmdlog "apt-get install -y fuse"
+		apt-get install -y fuse >>$LOGFILE 2>&1
+		printok "Installing fuse"
+	fi
 
 	echo
 	printprog "Enabling and starting redis service"
@@ -245,7 +255,7 @@ function InstallDependenciesDebian {
 	if [[ $OSVERSION == "10" ]]; then
 		echo
 		printprog "Debian 10, so installing gnupg and ssl-cert also"
-		cmdlog "apt-get install gnupg -y"
+		cmdlog "apt-get install gnupg ssl-cert -y"
 		apt-get install gnupg ssl-cert -y >>$LOGFILE 2>&1
 		printok "Debian 10, so installing gnupg and ssl-cert also"
 	fi
@@ -259,7 +269,26 @@ function InstallDependenciesDebian {
 		apt-get install -y libcap2-bin >>$LOGFILE 2>&1
 		printok "Installing setcap"
 	fi
-
+	
+	# install sudo for non-root elevation
+	cmdlog "which sudo"
+	if [[ -z $(which sudo 2>>$LOGFILE) ]]; then
+		echo
+		printprog "Installing sudo"
+		cmdlog "apt-get install -y sudo"
+		apt-get install -y sudo >>$LOGFILE 2>&1
+		printok "Installing sudo"
+	fi
+	
+	# install fuse for non-root file system mounting
+	cmdlog "which fusermount"
+	if [[ -z $(which fusermount 2>>$LOGFILE) ]]; then
+		echo
+		printprog "Installing fuse"
+		cmdlog "apt-get install -y fuse"
+		apt-get install -y fuse >>$LOGFILE 2>&1
+		printok "Installing fuse"
+	fi
 
 	# only run automated node install if executable not found
 	cmdlog "which node"
@@ -551,12 +580,30 @@ function InstallXO {
 	cmdlog "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
 	cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME
 	cmdlog "/usr/bin/sed -i 's/+process.env.XOA_PLAN === 5/false/' packages/xo-web/src/xo-app/index.js"
-	/usr/bin/sed -i 's/+process.env.XOA_PLAN === 5/false/' packages/xo-web/src/xo-app/index.js >/dev/null 2>&1
+	/usr/bin/sed -i 's/plan === 'Community'/false/' packages/xo-web/src/xo-app/index.js >/dev/null 2>&1
+	
+	if [[ "$XOUSER" != "root" ]]; then
+		echo
+		printprog "Adding sudo to mount command to allow mounting partitions as non-root user"
+		cmdlog "/usr/bin/sed -i \"s%execa('mount'%execa('sudo mount'%\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/src/xo-mixins/file-restore-ng.js"
+		/usr/bin/sed -i "s%execa('mount'%execa('sudo mount'%" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/src/xo-mixins/file-restore-ng.js
+		printok "Adding sudo to mount command to allow mounting partitions as non-root user"
+
+		if [[ ! -z "/usr/bin/sudo" ]]; then
+			printinfo "Setting use sudo option in config file"
+			cmdlog "/usr/bin/sed -i 's/#useSudo = false/useSudo = true/' $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
+			/usr/bin/sed -i 's/#useSudo = false/useSudo = true/' $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml
+			if [[ ! -e "/etc/sudoers.d/$XOUSER" ]]; then
+				printinfo "Adding permissions to sudoers file for $XOUSER"
+				cmdlog "echo \"$XOUSER  ALL=NOPASSWD:/bin/mount, NOPASSWD:/bin/umount, NOPASSWD:/bin/mkdir, NOPASSWD:/bin/findmnt\" > /etc/sudoers.d/$XOUSER"
+				echo "$XOUSER  ALL=NOPASSWD:/bin/mount, NOPASSWD:/bin/umount, NOPASSWD:/bin/mkdir, NOPASSWD:/bin/findmnt" > /etc/sudoers.d/$XOUSER
+			fi
+		fi
+	fi
+	
+	echo
 	cmdlog "cd $(dirname $0)"
 	cd $(dirname $0)
-
-	echo
-	echo
 	printinfo "xo-server and xo-web build for quite a while. Grab a cup of coffee and lay back"
 	echo
 	printprog "Running installation"
@@ -568,17 +615,23 @@ function InstallXO {
 	InstallXOPlugins
 
 	echo
-	printinfo "Fixing binary path in systemd service configuration file"
+	printprog "Fixing binary path in systemd service configuration file"
 	cmdlog "sed -i \"s#ExecStart=.*#ExecStart=$INSTALLDIR\/xo-server\/bin\/xo-server#\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service"
 	sed -i "s#ExecStart=.*#ExecStart=$INSTALLDIR\/xo-server\/bin\/xo-server#" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service
-	printinfo "Adding WorkingDirectory parameter to systemd service configuration file"
+	printok "Fixing binary path in systemd service configuration file"
+	
+	echo
+	printprog "Adding WorkingDirectory parameter to systemd service configuration file"
 	cmdlog "sed -i \"/ExecStart=.*/a WorkingDirectory=$INSTALLDIR/xo-server\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service"
 	sed -i "/ExecStart=.*/a WorkingDirectory=$INSTALLDIR/xo-server" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service >>$LOGFILE 2>&1
+	printok "Adding WorkingDirectory parameter to systemd service configuration file"
 
 	if [[ "$XOUSER" != "root" ]]; then
-		printinfo "Adding user to systemd config"
+		echo
+		printprog "Adding user to systemd config"
 		cmdlog "sed -i \"/SyslogIdentifier=.*/a User=$XOUSER\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service"
 		sed -i "/SyslogIdentifier=.*/a User=$XOUSER" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service >>$LOGFILE 2>&1
+		printok "Adding user to systemd config"
 
 		if [ "$PORT" -le "1024" ]; then
 			NODEBINARY="$(which node)"
@@ -587,6 +640,7 @@ function InstallXO {
 			fi
 
 			if [[ -n $NODEBINARY ]]; then
+				echo
 				printprog "Attempting to set cap_net_bind_service permission for $NODEBINARY"
 				cmdlog "setcap 'cap_net_bind_service=+ep' $NODEBINARY"
 				setcap 'cap_net_bind_service=+ep' $NODEBINARY >>$LOGFILE 2>&1 \
@@ -604,45 +658,33 @@ function InstallXO {
 		sed -i "s/#'\/any\/url' = '\/path\/to\/directory'/'\/' = '$INSTALLDIRESC\/xo-web\/dist\/'/" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml >>$LOGFILE 2>&1
 		sleep 2
 		if [[ $PORT != "80" ]]; then
-			printinfo "Changing port in xo-server configuration file"
+			echo
+			printprog "Changing port in xo-server configuration file"
 			cmdlog "sed -i \"s/port = 80/port = $PORT/\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
 			sed -i "s/port = 80/port = $PORT/" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml >>$LOGFILE 2>&1
+			printok "Changing port in xo-server configuration file"
 			sleep 2
 		fi
 
 		if [[ "$HTTPS" == "true" ]] ; then
-			printinfo "Enabling HTTPS in xo-server configuration file"
+			echo
+			printprog "Enabling HTTPS in xo-server configuration file"
 			cmdlog "sed -i \"s%# cert = '.\/certificate.pem'%cert = '$PATH_TO_HTTPS_CERT'%\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
 			sed -i "s%# cert = '.\/certificate.pem'%cert = '$PATH_TO_HTTPS_CERT'%" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml >>$LOGFILE 2>&1
 			cmdlog \"sed -i "s%# key = '.\/key.pem'%key = '$PATH_TO_HTTPS_KEY'%\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
 			sed -i "s%# key = '.\/key.pem'%key = '$PATH_TO_HTTPS_KEY'%" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml >>$LOGFILE 2>&1
 			cmdlog "sed -i \"s/# redirectToHttps/redirectToHttps/\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml" 
 			sed -i "s/# redirectToHttps/redirectToHttps/" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml >>$LOGFILE 2>&1
+			printok "Enabling HTTPS in xo-server configuration file"
 			sleep 2
 		fi
 		
 		if [[ "$XOUSER" != "root" ]]; then
-			printinfo "Updating mounts dir in config file"
+			echo
+			printprog "Updating mounts dir in config file"
 			cmdlog "/usr/bin/sed -i \"s%#mountsDir = '/run/xo-server/mounts'%mountsDir = '$INSTALLDIR/remotes/mounts'%\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
 			/usr/bin/sed -i "s%#mountsDir = '/run/xo-server/mounts'%mountsDir = '$INSTALLDIR/remotes/mounts'%" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml
-			
-			echo
-			printprog "Adding sudo to mount command to allow mounting partitions as non-root user"
-			cmdlog "/usr/bin/sed -i \"s%execa('mount'%execa('sudo mount'%\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/src/xo-mixins/file-restore-ng.js"
-			/usr/bin/sed -i "s%execa('mount'%execa('sudo mount'%" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/src/xo-mixins/file-restore-ng.js
-			printok "Adding sudo to mount command to allow mounting partitions as non-root user"
-			
-			if [[ ! -z "/usr/bin/sudo" ]]; then
-				printinfo "Setting use sudo option in config file"
-				cmdlog "/usr/bin/sed -i 's/#useSudo = false/useSudo = true/' $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
-				/usr/bin/sed -i 's/#useSudo = false/useSudo = true/' $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml
-				if [[ ! -e "/etc/sudoers.d/$XOUSER" ]]; then
-					printinfo "Adding permissions to sudoers file for $XOUSER"
-					cmdlog "echo \"$XOUSER  ALL=NOPASSWD:/bin/mount, NOPASSWD:/bin/umount, NOPASSWD:/bin/mkdir, NOPASSWD:/bin/findmnt\" > /etc/sudoers.d/$XOUSER"
-					echo "$XOUSER  ALL=NOPASSWD:/bin/mount, NOPASSWD:/bin/umount, NOPASSWD:/bin/mkdir, NOPASSWD:/bin/findmnt" > /etc/sudoers.d/$XOUSER
-				fi
-			fi
-			
+			printok "Updating mounts dir in config file"			
 		fi
 
 		printinfo "Activating modified configuration file"
@@ -875,7 +917,7 @@ function CheckOS {
 			exit 1
 		fi
 	else
-		printfail "Only CentOS 8 / Ubuntu 16/18 and Debian 8/9 supported"
+		printfail "Only CentOS 8 / Ubuntu 16/18/20 and Debian 8/9/10 supported"
 		exit 1
 	fi
 
