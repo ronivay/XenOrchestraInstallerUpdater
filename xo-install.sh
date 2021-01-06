@@ -583,6 +583,8 @@ function InstallXO {
 	cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME
 	cmdlog "/usr/bin/sed -i 's/+process.env.XOA_PLAN === 5/false/' packages/xo-web/src/xo-app/index.js"
 	/usr/bin/sed -i 's/plan === 'Community'/false/' packages/xo-web/src/xo-app/index.js >/dev/null 2>&1
+	cmdlog "/usr/bin/sed -i 's/+process.env.XOA_PLAN === 5/false/' packages/xo-web/src/xo-app/index.js >/dev/null 2>&1"
+	/usr/bin/sed -i 's/+process.env.XOA_PLAN === 5/false/' packages/xo-web/src/xo-app/index.js >/dev/null 2>&1
 	printok "Removing open-source warning and banner"
 	
 	if [[ "$XOUSER" != "root" ]]; then
