@@ -25,7 +25,7 @@ LOGPATH=${LOGPATH:-$(dirname "$(realpath $0)")/logs}
 AUTOUPDATE=${AUTOUPDATE:-"true"}
 PRESERVE=${PRESERVE:-"3"}
 XOUSER=${XOUSER:-"root"}
-CONFIGPATH="/etc/xo-server"
+CONFIGPATH="/etc"
 PLUGINS="${PLUGINS:-"none"}"
 REPOSITORY="${REPOSITORY:-"https://github.com/vatesfr/xen-orchestra"}"
 
