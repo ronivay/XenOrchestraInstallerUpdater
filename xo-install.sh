@@ -480,7 +480,7 @@ function InstallXO {
 		cd $(dirname $0) >>$LOGFILE 2>&1
 		cmdlog "cd $(dirname $0)"
 	fi
-	printprog "Fetching Xen Orchestra source code"
+	printok "Fetching Xen Orchestra source code"
 
 	# Deploy the latest xen-orchestra source to the new install directory.
 	echo
@@ -489,7 +489,7 @@ function InstallXO {
 	rm -rf "$INSTALLDIR/xo-builds/xen-orchestra-$TIME" >>$LOGFILE 2>&1
 	cmdlog "cp -r \"$XO_SRC_DIR" "$INSTALLDIR/xo-builds/xen-orchestra-$TIME\""
 	cp -r "$XO_SRC_DIR" "$INSTALLDIR/xo-builds/xen-orchestra-$TIME" >>$LOGFILE 2>&1
-	printprog "Creating install directory: $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
+	printok "Creating install directory: $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
 
 	if [[ "$BRANCH" == "release" ]]; then
 		echo
