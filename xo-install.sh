@@ -653,7 +653,7 @@ function InstallXO {
 				printprog "Attempting to set cap_net_bind_service permission for $NODEBINARY"
 				cmdlog "setcap 'cap_net_bind_service=+ep' $NODEBINARY"
 				setcap 'cap_net_bind_service=+ep' $NODEBINARY >>$LOGFILE 2>&1 \
-				&& printok " Attempting to set cap_net_bind_service permission for $NODEBINARY" || { printfail "Attempting to set cap_net_bind_service permission for $NODEBINARY" ; echo "	Non-privileged user might not be able to bind to <1024 port. xo-server won't start most likely" ; }
+				&& printok "Attempting to set cap_net_bind_service permission for $NODEBINARY" || { printfail "Attempting to set cap_net_bind_service permission for $NODEBINARY" ; echo "	Non-privileged user might not be able to bind to <1024 port. xo-server won't start most likely" ; }
 			else
 				printfail "Can't find node executable, or it's a symlink to non existing file. Not trying to setcap. xo-server won't start most likely"
 			fi
