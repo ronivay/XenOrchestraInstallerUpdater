@@ -254,10 +254,10 @@ function InstallDependenciesDebian {
 
 	if [[ $OSVERSION == "10" ]]; then
 		echo
-		printprog "Debian 10, so installing gnupg and ssl-cert also"
-		cmdlog "apt-get install gnupg ssl-cert -y"
-		apt-get install gnupg ssl-cert -y >>$LOGFILE 2>&1
-		printok "Debian 10, so installing gnupg and ssl-cert also"
+		printprog "Debian 10, so installing gnupg, ntfs-3g, and ssl-cert"
+		cmdlog "apt-get install gnupg ntfs-3g ssl-cert -y"
+		apt-get install gnupg ntfs-3g ssl-cert -y >>$LOGFILE 2>&1
+		printok "Debian 10, so installing gnupg, ntfs-3g, and ssl-cert"
 	fi
 
 	# install setcap for non-root port binding if missing
