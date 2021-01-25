@@ -812,6 +812,11 @@ function RollBackInstallation {
 
 function CheckOS {
 
+	if [[ $(uname -m) != "x86_64" ]]; then
+		printfail "Installation only supports 64bit OS. You seem to be running architecture: $(uname -m)"
+		exit 1
+	fi
+
 	if [ -f /etc/centos-release ] ; then
 		OSVERSION=$(grep -Eo "[0-9]" /etc/centos-release | head -1)
 		OSNAME="CentOS"
