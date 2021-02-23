@@ -151,7 +151,7 @@ function InstallDependenciesCentOS {
 		printprog "Installing yarn"
 		cmdlog "curl -s -o /etc/yum.repos.d/yarn.repo https://dl.yarnpkg.com/rpm/yarn.repo && yum -y install yarn"
 		curl -s -o /etc/yum.repos.d/yarn.repo https://dl.yarnpkg.com/rpm/yarn.repo >>$LOGFILE 2>&1 && \
-		yum -y install yarn >>$LOGFILE 2>&1 || false
+		yum -y install yarn >>$LOGFILE 2>&1
 		printok "Installing yarn"
 	fi
 
