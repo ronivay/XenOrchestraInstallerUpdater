@@ -151,7 +151,7 @@ function InstallDependenciesCentOS {
 		printprog "Installing yarn"
 		cmdlog "curl -s -o /etc/yum.repos.d/yarn.repo https://dl.yarnpkg.com/rpm/yarn.repo && yum -y install yarn"
 		curl -s -o /etc/yum.repos.d/yarn.repo https://dl.yarnpkg.com/rpm/yarn.repo >>$LOGFILE 2>&1 && \
-		yum -y install yarn >>$LOGFILE 2>&1
+		yum -y install yarn >>$LOGFILE 2>&1 || false
 		printok "Installing yarn"
 	fi
 
@@ -188,13 +188,13 @@ function InstallDependenciesCentOS {
 	echo
 	printprog "Enabling and starting redis service"
 	cmdlog "/bin/systemctl enable redis && /bin/systemctl start redis"
-	/bin/systemctl enable redis >>$LOGFILE 2>&1  && /bin/systemctl start redis >>$LOGFILE 2>&1
+	/bin/systemctl enable redis >>$LOGFILE 2>&1  && /bin/systemctl start redis >>$LOGFILE 2>&1 || false
 	printok "Enabling and starting redis service"
 
 	echo
 	printprog "Enabling and starting rpcbind service"
 	cmdlog "/bin/systemctl enable rpcbind && /bin/systemctl start rpcbind"
-	/bin/systemctl enable rpcbind >>$LOGFILE 2>&1 && /bin/systemctl start rpcbind >>$LOGFILE 2>&1
+	/bin/systemctl enable rpcbind >>$LOGFILE 2>&1 && /bin/systemctl start rpcbind >>$LOGFILE 2>&1 || false
 	printok "Enabling and starting rpcbind service"
 
 }
@@ -295,13 +295,13 @@ function InstallDependenciesDebian {
 	echo
 	printprog "Enabling and starting redis service"
 	cmdlog "/bin/systemctl enable redis-server && /bin/systemctl start redis-server"
-	/bin/systemctl enable redis-server >>$LOGFILE 2>&1 && /bin/systemctl start redis-server >>$LOGFILE 2>&1
+	/bin/systemctl enable redis-server >>$LOGFILE 2>&1 && /bin/systemctl start redis-server >>$LOGFILE 2>&1 || false
 	printok "Enabling and starting redis service"
 
 	echo
 	printprog "Enabling and starting rpcbind service"
 	cmdlog "/bin/systemctl enable rpcbind && /bin/systemctl start rpcbind"
-	/bin/systemctl enable rpcbind >>$LOGFILE 2>&1 && /bin/systemctl start rpcbind >>$LOGFILE 2>&1
+	/bin/systemctl enable rpcbind >>$LOGFILE 2>&1 && /bin/systemctl start rpcbind >>$LOGFILE 2>&1 || false
 	printok "Enabling and starting rpcbind service"
 
 }
@@ -390,7 +390,7 @@ function InstallXOPlugins {
 		fi
 
 		cmdlog "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn && yarn build"
-		cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn >>$LOGFILE 2>&1 && yarn build >>$LOGFILE 2>&1
+		cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn >>$LOGFILE 2>&1 && yarn build >>$LOGFILE 2>&1 || false
 		printok "Installing plugins"
 	else
 		echo
@@ -551,7 +551,7 @@ function InstallXO {
 	echo
 	printprog "Running installation"
 	cmdlog "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn  && yarn build"
-	cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME >>$LOGFILE 2>&1 && yarn >>$LOGFILE 2>&1 && yarn build >>$LOGFILE 2>&1
+	cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME >>$LOGFILE 2>&1 && yarn >>$LOGFILE 2>&1 && yarn build >>$LOGFILE 2>&1 || false
 	printok "Running installation"
 
 	# Install plugins
