@@ -33,7 +33,7 @@ REPOSITORY="${REPOSITORY:-"https://github.com/vatesfr/xen-orchestra"}"
 TIME=$(date +%Y%m%d%H%M)
 LOGTIME=$(date "+%Y-%m-%d %H:%M:%S")
 LOGFILE="${LOGPATH}/xo-install.log-$TIME"
-NODEVERSION="12"
+NODEVERSION="14"
 
 # Set path where new source is cloned/pulled
 XO_SRC_DIR="$INSTALLDIR/xo-src/xen-orchestra"
