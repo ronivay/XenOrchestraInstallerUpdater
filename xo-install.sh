@@ -854,16 +854,6 @@ function CheckSystemd {
 	fi
 }
 
-function CheckDocker {
-
-	if [[ -z $(which docker) ]]; then
-		echo
-		printfail "Docker needs to be installed for this to work"
-		exit 1
-	fi
-
-}
-
 function CheckCertificate {
 	if [[ "$HTTPS" == "true" ]]; then
 		local CERT="$(openssl x509 -modulus -noout -in "$PATH_TO_HTTPS_CERT" | openssl md5)"
@@ -927,20 +917,6 @@ function CheckDiskFree {
 	fi
 }
 
-function PullDockerImage {
-
-	echo
-	docker pull ronivay/xen-orchestra
-	echo
-	echo
-	printinfo "Image pulled. Run container:"
-	echo "	docker run -itd -p 80:80 ronivay/xen-orchestra"
-	echo
-	printinfo "If you want to persist xen-orchestra and redis data, use volume flags like:"
-	echo "	docker run -itd -p 80:80 -v /path/to/data/xo-server:/var/lib/xo-server -v /path/to/data/redis:/var/lib/redis ronivay/xen-orchestra"
-
-}
-
 function StartUpScreen {
 
 echo "-----------------------------------------"
@@ -973,9 +949,8 @@ echo "-----------------------------------------"
 echo
 echo -e "${COLOR_WHITE}1. Autoinstall${COLOR_N}"
 echo -e "${COLOR_WHITE}2. Update / Install without packages${COLOR_N}"
-echo -e "${COLOR_WHITE}3. Deploy docker container${COLOR_N}"
-echo -e "${COLOR_WHITE}4. Rollback to another existing installation${COLOR_N}"
-echo -e "${COLOR_WHITE}5. Exit${COLOR_N}"
+echo -e "${COLOR_WHITE}3. Rollback to another existing installation${COLOR_N}"
+echo -e "${COLOR_WHITE}4. Exit${COLOR_N}"
 echo
 read -p ": " option
 
@@ -1015,15 +990,10 @@ read -p ": " option
 			exit 0
 		;;
 		3)
-			CheckDocker
-			echo
-			PullDockerImage
-		;;
-		4)
 			RollBackInstallation
 			exit 0
 		;;
-		5)
+		4)
 			exit 0
 		;;
 		*)

@@ -33,7 +33,7 @@ non-interactive update task (option 2):
 non-interactive install task (option 1):
 ./xo-install.sh --install
 
-quick option to rollback (option 4):
+quick option to rollback (option 3):
 ./xo-install.sh --rollback
 ```
 
@@ -47,10 +47,7 @@ Script makes some checks and offers options:
  - Updates NodeJS and Yarn packages if AUTOUPDATE variable is set to true (it is by default)
  - Installs Xen-Orchestra from latest sources (doesn't install any new packages)
 
-3. Deploy container
- - Offers options to pull ready docker image from dockerhub, also maintained by me
-
-4. Rollback installation
+3. Rollback installation
  - Offers option to choose which installation to use from existing ones (if more than 1)
 
 notes:
