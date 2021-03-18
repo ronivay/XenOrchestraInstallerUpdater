@@ -677,11 +677,11 @@ function InstallXO {
 
 	count=0
 	limit=6
-	servicestatus="$(journalctl --since "$LOGTIME" -u xo-server | sed -n 'H; /Starting XO Server/h; ${g;p;}' | grep "https\{0,1\}:\/\/\[::\]:$PORT")"
+	servicestatus="$(journalctl --since "$LOGTIME" -u xo-server | grep "https\{0,1\}:\/\/.*:$PORT")"
 	while [[ -z "$servicestatus" ]] && [[ "$count" -lt "$limit" ]]; do
 		echo " waiting for port to be open"
 		sleep 10
-		servicestatus="$(journalctl --since "$LOGTIME" -u xo-server | sed -n 'H; /Starting XO Server/h; ${g;p;}' | grep "https\{0,1\}:\/\/\[::\]:$PORT")"
+		servicestatus="$(journalctl --since "$LOGTIME" -u xo-server | grep "https\{0,1\}:\/\/.*:$PORT")"
 		(( count++ ))
 	done
 
