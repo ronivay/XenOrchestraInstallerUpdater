@@ -813,7 +813,7 @@ function RollBackInstallation {
 function CheckOS {
 
 	if [[ $(uname -m) != "x86_64" ]]; then
-		printfail "Installation only supports 64bit OS. You seem to be running architecture: $(uname -m)"
+		printfail "Installation supports only x86_64. You seem to be running architecture: $(uname -m)"
 		exit 1
 	fi
 
