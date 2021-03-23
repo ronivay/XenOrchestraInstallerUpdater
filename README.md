@@ -28,7 +28,7 @@ basic functionality including menu:
 ./xo-install.sh
 
 non-interactive update task (option 2):
-./xo-install.sh --update
+./xo-install.sh --update [--force]
 
 non-interactive install task (option 1):
 ./xo-install.sh --install

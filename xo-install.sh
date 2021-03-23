@@ -34,6 +34,8 @@ TIME=$(date +%Y%m%d%H%M)
 LOGTIME=$(date "+%Y-%m-%d %H:%M:%S")
 LOGFILE="${LOGPATH}/xo-install.log-$TIME"
 NODEVERSION="14"
+FORCE="false"
+INTERACTIVE="false"
 
 # Set path where new source is cloned/pulled
 XO_SRC_DIR="$INSTALLDIR/xo-src/xen-orchestra"
@@ -60,7 +62,7 @@ if [[ $PATH_TO_HTTPS_CERT ]] && [[ $PATH_TO_HTTPS_KEY ]]; then
 	fi
 else
 	HTTPS=false
-	
+
 fi
 
 # create logpath if doesn't exist
@@ -141,7 +143,7 @@ function InstallDependenciesCentOS {
 		curl -s -L https://rpm.nodesource.com/setup_${NODEVERSION}.x | bash - >>$LOGFILE 2>&1
 		printok "Installing node.js"
 	else
-		UpdateNodeYarn install
+		UpdateNodeYarn
 	fi
 
 	# only install yarn repo and package if not found
@@ -208,11 +210,11 @@ function InstallDependenciesDebian {
 	# Install necessary dependencies for XO build
 
 	if [[ $OSVERSION =~ (16|18|20) ]]; then
+		echo
 		printprog "OS Ubuntu so making sure universe repository is enabled"
 		cmdlog "add-apt-repository universe"
 		add-apt-repository universe >>$LOGFILE 2>&1
 		printok "OS Ubuntu so making sure universe repository is enabled"
-		echo
 	fi
 
 	echo
@@ -273,7 +275,7 @@ function InstallDependenciesDebian {
 		apt-get install -y nodejs >>$LOGFILE 2>&1
 		printok "Installing node.js"
 	else
-		UpdateNodeYarn install
+		UpdateNodeYarn
 	fi
 
 	# only install yarn repo and package if not found
@@ -325,13 +327,13 @@ function UpdateNodeYarn {
 				yum install -y nodejs >>LOGFILE 2>&1
 				printok "node.js version is $NODEV, upgrading to ${NODEVERSION}.x"
 			else
-				if [[ $1 == "update" ]]; then
+				if [[ "$TASK" == "Update" ]]; then
 					echo
 					printprog "node.js version already on $NODEV, checking updates"
 					cmdlog "yum update -y nodejs yarn"
 					yum update -y nodejs yarn >>$LOGFILE 2>&1
 					printok "node.js version already on $NODEV, checking updates"
-				elif [[ $1 == "install" ]]; then
+				elif [[ "$TASK" == "Installation" ]]; then
 					echo
 					printinfo "node.js version already on $NODEV"
 				fi
@@ -349,13 +351,13 @@ function UpdateNodeYarn {
 				apt-get install -y nodejs >>$LOGFILE 2>&1
 				printok	"node.js version is $NODEV, upgrading to ${NODEVERSION}.x"
 			else
-				if [[ $1 == "update" ]]; then
+				if [[ "$TASK" == "Update" ]]; then
 					echo
 					printprog "node.js version already on $NODEV, checking updates"
 					cmdlog "apt-get install -y --only-upgrade nodejs yarn"
 					apt-get install -y --only-upgrade nodejs yarn >>$LOGFILE 2>&1
 					printok "node.js version already on $NODEV, checking updates"
-				elif [[ $1 == "install" ]]; then
+				elif [[ "$TASK" == "Installation" ]]; then
 					echo
 					printinfo "node.js version already on $NODEV"
 				fi
@@ -517,13 +519,30 @@ function InstallXO {
 
 	# If the new install is no different from the existing install, then don't
 	# proceed with the build.
-	if [[ "$NEW_REPO_HASH" == "$OLD_REPO_HASH" ]]; then
+	if [[ "$NEW_REPO_HASH" == "$OLD_REPO_HASH" ]] && [[ "$FORCE" != "true" ]]; then
 		echo
-		printinfo "No changes to xen-orchestra since previous install. Skipping xo-server and xo-web build."
-		printinfo "Cleaning up install directory: $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
-		cmdlog "rm -rf $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
-		rm -rf $INSTALLDIR/xo-builds/xen-orchestra-$TIME >>$LOGFILE 2>&1
-		return 0
+		if [[ "$INTERACTIVE" == "true" ]]; then
+			printinfo "No changes to xen-orchestra since previous install. Run update anyway?"
+			read -p "[y/N]: " answer
+			answer=${answer:-n}
+				case $answer in
+				y)
+				:
+				;;
+				n)
+				printinfo "Cleaning up install directory: $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
+				cmdlog "rm -rf $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
+				rm -rf $INSTALLDIR/xo-builds/xen-orchestra-$TIME >>$LOGFILE 2>&1
+				exit 0
+				;;
+			esac
+		else
+			printinfo "No changes to xen-orchestra since previous install. Skipping xo-server and xo-web build."
+			printinfo "Cleaning up install directory: $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
+			cmdlog "rm -rf $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
+			rm -rf $INSTALLDIR/xo-builds/xen-orchestra-$TIME >>$LOGFILE 2>&1
+			exit 0
+		fi
 	fi
 
 	# Now that we know we're going to be building a new xen-orchestra, make
@@ -539,8 +558,11 @@ function InstallXO {
 	# If this isn't a fresh install, then list the upgrade the user is making.
 	if [[ -n "$OLD_REPO_HASH" ]]; then
 		echo
-		TASK="Update"
-		printinfo "Updating xen-orchestra from '$OLD_REPO_HASH_SHORT' to '$NEW_REPO_HASH_SHORT'"
+		if [[ "$FORCE" != "true" ]]; then
+			printinfo "Updating xen-orchestra from '$OLD_REPO_HASH_SHORT' to '$NEW_REPO_HASH_SHORT'"
+		else
+			printinfo "Updating xen-orchestra (forced) from '$OLD_REPO_HASH_SHORT' to '$NEW_REPO_HASH_SHORT'"
+		fi
 	else
 		TASK="Installation"
 	fi
@@ -619,7 +641,7 @@ function InstallXO {
 		mkdir -p $CONFIGPATH/.config/xo-server
 		cmdlog "mv -f $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml $CONFIGPATH/.config/xo-server/config.toml"
                 mv -f $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml $CONFIGPATH/.config/xo-server/config.toml
-		
+
 
         fi
 
@@ -643,7 +665,7 @@ function InstallXO {
 
 		cmdlog "chown -R $XOUSER:$XOUSER /var/lib/xo-server"
 		chown -R $XOUSER:$XOUSER /var/lib/xo-server >>$LOGFILE 2>&1
-		
+
 		cmdlog "chown -R $XOUSER:$XOUSER $CONFIGPATH/.config/xo-server"
 		chown -R $XOUSER:$XOUSER $CONFIGPATH/.config/xo-server >>$LOGFILE 2>&1
 	fi
@@ -736,32 +758,77 @@ function UpdateXO {
 
 function HandleArgs {
 
+	OPTS=$(getopt -o: --long force,rollback,update,install -- "$@")
+
+	if [[ $? != 0 ]]; then
+		echo "Usage: $(dirname $0)/$(basename $0) [--install | --update | --rollback ] [--force]"
+		exit 1
+	fi
+
+	eval set -- "$OPTS"
+
+	local UPDATEARG=0
+	local INSTALLARG=0
+	local ROLLBACKARG=0
+
+	while true; do
 	case "$1" in
+		--force)
+			shift
+			FORCE="true"
+			;;
 		--update)
-			UpdateNodeYarn update
-			UpdateXO
+			shift
+			local UPDATEARG=1
+			TASK="Update"
 			;;
 		--install)
-			if [ $OSNAME == "CentOS" ]; then
-				InstallDependenciesCentOS
-				InstallXO
-				exit 0
-			else
-				InstallDependenciesDebian
-				InstallXO
-				exit 0
-			fi
+			shift
+			local INSTALLARG=1
+			TASK="Installation"
 			;;
 		--rollback)
-			RollBackInstallation
-			exit 0
+			shift
+			local ROLLBACKARG=1
+			;;
+		--)
+			shift
+			break
 			;;
 		*)
-			CheckDiskFree
-			CheckMemory
-			StartUpScreen
+			shift
+			break
 			;;
 		esac
+	done
+
+	if [[ "$((INSTALLARG+UPDATEARG+ROLLBACKARG))" -gt 1 ]]; then
+		echo "Define either install/update or rollback"
+		exit 1
+	fi
+
+	if [[ $UPDATEARG -gt 0 ]]; then
+		UpdateNodeYarn
+		UpdateXO
+		exit
+	fi
+
+	if [[ $INSTALLARG -gt 0 ]]; then
+		if [ $OSNAME == "CentOS" ]; then
+			InstallDependenciesCentOS
+			InstallXO
+			exit
+		else
+			InstallDependenciesDebian
+			InstallXO
+			exit
+		fi
+	fi
+
+	if [[ $ROLLBACKARG -gt 0 ]]; then
+		RollBackInstallation
+		exit
+	fi
 
 }
 
@@ -893,7 +960,7 @@ function CheckMemory {
 		esac
 	fi
 
-}	
+}
 
 function CheckDiskFree {
 	FREEDISK=$(df -P -k ${INSTALLDIR%/*} | tail -1 | awk '{print $4}')
@@ -975,17 +1042,23 @@ read -p ": " option
 			fi
 
 			if [ $OSNAME == "CentOS" ]; then
+				TASK="Installation"
+				INTERACTIVE="true"
 				InstallDependenciesCentOS
 				InstallXO
 				exit 0
 			else
+				TASK="Installation"
+				INTERACTIVE="true"
 				InstallDependenciesDebian
 				InstallXO
 				exit 0
 			fi
 		;;
 		2)
-			UpdateNodeYarn update
+			TASK="Update"
+			INTERACTIVE="true"
+			UpdateNodeYarn
 			UpdateXO
 			exit 0
 		;;
@@ -1010,8 +1083,8 @@ CheckOS
 CheckSystemd
 CheckCertificate
 
-if [[ $# == "1" ]]; then
-	HandleArgs "$1"
+if [[ $# != "0" ]]; then
+	HandleArgs "$@"
 	exit 0
 else
 	CheckDiskFree
