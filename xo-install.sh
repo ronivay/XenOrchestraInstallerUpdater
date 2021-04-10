@@ -569,7 +569,7 @@ function InstallXO {
 
 	echo
 	echo
-	printinfo "xo-server and xo-web build quite a while. Grab a cup of coffee and lay back"
+	printinfo "xo-server and xo-web build takes quite a while. Grab a cup of coffee and lay back"
 	echo
 	printprog "Running installation"
 	cmdlog "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn  && yarn build"
