@@ -19,9 +19,5 @@ describe the issue and what task you were running (update, install)
 
 **Installation logfile**
 ```
-copy and paste the output from installation logfile. by default logfiles are stored in logs directory
-```
-**xo-server.service log**
-```
-copy and paste the output (if available) from command journalctl -u xo-server -n 100
+Copy and paste the output from installation logfile. By default logfiles are stored in XenOrchestraInstallerUpdater/logs directory 
 ```
