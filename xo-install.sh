@@ -206,7 +206,7 @@ function InstallDependenciesDeb {
 
 	# Install necessary dependencies for XO build
 
-	if [[ $OSVERSION =~ (16|18|20) ]]; then
+	if [[ $OSNAME == "Ubuntu" ]]; then
 		echo
 		printprog "OS Ubuntu so making sure universe repository is enabled"
 		cmdlog "add-apt-repository universe"
@@ -221,7 +221,7 @@ function InstallDependenciesDeb {
 	printok "Running apt-get update"
 
 	#determine which python package is needed. Ubuntu 20 requires python2-minimal, 16 and 18 are python-minimal
-	if [[ $OSVERSION == "20" ]]; then
+	if [[ $OSNAME == "Ubuntu" ]] && [[ $OSVERSION == "20" ]]; then
 		PYTHON="python2-minimal"
 	else
 		PYTHON="python-minimal"
@@ -241,7 +241,7 @@ function InstallDependenciesDeb {
 	apt-get install -y apt-transport-https ca-certificates >>$LOGFILE 2>&1
 	printok "Installing apt-transport-https and ca-certificates packages to support https repos"
 
-	if [[ $OSVERSION == "10" ]]; then
+	if [[ $OSNAME == "Debian" ]] && [[ $OSVERSION == "10" ]]; then
 		echo
 		printprog "Debian 10, so installing gnupg also"
 		cmdlog "apt-get install gnupg -y"
