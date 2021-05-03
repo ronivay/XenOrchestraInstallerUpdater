@@ -307,57 +307,58 @@ function InstallDependenciesDeb {
 
 function UpdateNodeYarn {
 
-	if [[ $AUTOUPDATE == "true" ]]; then
+	if [[ $AUTOUPDATE != "true" ]]; then
+		return 0
+	fi
 
-		if [ $PKG_FORMAT == "rpm" ]; then
+	echo
+	printinfo "Checking current node.js version"
+	NODEV=$(node -v 2>/dev/null| grep -Eo '[0-9.]+' | cut -d'.' -f1)
+
+	if [ $PKG_FORMAT == "rpm" ]; then
+		if [[ -n $NODEV ]] && [[ $NODEV -lt ${NODEVERSION} ]]; then
 			echo
-			printinfo "Checking current node.js version"
-			NODEV=$(node -v 2>/dev/null| grep -Eo '[0-9.]+' | cut -d'.' -f1)
-			if [[ -n $NODEV ]] && [[ $NODEV -lt ${NODEVERSION} ]]; then
-				echo
-				printprog "node.js version is $NODEV, upgrading to ${NODEVERSION}.x"
-				cmdlog "curl -sL https://rpm.nodesource.com/setup_${NODEVERSION}.x | bash -"
-				curl -sL https://rpm.nodesource.com/setup_${NODEVERSION}.x | bash - >>$LOGFILE 2>&1
-				cmdlog "yum clean all"
-				yum clean all >> $LOGFILE 2>&1
-				cmdlog "yum install -y nodejs"
-				yum install -y nodejs >>LOGFILE 2>&1
-				printok "node.js version is $NODEV, upgrading to ${NODEVERSION}.x"
-			else
-				if [[ "$TASK" == "Update" ]]; then
-					echo
-					printprog "node.js version already on $NODEV, checking updates"
-					cmdlog "yum update -y nodejs yarn"
-					yum update -y nodejs yarn >>$LOGFILE 2>&1
-					printok "node.js version already on $NODEV, checking updates"
-				elif [[ "$TASK" == "Installation" ]]; then
-					echo
-					printinfo "node.js version already on $NODEV"
-				fi
-			fi
+			printprog "node.js version is $NODEV, upgrading to ${NODEVERSION}.x"
+			cmdlog "curl -sL https://rpm.nodesource.com/setup_${NODEVERSION}.x | bash -"
+			curl -sL https://rpm.nodesource.com/setup_${NODEVERSION}.x | bash - >>$LOGFILE 2>&1
+			cmdlog "yum clean all"
+			yum clean all >> $LOGFILE 2>&1
+			cmdlog "yum install -y nodejs"
+			yum install -y nodejs >>LOGFILE 2>&1
+			printok "node.js version is $NODEV, upgrading to ${NODEVERSION}.x"
 		else
-			echo
-			printinfo "Checking current node.js version"
-			NODEV=$(node -v 2>/dev/null| grep -Eo '[0-9.]+' | cut -d'.' -f1)
-			if [[ -n $NODEV ]] && [[ $NODEV -lt ${NODEVERSION} ]]; then
+			if [[ "$TASK" == "Update" ]]; then
 				echo
-				printprog "node.js version is $NODEV, upgrading to ${NODEVERSION}.x"
-				cmdlog "curl -sL https://deb.nodesource.com/setup_${NODEVERSION}.x | bash -"
-				curl -sL https://deb.nodesource.com/setup_${NODEVERSION}.x | bash - >>$LOGFILE 2>&1
-				cmdlog "apt-get install -y nodejs"
-				apt-get install -y nodejs >>$LOGFILE 2>&1
-				printok	"node.js version is $NODEV, upgrading to ${NODEVERSION}.x"
-			else
-				if [[ "$TASK" == "Update" ]]; then
-					echo
-					printprog "node.js version already on $NODEV, checking updates"
-					cmdlog "apt-get install -y --only-upgrade nodejs yarn"
-					apt-get install -y --only-upgrade nodejs yarn >>$LOGFILE 2>&1
-					printok "node.js version already on $NODEV, checking updates"
-				elif [[ "$TASK" == "Installation" ]]; then
-					echo
-					printinfo "node.js version already on $NODEV"
-				fi
+				printprog "node.js version already on $NODEV, checking updates"
+				cmdlog "yum update -y nodejs yarn"
+				yum update -y nodejs yarn >>$LOGFILE 2>&1
+				printok "node.js version already on $NODEV, checking updates"
+			elif [[ "$TASK" == "Installation" ]]; then
+				echo
+				printinfo "node.js version already on $NODEV"
+			fi
+		fi
+	fi
+
+	if [ $PKG_FORMAT == "deb" ]]; then
+		if [[ -n $NODEV ]] && [[ $NODEV -lt ${NODEVERSION} ]]; then
+			echo
+			printprog "node.js version is $NODEV, upgrading to ${NODEVERSION}.x"
+			cmdlog "curl -sL https://deb.nodesource.com/setup_${NODEVERSION}.x | bash -"
+			curl -sL https://deb.nodesource.com/setup_${NODEVERSION}.x | bash - >>$LOGFILE 2>&1
+			cmdlog "apt-get install -y nodejs"
+			apt-get install -y nodejs >>$LOGFILE 2>&1
+			printok	"node.js version is $NODEV, upgrading to ${NODEVERSION}.x"
+		else
+			if [[ "$TASK" == "Update" ]]; then
+				echo
+				printprog "node.js version already on $NODEV, checking updates"
+				cmdlog "apt-get install -y --only-upgrade nodejs yarn"
+				apt-get install -y --only-upgrade nodejs yarn >>$LOGFILE 2>&1
+				printok "node.js version already on $NODEV, checking updates"
+			elif [[ "$TASK" == "Installation" ]]; then
+				echo
+				printinfo "node.js version already on $NODEV"
 			fi
 		fi
 	fi
