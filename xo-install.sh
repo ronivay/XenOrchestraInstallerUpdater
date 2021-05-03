@@ -370,32 +370,31 @@ function InstallXOPlugins {
 
 	trap ErrorHandling ERR INT
 
-	if [[ -n "$PLUGINS" ]] && [[ "$PLUGINS" != "none" ]]; then
-
-		if [[ "$PLUGINS" == "all" ]]; then
-			echo
-			printprog "Installing plugins"
-			cmdlog "find \"$INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/\" -maxdepth 1 -mindepth 1 -not -name \"xo-server\" -not -name \"xo-web\" -not -name \"xo-server-cloud\" -exec ln -sn {} \"$INSTALLDIR/xo-builds/xen-orchestra-$TIME/\""
-			find "$INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/" -maxdepth 1 -mindepth 1 -not -name "xo-server" -not -name "xo-web" -not -name "xo-server-cloud" -exec ln -sn {} "$INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/node_modules/" \; >>$LOGFILE 2>&1
-		else
-			echo
-			printprog "Installing plugins"
-			local PLUGINSARRAY=($(echo "$PLUGINS" | tr ',' ' '))
-				for x in "${PLUGINSARRAY[@]}"; do
-				if [[ $(find $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages -type d -name "$x") ]]; then
-					cmdlog "ln -sn $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/$x $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/node_modules/"
-					ln -sn $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/$x $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/node_modules/ >>$LOGFILE 2>&1
-				fi
-			done
-		fi
-
-		cmdlog "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn && yarn build"
-		cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn >>$LOGFILE 2>&1 && yarn build >>$LOGFILE 2>&1 || false
-		printok "Installing plugins"
-	else
+	if [[ -z "$PLUGINS" ]] || [[ "$PLUGINS" == "none" ]]; then
 		echo
 		printinfo "No plugins to install"
+		return 0
 	fi
+
+	echo
+	printprog "Installing plugins"
+
+	if [[ "$PLUGINS" == "all" ]]; then
+		cmdlog "find \"$INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/\" -maxdepth 1 -mindepth 1 -not -name \"xo-server\" -not -name \"xo-web\" -not -name \"xo-server-cloud\" -exec ln -sn {} \"$INSTALLDIR/xo-builds/xen-orchestra-$TIME/\""
+		find "$INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/" -maxdepth 1 -mindepth 1 -not -name "xo-server" -not -name "xo-web" -not -name "xo-server-cloud" -exec ln -sn {} "$INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/node_modules/" \; >>$LOGFILE 2>&1
+	else
+		local PLUGINSARRAY=($(echo "$PLUGINS" | tr ',' ' '))
+			for x in "${PLUGINSARRAY[@]}"; do
+			if [[ $(find $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages -type d -name "$x") ]]; then
+				cmdlog "ln -sn $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/$x $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/node_modules/"
+				ln -sn $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/$x $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/node_modules/ >>$LOGFILE 2>&1
+			fi
+		done
+	fi
+
+	cmdlog "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn && yarn build"
+	cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn >>$LOGFILE 2>&1 && yarn build >>$LOGFILE 2>&1 || false
+	printok "Installing plugins"
 
 }
 
