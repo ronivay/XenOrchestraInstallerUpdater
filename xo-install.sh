@@ -876,11 +876,13 @@ function RollBackInstallation {
 
 function CheckOS {
 
-	if [[ "$(which yum)" ]]; then
+	cmdlog "which yum"
+	if [[ "$(which yum 2>>$LOGFILE)" ]]; then
 		PKG_FORMAT="rpm"
 	fi
 
-	if [[ "$(which apt-get)" ]]; then
+	cmdlog "which apt-get"
+	if [[ "$(which apt-get 2>>$LOGFILE)" ]]; then
 		PKG_FORMAT="deb"
 	fi 
 
@@ -896,7 +898,7 @@ function CheckOS {
 		exit 1
 	fi
 
-	if [[ $OSNAME == "CentOS" ]] && [[ ! $OSVERSION != "8" ]]; then
+	if [[ $OSNAME == "CentOS" ]] && [[ $OSVERSION != "8" ]]; then
 		printfail "Only CentOS 8 supported"
 		exit 1
 	fi
