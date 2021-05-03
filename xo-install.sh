@@ -59,7 +59,6 @@ if [[ -s $PATH_TO_HTTPS_CERT ]] && [[ -s $PATH_TO_HTTPS_KEY ]]; then
 	HTTPS=true
 else
 	HTTPS=false
-	HTTPSFAIL="- certificate or Key doesn't exist or file is empty"
 fi
 
 # create logpath if doesn't exist
@@ -1031,7 +1030,7 @@ else
 fi
 
 echo -e "Port: ${COLOR_WHITE}$PORT${COLOR_N}"
-echo -e "HTTPS: ${COLOR_WHITE}${HTTPS}${COLOR_N} ${COLOR_RED}${HTTPSFAIL}${COLOR_N}"
+echo -e "HTTPS: ${COLOR_WHITE}${HTTPS}${COLOR_N}"
 echo -e "Git Branch for source: ${COLOR_WHITE}$BRANCH${COLOR_N}"
 echo -e "Following plugins will be installed: ${COLOR_WHITE}"$PLUGINS"${COLOR_N}"
 echo -e "Number of previous installations to preserve: ${COLOR_WHITE}$PRESERVE${COLOR_N}"
