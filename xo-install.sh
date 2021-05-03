@@ -168,14 +168,8 @@ function InstallDependenciesRPM {
 	if [[ -z $(which vhdimount 2>>$LOGFILE) ]] ; then
 		echo
 		printprog "Installing libvhdi-tools from forensics repository"
-		if [[ $OSVERSION == "7" ]]; then
-			cmdlog "rpm -ivh https://forensics.cert.org/cert-forensics-tools-release-el7.rpm"
-			rpm -ivh https://forensics.cert.org/cert-forensics-tools-release-el7.rpm >>$LOGFILE 2>&1
-		fi
-		if [[ $OSVERSION == "8" ]]; then
-			cmdlog "rpm -ivh https://forensics.cert.org/cert-forensics-tools-release-el8.rpm"
-			rpm -ivh https://forensics.cert.org/cert-forensics-tools-release-el8.rpm >>$LOGFILE 2>&1
-		fi
+		cmdlog "rpm -ivh https://forensics.cert.org/cert-forensics-tools-release-el8.rpm"
+		rpm -ivh https://forensics.cert.org/cert-forensics-tools-release-el8.rpm >>$LOGFILE 2>&1
 		cmdlog "sed -i 's/enabled=1/enabled=0/g' /etc/yum.repos.d/cert-forensics-tools.repo"
 		sed -i 's/enabled=1/enabled=0/g' /etc/yum.repos.d/cert-forensics-tools.repo >>$LOGFILE 2>&1
 		cmdlog "yum --enablerepo=forensics install -y libvhdi-tools"
