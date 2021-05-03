@@ -869,6 +869,9 @@ function RollBackInstallation {
 
 function CheckOS {
 
+	OSVERSION=$(grep ^VERSION_ID /etc/os-release | cut -d'=' -f2 | grep -Eo "[0-9]{1,2}" | head -1)
+	OSNAME=$(grep ^NAME /etc/os-release | cut -d'=' -f2 | sed 's/"//g' | awk '{print $1}')
+
 	cmdlog "which yum"
 	if [[ "$(which yum 2>>$LOGFILE)" ]]; then
 		PKG_FORMAT="rpm"
@@ -887,9 +890,6 @@ function CheckOS {
 	if [[ "$OS_CHECK" != "true" ]]; then
 		return 0
 	fi
-
-	OSVERSION=$(grep ^VERSION_ID /etc/os-release | cut -d'=' -f2 | grep -Eo "[0-9]{1,2}" | head -1)
-	OSNAME=$(grep ^NAME /etc/os-release | cut -d'=' -f2 | sed 's/"//g' | awk '{print $1}')
 
 	if [[ ! $OSNAME =~ ^(Debian|Ubuntu|CentOS|AlmaLinux)$ ]]; then
 		printfail "Only Ubuntu/Debian/CentOS/AlmaLinux supported"
