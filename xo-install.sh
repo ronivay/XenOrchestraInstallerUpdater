@@ -879,6 +879,11 @@ function CheckOS {
 		PKG_FORMAT="deb"
 	fi 
 
+	if [[ -z $PKG_FORMAT ]]; then
+		printfail "this script requires either yum or apt-get"
+		exit 1
+	fi
+
 	if [[ "$OS_CHECK" != "true" ]]; then
 		return 0
 	fi
