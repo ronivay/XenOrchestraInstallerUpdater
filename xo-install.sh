@@ -28,6 +28,8 @@ XOUSER=${XOUSER:-"root"}
 CONFIGPATH="$(getent passwd $XOUSER | cut -d: -f6)"
 PLUGINS="${PLUGINS:-"none"}"
 REPOSITORY="${REPOSITORY:-"https://github.com/vatesfr/xen-orchestra"}"
+OS_CHECK="${OS_CHECK:-"true"}"
+ARCH_CHECK="${ARCH_CHECK:-"true"}"
 
 # set variables not changeable in configfile
 TIME=$(date +%Y%m%d%H%M)
@@ -114,7 +116,7 @@ function ErrorHandling {
 	exit 1
 }
 
-function InstallDependenciesCentOS {
+function InstallDependenciesRPM {
 
 	set -euo pipefail
 
@@ -196,7 +198,7 @@ function InstallDependenciesCentOS {
 
 }
 
-function InstallDependenciesDebian {
+function InstallDependenciesDeb {
 
 	set -euo pipefail
 
@@ -307,7 +309,7 @@ function UpdateNodeYarn {
 
 	if [[ $AUTOUPDATE == "true" ]]; then
 
-		if [ $OSNAME == "CentOS" ]; then
+		if [ $PKG_FORMAT == "rpm" ]; then
 			echo
 			printinfo "Checking current node.js version"
 			NODEV=$(node -v 2>/dev/null| grep -Eo '[0-9.]+' | cut -d'.' -f1)
@@ -809,12 +811,12 @@ function HandleArgs {
 	fi
 
 	if [[ $INSTALLARG -gt 0 ]]; then
-		if [ $OSNAME == "CentOS" ]; then
-			InstallDependenciesCentOS
+		if [ $PKG_FORMAT == "rpm" ]; then
+			InstallDependenciesRPM
 			InstallXO
 			exit
 		else
-			InstallDependenciesDebian
+			InstallDependenciesDeb
 			InstallXO
 			exit
 		fi
@@ -874,13 +876,25 @@ function RollBackInstallation {
 
 function CheckOS {
 
-	if [[ $(uname -m) != "x86_64" ]]; then
-		printfail "Installation supports only x86_64. You seem to be running architecture: $(uname -m)"
-		exit 1
+	if [[ "$(which yum)" ]]; then
+		PKG_FORMAT="rpm"
+	fi
+
+	if [[ "$(which apt-get)" ]]; then
+		PKG_FORMAT="deb"
+	fi 
+
+	if [[ "$OS_CHECK" != "true" ]]; then
+		return 0
 	fi
 
 	OSVERSION=$(grep ^VERSION_ID /etc/os-release | cut -d'=' -f2 | grep -Eo "[0-9]{1,2}" | head -1)
 	OSNAME=$(grep ^NAME /etc/os-release | cut -d'=' -f2 | sed 's/"//g' | awk '{print $1}')
+
+	if [[ ! $OSNAME =~ ^(Debian|Ubuntu|CentOS)$ ]]; then
+		printfail "Only Ubuntu/Debian/CentOS supported"
+		exit 1
+	fi
 
 	if [[ $OSNAME == "CentOS" ]] && [[ ! $OSVERSION != "8" ]]; then
 		printfail "Only CentOS 8 supported"
@@ -903,11 +917,18 @@ function CheckOS {
 		exit 1
 	fi
 
-	if [[ ! $OSNAME =~ ^(Debian|Ubuntu|CentOS)$ ]]; then
-		printfail "Only Ubuntu/Debian/CentOS supported"
-		exit 1
+}
+
+function CheckArch {
+
+	if [[ "$ARCH_CHECK" != "true" ]]; then
+		return 0
 	fi
 
+	if [[ $(uname -m) != "x86_64" ]]; then
+		printfail "Installation supports only x86_64. You seem to be running architecture: $(uname -m)"
+		exit 1
+	fi
 }
 
 function CheckSystemd {
@@ -1038,16 +1059,17 @@ read -p ": " option
 						esac
 			fi
 
-			if [ $OSNAME == "CentOS" ]; then
+			if [ $PKG_FORMAT == "rpm" ]; then
 				TASK="Installation"
 				INTERACTIVE="true"
-				InstallDependenciesCentOS
+				InstallDependenciesRPM
 				InstallXO
 				exit 0
-			else
+			fi
+			if [ $PKG_FORMAT == "deb" ]; then
 				TASK="Installation"
 				INTERACTIVE="true"
-				InstallDependenciesDebian
+				InstallDependenciesDeb
 				InstallXO
 				exit 0
 			fi
@@ -1076,6 +1098,7 @@ esac
 }
 
 CheckUser
+CheckArch
 CheckOS
 CheckSystemd
 CheckCertificate
