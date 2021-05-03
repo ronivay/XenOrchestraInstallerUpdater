@@ -919,6 +919,15 @@ function CheckOS {
 
 }
 
+function CheckXE {
+
+	cmdlog "which xe"
+	if [[ $(which xe 2>>$LOGFILE) ]]; then
+		printfail "xe binary found, don't try to run install on xcp-ng/xenserver host. use xo-appliance.sh instead"
+		exit 1
+	fi
+}
+
 function CheckArch {
 
 	if [[ "$ARCH_CHECK" != "true" ]]; then
@@ -1101,6 +1110,7 @@ CheckUser
 CheckArch
 CheckOS
 CheckSystemd
+CheckXE
 CheckCertificate
 
 if [[ $# != "0" ]]; then
