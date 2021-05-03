@@ -62,6 +62,7 @@ Script has been tested to work with following distros:
 - CentOS 8 (note LVM file level restore issue from below)
 - Debian 10
 - Ubuntu 20.04
+- AlmaLinux 8 (early testing phase)
 
 Installation works but not tested frequently:
 - Debian 8

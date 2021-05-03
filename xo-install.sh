@@ -886,13 +886,19 @@ function CheckOS {
 	OSVERSION=$(grep ^VERSION_ID /etc/os-release | cut -d'=' -f2 | grep -Eo "[0-9]{1,2}" | head -1)
 	OSNAME=$(grep ^NAME /etc/os-release | cut -d'=' -f2 | sed 's/"//g' | awk '{print $1}')
 
-	if [[ ! $OSNAME =~ ^(Debian|Ubuntu|CentOS)$ ]]; then
-		printfail "Only Ubuntu/Debian/CentOS supported"
+	if [[ ! $OSNAME =~ ^(Debian|Ubuntu|CentOS|AlmaLinux)$ ]]; then
+		printfail "Only Ubuntu/Debian/CentOS/AlmaLinux supported"
 		exit 1
 	fi
 
 	if [[ $OSNAME == "CentOS" ]] && [[ $OSVERSION != "8" ]]; then
 		printfail "Only CentOS 8 supported"
+		exit 1
+	fi
+
+	# for future if/when something above 8 is released
+	if [[ $OSNAME == "AlmaLinux" ]] && [[ $OSVERSION != "8" ]]; then
+		printfail "Only AlmaLinux 8 supported"
 		exit 1
 	fi
 
