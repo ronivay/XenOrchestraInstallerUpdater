@@ -737,17 +737,17 @@ function UpdateXO {
 
 	set -euo pipefail
 
-	if [[ "$PRESERVE" != "0" ]]; then
-
-		# remove old builds. leave as many as defined in PRESERVE variable
-		echo
-		printprog "Removing old installations. Leaving $PRESERVE latest"
-		cmdlog "find $INSTALLDIR/xo-builds/ -maxdepth 1 -type d -name \"xen-orchestra*\" -printf \"%T@ %p\\n\" | sort -n | cut -d' ' -f2- | head -n -$PRESERVE | xargs -r rm -r"
-		find $INSTALLDIR/xo-builds/ -maxdepth 1 -type d -name "xen-orchestra*" -printf "%T@ %p\n" | sort -n | cut -d' ' -f2- | head -n -$PRESERVE | xargs -r rm -r >>$LOGFILE 2>&1
-		printok "Removing old installations. Leaving $PRESERVE latest"
-	else
+	if [[ "$PRESERVE" == "0" ]]; then
 		printinfo "PRESERVE variable is set to 0. This needs to be at least 1. Not doing a cleanup"
+		return 0
 	fi
+
+	# remove old builds. leave as many as defined in PRESERVE variable
+	echo
+	printprog "Removing old installations. Leaving $PRESERVE latest"
+	cmdlog "find $INSTALLDIR/xo-builds/ -maxdepth 1 -type d -name \"xen-orchestra*\" -printf \"%T@ %p\\n\" | sort -n | cut -d' ' -f2- | head -n -$PRESERVE | xargs -r rm -r"
+	find $INSTALLDIR/xo-builds/ -maxdepth 1 -type d -name "xen-orchestra*" -printf "%T@ %p\n" | sort -n | cut -d' ' -f2- | head -n -$PRESERVE | xargs -r rm -r >>$LOGFILE 2>&1
+	printok "Removing old installations. Leaving $PRESERVE latest"
 
 }
 
