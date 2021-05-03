@@ -884,30 +884,32 @@ function CheckOS {
 		exit 1
 	fi
 
-	if [ -f /etc/centos-release ] ; then
-		OSVERSION=$(grep -Eo "[0-9]" /etc/centos-release | head -1)
-		OSNAME="CentOS"
-		if [[ $OSVERSION != "8" ]]; then
-			printfail "Only CentOS 8 supported"
-			exit 1
-		fi
-		cmdlog "which xe"
-		if [[ $(which xe 2>>$LOGFILE) ]]; then
-			printfail "xe binary found, don't try to run install on xcp-ng/xenserver host. use xo-appliance.sh instead"
-			exit 1
-		fi
-	elif [[ -f /etc/os-release ]]; then
-		OSVERSION=$(grep ^VERSION_ID /etc/os-release | cut -d'=' -f2 | grep -Eo "[0-9]{1,2}" | head -1)
-		OSNAME=$(grep ^NAME /etc/os-release | cut -d'=' -f2 | sed 's/"//g' | awk '{print $1}')
-		if [[ $OSNAME == "Debian" ]] && [[ ! $OSVERSION =~ ^(8|9|10)$ ]]; then
-			printfail "Only Debian 8/9/10 supported"
-			exit 1
-		elif [[ $OSNAME == "Ubuntu" ]] && [[ ! $OSVERSION =~ ^(16|18|20)$ ]]; then
-			printfail "Only Ubuntu 16/18/20 supported"
-			exit 1
-		fi
-	else
-		printfail "Only CentOS 8 / Ubuntu 16/18 and Debian 8/9 supported"
+	OSVERSION=$(grep ^VERSION_ID /etc/os-release | cut -d'=' -f2 | grep -Eo "[0-9]{1,2}" | head -1)
+	OSNAME=$(grep ^NAME /etc/os-release | cut -d'=' -f2 | sed 's/"//g' | awk '{print $1}')
+
+	if [[ $OSNAME == "CentOS" ]] && [[ ! $OSVERSION != "8" ]]; then
+		printfail "Only CentOS 8 supported"
+		exit 1
+	fi
+
+	if [[ $OSNAME == "Debian" ]] && [[ ! $OSVERSION =~ ^(8|9|10)$ ]]; then
+		printfail "Only Debian 8/9/10 supported"
+		exit 1
+	fi
+
+	if [[ $OSNAME == "Ubuntu" ]] && [[ ! $OSVERSION =~ ^(16|18|20)$ ]]; then
+		printfail "Only Ubuntu 16/18/20 supported"
+		exit 1
+	fi
+
+	cmdlog "which xe"
+	if [[ $(which xe 2>>$LOGFILE) ]]; then
+		printfail "xe binary found, don't try to run install on xcp-ng/xenserver host. use xo-appliance.sh instead"
+		exit 1
+	fi
+
+	if [[ ! $OSNAME =~ ^(Debian|Ubuntu|CentOS)$ ]]; then
+		printfail "Only Ubuntu/Debian/CentOS supported"
 		exit 1
 	fi
 
