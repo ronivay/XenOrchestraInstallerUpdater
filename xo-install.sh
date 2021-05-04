@@ -333,7 +333,7 @@ function UpdateNodeYarn {
 		fi
 	fi
 
-	if [ $PKG_FORMAT == "deb" ]]; then
+	if [ $PKG_FORMAT == "deb" ]; then
 		if [[ -n $NODEV ]] && [[ $NODEV -lt ${NODEVERSION} ]]; then
 			echo
 			printprog "node.js version is $NODEV, upgrading to ${NODEVERSION}.x"
