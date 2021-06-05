@@ -202,8 +202,8 @@ function InstallDependenciesDeb {
 	if [[ $OSNAME == "Ubuntu" ]]; then
 		echo
 		printprog "OS Ubuntu so making sure universe repository is enabled"
-		cmdlog "add-apt-repository universe"
-		add-apt-repository universe >>$LOGFILE 2>&1
+		cmdlog "add-apt-repository -y universe"
+		add-apt-repository -y universe >>$LOGFILE 2>&1
 		printok "OS Ubuntu so making sure universe repository is enabled"
 	fi
 
