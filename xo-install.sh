@@ -550,10 +550,14 @@ function InstallXO {
 		echo
 		if [[ "$FORCE" != "true" ]]; then
 			printinfo "Updating xen-orchestra from '$OLD_REPO_HASH_SHORT' to '$NEW_REPO_HASH_SHORT'"
+			echo "Updating xen-orchestra from '$OLD_REPO_HASH_SHORT' to '$NEW_REPO_HASH_SHORT'" >> $LOGFILE
 		else
 			printinfo "Updating xen-orchestra (forced) from '$OLD_REPO_HASH_SHORT' to '$NEW_REPO_HASH_SHORT'"
+			echo "Updating xen-orchestra (forced) from '$OLD_REPO_HASH_SHORT' to '$NEW_REPO_HASH_SHORT'" >> $LOGFILE
 		fi
 	else
+		printinfo "Installing xen-orchestra from branch: $BRANCH - commit: $NEW_REPO_HASH_SHORT"
+		echo "Installing xen-orchestra from branch: $BRANCH - commit: $NEW_REPO_HASH_SHORT" >> $LOGFILE
 		TASK="Installation"
 	fi
 
