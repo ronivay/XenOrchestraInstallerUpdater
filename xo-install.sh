@@ -77,6 +77,17 @@ function CheckUser {
 
 }
 
+function scriptInfo {
+
+	SCRIPTVERSION=$(cd $(dirname $0) 2>/dev/null && git rev-parse --short HEAD 2>/dev/null)
+
+	[ -z $SCRIPTVERSION ] && SCRIPTVERSION="undefined"
+	echo "Running script version $SCRIPTVERSION with config:" >> $LOGFILE
+	echo >> $LOGFILE
+	[ -s $CONFIG_FILE ] && echo "$(cat $CONFIG_FILE | grep -Eo '^[A-Z_]+.*')" >> $LOGFILE || echo "No config file found" >> $LOGFILE
+	echo >> $LOGFILE
+}
+
 function cmdlog {
 	echo "=== CMD ===: $@" >> $LOGFILE
 	echo >> $LOGFILE
@@ -1116,6 +1127,7 @@ esac
 
 }
 
+scriptInfo
 CheckUser
 CheckArch
 CheckOS
