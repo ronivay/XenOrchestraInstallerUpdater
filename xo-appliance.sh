@@ -96,7 +96,7 @@ function VMImport {
 	echo "Downloading and importing XVA image..."
 	echo
 
-	uuid=$(curl "$IMAGE_URL" | xe vm-import filename=/dev/stdin 2>/dev/null)
+	uuid=$(curl "$IMAGE_URL" | xe vm-import filename=/dev/stdin)
 
 	if [[ $? != "0" ]]; then
 		echo "Import failed"
