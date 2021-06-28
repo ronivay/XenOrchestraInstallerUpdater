@@ -368,6 +368,46 @@ function UpdateNodeYarn {
 	fi
 }
 
+function InstallAdditionalXOPlugins {
+
+	set -euo pipefail
+
+	trap ErrorHandling ERR INT
+
+	if [[ -z "$ADDITIONAL_PLUGINS" ]] || [[ "$ADDITIONAL_PLUGINS" == "none" ]]; then
+		echo
+		printinfo "No additional plugins to install"
+		return 0
+	fi
+
+	echo
+	printprog "Installing additional plugins"
+
+	local ADDITIONAL_PLUGINSARRAY=($(echo "$ADDITIONAL_PLUGINS" | tr ',' ' '))
+	for x in "${ADDITIONAL_PLUGINSARRAY[@]}"; do
+		local PLUGIN_NAME=$(basename "$x" | rev | cut -c 5- | rev)
+		local PLUGIN_SRC_DIR=$(realpath -m "$XO_SRC_DIR/../$PLUGIN_NAME")
+
+		if [[ ! -d "$PLUGIN_SRC_DIR" ]]; then
+			cmdlog "mkdir -p \"$PLUGIN_SRC_DIR\""
+			mkdir -p "$PLUGIN_SRC_DIR"
+			cmdlog "git clone \"${x}\" \"$PLUGIN_SRC_DIR\""
+			git clone "${x}" "$PLUGIN_SRC_DIR" >>$LOGFILE 2>&1
+		else
+			cmdlog "cd \"$PLUGIN_SRC_DIR\""
+			cd "$PLUGIN_SRC_DIR" >>$LOGFILE 2>&1
+			cmdlog "git pull"
+			git pull >>$LOGFILE 2>&1
+			cd $(dirname $0) >>$LOGFILE 2>&1
+			cmdlog "cd $(dirname $0)"
+		fi
+
+		cmdlog "cp -r $PLUGIN_SRC_DIR $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/"
+		cp -r "$PLUGIN_SRC_DIR" "$INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/" >>$LOGFILE 2>&1
+	done
+	printok "Installing additional plugins"
+}
+
 function InstallXOPlugins {
 
 	set -euo pipefail
@@ -571,6 +611,9 @@ function InstallXO {
 		echo "Installing xen-orchestra from branch: $BRANCH - commit: $NEW_REPO_HASH_SHORT" >> $LOGFILE
 		TASK="Installation"
 	fi
+
+	# Install additional plugins
+	InstallAdditionalXOPlugins
 
 	echo
 	echo
