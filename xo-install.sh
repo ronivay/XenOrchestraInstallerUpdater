@@ -906,13 +906,18 @@ function CheckOS {
 		return 0
 	fi
 
-	if [[ ! $OSNAME =~ ^(Debian|Ubuntu|CentOS|AlmaLinux)$ ]]; then
-		printfail "Only Ubuntu/Debian/CentOS/AlmaLinux supported"
+	if [[ ! $OSNAME =~ ^(Debian|Ubuntu|CentOS|Rocky|AlmaLinux)$ ]]; then
+		printfail "Only Ubuntu/Debian/CentOS/Rocky/AlmaLinux supported"
 		exit 1
 	fi
 
 	if [[ $OSNAME == "CentOS" ]] && [[ $OSVERSION != "8" ]]; then
 		printfail "Only CentOS 8 supported"
+		exit 1
+	fi
+
+	if [[ $OSNAME == "Rocky" ]] && [[ $OSVERSION != "8" ]]; then
+		printfail "Only Rocky Linux 8 supported"
 		exit 1
 	fi
 
