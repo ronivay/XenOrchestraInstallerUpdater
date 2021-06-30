@@ -1,0 +1,19 @@
+name: Mark stale issues
+
+on:
+  schedule:
+  - cron: '38 1 * * *'
+
+jobs:
+  stale:
+
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+
+    steps:
+    - uses: actions/stale@v3
+      with:
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        stale-issue-message: 'This issue has been open for 14 days without activity. It will be closed in 5 days if not updated'
+        stale-issue-label: 'Stale'
