@@ -27,6 +27,7 @@ PRESERVE=${PRESERVE:-"3"}
 XOUSER=${XOUSER:-"root"}
 CONFIGPATH="$(getent passwd $XOUSER | cut -d: -f6)"
 PLUGINS="${PLUGINS:-"none"}"
+ADDITIONAL_PLUGINS="${ADDITIONAL_PLUGINS:-"none"}"
 REPOSITORY="${REPOSITORY:-"https://github.com/vatesfr/xen-orchestra"}"
 OS_CHECK="${OS_CHECK:-"true"}"
 ARCH_CHECK="${ARCH_CHECK:-"true"}"
