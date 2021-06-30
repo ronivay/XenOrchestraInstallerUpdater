@@ -1,10 +1,14 @@
-[![](https://xo-build-status.yawn.fi/builds/debian/build-status.svg)](https://xo-build-status.yawn.fi/builds/debian/build-status.html) [![](https://xo-build-status.yawn.fi/builds/centos/build-status.svg)](https://xo-build-status.yawn.fi/builds/centos/build-status.html) [![](https://xo-build-status.yawn.fi/builds/ubuntu/build-status.svg)](https://xo-build-status.yawn.fi/builds/ubuntu/build-status.html)
+Daily test install status:
+[![](https://img.shields.io/endpoint?url=https://xo-build-status.yawn.fi/builds/debian/status.json)](https://xo-build-status.yawn.fi/builds/debian/details.html) [![](https://img.shields.io/endpoint?url=https://xo-build-status.yawn.fi/builds/centos/status.json)](https://xo-build-status.yawn.fi/builds/centos/details.html) [![](https://img.shields.io/endpoint?url=https://xo-build-status.yawn.fi/builds/ubuntu/status.json)](https://xo-build-status.yawn.fi/builds/ubuntu/details.html)
+
+Github action status:
+![](https://github.com/ronivay/XenOrchestraInstallerUpdater/actions/workflows/main.yml/badge.svg)
 
 # XenOrchestraInstallerUpdater - Install / Update Xen-Orchestra from sources
 
 # In a nutshell
 
-This repo consist of script to install and update [Xen Orchestra](https://xen-orchestra.com/#!/) for CentOS 8/Ubuntu 18/Debian 10. If you find it difficult to create a VM on your fresh Xenserver/XCP-ng installation, take a look at the appliance method from the end of this README.
+This repo consist of script to install and update [Xen Orchestra](https://xen-orchestra.com/#!/) for CentOS 8/Ubuntu 20/Debian 10. If you find it difficult to create a VM on your fresh Xenserver/XCP-ng installation, take a look at the appliance method from the end of this README.
 
 Installation is done using latest xo-server and xo-web sources by default. With this method Xen-Orchestra has all features unlocked which are normally available only with monthly fee.
 
@@ -19,7 +23,7 @@ Paid version comes with pro support and appliance and is the suggested option fo
 
 ### platform
 
-Suggested platform is a VM with fresh install of any of the supported OS. You should put at least 3GB of RAM to the machine, but preferably 2vCPU/4GB RAM. Otherwise you may encounter OOM error during installation because of running out of memory.
+Suggested platform is a VM with fresh install of any of the supported OS (see list below). You should put at least 3GB of RAM to the machine, but preferably 2vCPU/4GB RAM. Otherwise you may encounter OOM error during installation because of running out of memory.
 
 ### script
 Clone this repository, copy sample.xo-install.cfg as xo-install.cfg and edit variables to suit your preferences and run xo-install.sh as root. Sample configuration will be copied as xo-install.cfg
@@ -58,21 +62,23 @@ notes:
 
 ## Notes
 
-Script has been tested to work with following distros:
+Script supports following Linux distributions and versions:
 
 - CentOS 8 (note LVM file level restore issue from below)
+- AlmaLinux 8
+- Rocky Linux 8
 - Debian 10
-- Ubuntu 20.04
-- AlmaLinux 8 (early testing phase)
-
-Installation works but not tested frequently:
-- Debian 8
 - Debian 9
-- Ubuntu 16.04
+- Debian 8
+- Ubuntu 20.04
 - Ubuntu 18.04
+- Ubuntu 16.04
+
+Note that even though multiple distributions and versions are supported, tests are ran only against newest Debian/Centos/Ubuntu. 
+
+Your distribution not in the list? Set OS_CHECK variable to false in xo-install.cfg to skip operating system version check.
 
 In order to use file level restore from delta backups, the service needs to be ran as root.
-CentOS installation is currently not able to do file level restore if the backed up disk contains LVM or only sees some of the partitions.
 
 CentOS setup is confirmed to work with fresh minimal installation and SELinux enabled.
 Although script doesn't do any SELinux checks or modifications, so you need to take care of possible changes by yourself according to your system.
