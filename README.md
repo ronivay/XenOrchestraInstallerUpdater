@@ -1,3 +1,4 @@
+[![](https://xo-build-status.yawn.fi/builds/debian/build-status.svg)](https://xo-build-status.yawn.fi/builds/debian/build-status.html) [![](https://xo-build-status.yawn.fi/builds/centos/build-status.svg)](https://xo-build-status.yawn.fi/builds/centos/build-status.html) [![](https://xo-build-status.yawn.fi/builds/ubuntu/build-status.svg)](https://xo-build-status.yawn.fi/builds/ubuntu/build-status.html)
 
 # XenOrchestraInstallerUpdater - Install / Update Xen-Orchestra from sources
 
