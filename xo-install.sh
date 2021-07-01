@@ -1003,12 +1003,6 @@ function CheckOS {
 		exit 1
 	fi
 
-	cmdlog "command -v xe"
-	if [[ $(command -v xe 2>>"$LOGFILE") ]]; then
-		printfail "xe binary found, don't try to run install on xcp-ng/xenserver host. use xo-appliance.sh instead"
-		exit 1
-	fi
-
 }
 
 function CheckXE {
