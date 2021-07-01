@@ -381,12 +381,12 @@ function InstallAdditionalXOPlugins {
 
 	if [[ -z "$ADDITIONAL_PLUGINS" ]] || [[ "$ADDITIONAL_PLUGINS" == "none" ]]; then
 		echo
-		printinfo "No additional plugins to install"
+		printinfo "No 3rd party plugins to install"
 		return 0
 	fi
 
 	echo
-	printprog "Installing additional plugins"
+	printprog "Fetching 3rd party plugin(s) source code"
 
 	local ADDITIONAL_PLUGINSARRAY=($(echo "$ADDITIONAL_PLUGINS" | tr ',' ' '))
 	for x in "${ADDITIONAL_PLUGINSARRAY[@]}"; do
@@ -410,7 +410,7 @@ function InstallAdditionalXOPlugins {
 		cmdlog "cp -r $PLUGIN_SRC_DIR $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/"
 		cp -r "$PLUGIN_SRC_DIR" "$INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/" >>"$LOGFILE" 2>&1
 	done
-	printok "Installing additional plugins"
+	printok "Fetching 3rd party plugin(s) source code"
 }
 
 function InstallXOPlugins {
@@ -620,7 +620,6 @@ function InstallXO {
 	# Install additional plugins
 	InstallAdditionalXOPlugins
 
-	echo
 	echo
 	printinfo "xo-server and xo-web build takes quite a while. Grab a cup of coffee and lay back"
 	echo
