@@ -1,5 +1,11 @@
 #!/bin/bash
 
+#########################################################################
+# Title: XenOrchestraInstallerUpdater                                   #
+# Author: Roni Väyrynen                                                 #
+# Repository: https://github.com/ronivay/XenOrchestraInstallerUpdater   #
+#########################################################################
+
 IMAGE_URL="https://xo-appliance.yawn.fi/downloads/image.xva"
 
 function OSCheck {
