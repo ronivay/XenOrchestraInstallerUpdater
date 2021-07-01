@@ -5,7 +5,7 @@ IMAGE_URL="https://xo-appliance.yawn.fi/downloads/image.xva"
 function OSCheck {
 	set -e
 
-	if [[ -z $(which xe 2>/dev/null) ]]; then
+	if [[ -z $(command -v xe 2>/dev/null) ]]; then
                 echo "this scripts needs xe command. make sure you're on xenserver/xcp-ng host"
                 exit 1
         fi
@@ -24,6 +24,7 @@ function NetworkChoose {
 
 	set +e
 
+	# shellcheck disable=SC1117
 	IFS=$'\n' read -r -d '' -a networks <<< "$(xe network-list | grep "uuid\|name-label" | cut -d':' -f2 | sed 's/^ //' | paste - -)"
 
 
@@ -32,8 +33,9 @@ function NetworkChoose {
 	local PS3="Pick a number. CTRL+C to exit: "
 	select network in "${networks[@]}"
 	do
-		read -a network_split <<< "$network"
+		read -r -a network_split <<< "$network"
 		networkuuid=${network_split[0]}
+		# shellcheck disable=SC2124,SC2034
 		networkname=${network_split[@]:1}
 
 		case $network in
@@ -56,28 +58,28 @@ function NetworkSettings {
 	echo "Set network settings for VM. Leave IP-address as blank to use DHCP"
 	echo
 
-	read -p "IP address: " ipaddress
+	read -r -p "IP address: " ipaddress
 	ipaddress=${ipaddress:-dhcp}
 
 	if [[ "$ipaddress" != "dhcp" ]]; then
 		if ! [[ $ipaddress =~ $ipregex ]]; then
 			echo "Check ip-address format"
 			exit 1
-		fi 
-		read -p "Netmask [255.255.255.0]: " netmask
+		fi
+		read -r -p "Netmask [255.255.255.0]: " netmask
 		netmask=${netmask:-255.255.255.0}
 		if ! [[	$netmask =~ $ipregex ]]; then
                 	echo "Check netmask format"
                 	exit 1
                 fi
-		read -p "Gateway: " gateway
+		read -r -p "Gateway: " gateway
 		if [[ $gateway != "" ]]; then
 			if ! [[ $gateway =~ $ipregex ]]; then
 				echo "Check gateway format"
 				exit 1
 			fi
 		fi
-		read -p "DNS [8.8.8.8]: " dns
+		read -r -p "DNS [8.8.8.8]: " dns
 		dns=${dns:-8.8.8.8}
 		if ! [[ $dns =~ $ipregex ]]; then
 			echo "Check dns format"
@@ -89,7 +91,7 @@ function NetworkSettings {
 }
 
 function VMImport {
-	
+
 	set -e
 
 	echo
@@ -98,6 +100,7 @@ function VMImport {
 
 	uuid=$(curl "$IMAGE_URL" | xe vm-import filename=/dev/stdin)
 
+	# shellcheck disable=SC2181
 	if [[ $? != "0" ]]; then
 		echo "Import failed"
 		exit 1
@@ -105,39 +108,39 @@ function VMImport {
 	echo
 	echo "Import complete"
 
-	xe vif-create network-uuid=$vifuuid vm-uuid=$uuid device=0 >/dev/null
+	xe vif-create network-uuid="$vifuuid" vm-uuid="$uuid" device=0 >/dev/null
 
 	if [[ "$ipaddress" != "dhcp" ]]; then
-		xe vm-param-set uuid=$uuid xenstore-data:vm-data/ip=$ipaddress xenstore-data:vm-data/netmask=$netmask xenstore-data:vm-data/gateway=$gateway xenstore-data:vm-data/dns=$dns
+		xe vm-param-set uuid="$uuid" xenstore-data:vm-data/ip="$ipaddress" xenstore-data:vm-data/netmask="$netmask" xenstore-data:vm-data/gateway="$gateway" xenstore-data:vm-data/dns="$dns"
 	fi
 
-	xe vm-param-remove uuid=$uuid param-name=HVM-boot-params param-key=order
-	xe vm-param-set uuid=$uuid HVM-boot-params:"order: c"
+	xe vm-param-remove uuid="$uuid" param-name=HVM-boot-params param-key=order
+	xe vm-param-set uuid="$uuid" HVM-boot-params:"order: c"
 
 	echo
 	echo "Starting VM..."
-	xe vm-start uuid=$uuid
+	xe vm-start uuid="$uuid"
 
 	set +e
 
 	count=0
 	limit=10
-	ip=$(xe vm-param-get uuid=$uuid param-name=networks param-key=0/ip 2>/dev/null)
+	ip=$(xe vm-param-get uuid="$uuid" param-name=networks param-key=0/ip 2>/dev/null)
 	while [[ -z "$ip" ]] && [[ "$count" -lt "$limit" ]]; do
 		echo "Waiting for VM to start and announce it got IP-address"
 		sleep 30
-		ip=$(xe vm-param-get uuid=$uuid param-name=networks param-key=0/ip 2>/dev/null)
+		ip=$(xe vm-param-get uuid="$uuid" param-name=networks param-key=0/ip 2>/dev/null)
 		(( count++ ))
 	done
 
 	if [[ "$ipaddress" != "dhcp" ]]; then
-		xe vm-param-remove param-name=xenstore-data param-key=vm-data/ip uuid=$uuid 2>/dev/null
-		xe vm-param-remove param-name=xenstore-data param-key=vm-data/netmask uuid=$uuid 2>/dev/null
-		xe vm-param-remove param-name=xenstore-data param-key=vm-data/gateway uuid=$uuid 2>/dev/null
-		xe vm-param-remove param-name=xenstore-data param-key=vm-data/dns uuid=$uuid 2>/dev/null
+		xe vm-param-remove param-name=xenstore-data param-key=vm-data/ip uuid="$uuid" 2>/dev/null
+		xe vm-param-remove param-name=xenstore-data param-key=vm-data/netmask uuid="$uuid" 2>/dev/null
+		xe vm-param-remove param-name=xenstore-data param-key=vm-data/gateway uuid="$uuid" 2>/dev/null
+		xe vm-param-remove param-name=xenstore-data param-key=vm-data/dns uuid="$uuid" 2>/dev/null
 	fi
 
-	if [[ $ip != "" ]]; then
+	if [[ "$ip" != "" ]]; then
 		echo
 		echo "VM Started successfully"
 		echo
