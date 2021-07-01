@@ -1,0 +1,18 @@
+name: 'lint'
+on:
+  push:
+    paths:
+      - 'xo-install.sh'
+      - 'xo-appliance.sh'
+  pull_request:
+    paths:
+      - 'xo-install.sh'
+      - 'xo-appliance.sh'
+    
+jobs:
+  shellcheck:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: run shellcheck
+      uses: ludeeus/action-shellcheck@master
