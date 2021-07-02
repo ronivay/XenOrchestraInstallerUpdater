@@ -2,6 +2,8 @@
 
 [![](https://img.shields.io/endpoint?url=https://xo-build-status.yawn.fi/builds/debian/status.json)](https://xo-build-status.yawn.fi/builds/debian/details.html) [![](https://img.shields.io/endpoint?url=https://xo-build-status.yawn.fi/builds/centos/status.json)](https://xo-build-status.yawn.fi/builds/centos/details.html) [![](https://img.shields.io/endpoint?url=https://xo-build-status.yawn.fi/builds/ubuntu/status.json)](https://xo-build-status.yawn.fi/builds/ubuntu/details.html)
 
+[![](https://img.shields.io/endpoint?url=https://xo-appliance.yawn.fi/downloads/status.json)](https://xo-appliance.yawn.fi/downloads/image.txt)
+
 [![](https://github.com/ronivay/XenOrchestraInstallerUpdater/actions/workflows/main.yml/badge.svg?branch=master)](https://github.com/ronivay/XenOrchestraInstallerUpdater/actions)[![](https://github.com/ronivay/XenOrchestraInstallerUpdater/actions/workflows/lint.yml/badge.svg?branch=master)](https://github.com/ronivay/XenOrchestraInstallerUpdater/actions)
 
 Script to install/update [Xen Orchestra](https://xen-orchestra.com/#!/) and all of it's dependencies on multiple different Linux distributions. Separate script to be used on XenServer/XCP-ng host that installs a readymade appliance utilizing the same installer script.
@@ -16,7 +18,7 @@ Xen Orchestra is developed and maintained by company called Vates. They offer Xe
 
 #### Why to use this script?
 
-If you're a home user/enthusiast with simple enviroment you want to manage but can't justify the cost of Xen Orchestra appliance.
+If you're a home user/enthusiast with simple environment you want to manage but can't justify the cost of Xen Orchestra appliance.
 
 Since Xen Orchestra is open source and majority of the features included in the official appliance are part of the sources, one can build it on their own. This [procedure](https://xen-orchestra.com/docs/from_the_sources.html) is even documented. 
 
@@ -58,10 +60,13 @@ sudo xo-install.sh
 There are few options you can choose from:
 
 * `Install`
+
 install all dependencies, necessary configuration and xen orchestra itself
 * `Update`
+
 update existing installation to the newest version available
 * `Rollback to another existing installation`
+
 should be self explanatory. if you wish to rollback to another installation after doing update or whatever
 
 Each of these options can be run non interactively like so:
