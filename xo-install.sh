@@ -1127,8 +1127,8 @@ echo -e "Xen Orchestra configuration will be stored to ${COLOR_WHITE}$CONFIGPATH
 echo "-----------------------------------------"
 
 echo
-echo -e "${COLOR_WHITE}1. Autoinstall${COLOR_N}"
-echo -e "${COLOR_WHITE}2. Update / Install without packages${COLOR_N}"
+echo -e "${COLOR_WHITE}1. Install${COLOR_N}"
+echo -e "${COLOR_WHITE}2. Update${COLOR_N}"
 echo -e "${COLOR_WHITE}3. Rollback to another existing installation${COLOR_N}"
 echo -e "${COLOR_WHITE}4. Exit${COLOR_N}"
 echo
