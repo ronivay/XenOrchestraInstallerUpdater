@@ -1,68 +1,36 @@
+# Xen Orchestra Installer / Updater
+
 [![](https://img.shields.io/endpoint?url=https://xo-build-status.yawn.fi/builds/debian/status.json)](https://xo-build-status.yawn.fi/builds/debian/details.html) [![](https://img.shields.io/endpoint?url=https://xo-build-status.yawn.fi/builds/centos/status.json)](https://xo-build-status.yawn.fi/builds/centos/details.html) [![](https://img.shields.io/endpoint?url=https://xo-build-status.yawn.fi/builds/ubuntu/status.json)](https://xo-build-status.yawn.fi/builds/ubuntu/details.html)
-[![](https://github.com/ronivay/XenOrchestraInstallerUpdater/actions/workflows/main.yml/badge.svg?branch=master)](https://github.com/ronivay/XenOrchestraInstallerUpdater/actions)
-[![](https://github.com/ronivay/XenOrchestraInstallerUpdater/actions/workflows/lint.yml/badge.svg?branch=master)](https://github.com/ronivay/XenOrchestraInstallerUpdater/actions)
 
-# XenOrchestraInstallerUpdater - Install / Update Xen-Orchestra from sources
+[![](https://github.com/ronivay/XenOrchestraInstallerUpdater/actions/workflows/main.yml/badge.svg?branch=master)](https://github.com/ronivay/XenOrchestraInstallerUpdater/actions)[![](https://github.com/ronivay/XenOrchestraInstallerUpdater/actions/workflows/lint.yml/badge.svg?branch=master)](https://github.com/ronivay/XenOrchestraInstallerUpdater/actions)
 
-# In a nutshell
-
-This repo consist of script to install and update [Xen Orchestra](https://xen-orchestra.com/#!/) for CentOS 8/Ubuntu 20/Debian 10. If you find it difficult to create a VM on your fresh Xenserver/XCP-ng installation, take a look at the appliance method from the end of this README.
-
-Installation is done using latest xo-server and xo-web sources by default. With this method Xen-Orchestra has all features unlocked which are normally available only with monthly fee.
-
-Optional plugins are available and all of them will be installed by default by this script. If you need only specific ones, check list from [Xen Orchestra plugins](https://github.com/vatesfr/xen-orchestra/tree/master/packages) and edit xo-install.cfg accordingly.
-
-Xen-Orchestra is a great project and i strongly encourage you to consider the supported version of their product.
-
-Paid version comes with pro support and appliance and is the suggested option for larger environments. Method that this script offers comes with no support and is not the officially recommended way of using Xen-Orchestra. This is mainly intended for testing purposes and small environments which don't require support.
+Script to install/update [Xen Orchestra](https://xen-orchestra.com/#!/) and all of it's dependencies on multiple different Linux distributions. Separate script to be used on XenServer/XCP-ng host that installs a readymade appliance utilizing the same installer script.
 
 
-# Instructions
+#### What is Xen Orchestra?
 
-### platform
+Xen Orchestra is a web interface used to manage XenServer/XCP-ng hosts and pools. It runs separately and one can manage multiple different virtualization environments from one single management interface. 
 
-Suggested platform is a VM with fresh install of any of the supported OS (see list below). You should put at least 3GB of RAM to the machine, but preferably 2vCPU/4GB RAM. Otherwise you may encounter OOM error during installation because of running out of memory.
+Xen Orchestra is developed and maintained by company called Vates. They offer Xen Orchestra as a turnkey appliance with different pricing models for different needs. This is the preferred method of using Xen Orchestra product as each of the plans come with support. I highly recommend using the official appliance to support a great product and it's development now, and in the future.
 
-### script
-Clone this repository, copy sample.xo-install.cfg as xo-install.cfg and edit variables to suit your preferences and run xo-install.sh as root. Sample configuration will be copied as xo-install.cfg
- if doesn't exist
-```
-basic functionality including menu:
-./xo-install.sh
 
-non-interactive update task (option 2):
-./xo-install.sh --update [--force]
+#### Why to use this script?
 
-non-interactive install task (option 1):
-./xo-install.sh --install
+If you're a home user/enthusiast with simple enviroment you want to manage but can't justify the cost of Xen Orchestra appliance.
 
-quick option to rollback (option 3):
-./xo-install.sh --rollback
-```
+Since Xen Orchestra is open source and majority of the features included in the official appliance are part of the sources, one can build it on their own. This [procedure](https://xen-orchestra.com/docs/from_the_sources.html) is even documented. 
 
-Script makes some checks and offers options:
+This script offers an easy way to install all dependencies, fetch source code, compile it and do all the little details for you which you'd have to do manually otherwise. Other than that, it follows the steps described in the official documentation. All source code for Xen Orchestra is by default pulled from the official [repository](https://github.com/vatesfr/xen-orchestra). Note that even though this method is documented, it's not supported and using this script has no support whatsoever from Xen Orchestra team. Any issue you may have, please report it first to this repository.
 
-1. Autoinstall
- - Installs all dependencies (necessary packages and Xen-Orchestra itself). Doesn't do firewall changes, so make sure you allow access to port specified in xo-install.cfg.
- - Packages listed in the end of this README
+The very first version of this script i did purely for myself. Now i'm mainly trying to keep it up to date for others who might already rely on it frequently.
 
-2. Update / Install without dependencies
- - Updates NodeJS and Yarn packages if AUTOUPDATE variable is set to true (it is by default)
- - Installs Xen-Orchestra from latest sources (doesn't install any new packages)
+#### Preparations
 
-3. Rollback installation
- - Offers option to choose which installation to use from existing ones (if more than 1)
+First thing you need is a VM (or even a physical machine if you wish) where to install the software. This should have at least 4GB of free RAM and ~1GB of free disk space. Having more CPU does speed a the build procedure a bit but isn't really a requirement. 2vCPU's on most systems are more than fine.
 
-notes:
+Supported Linux distributions and versions:
 
- - If you choose to install with option 2, you need to take care that required packages are already installed
- - You can change xo-server and xo-web git branch/tag by editing xo-install.cfg $BRANCH variable
-
-## Notes
-
-Script supports following Linux distributions and versions:
-
-- CentOS 8 (note LVM file level restore issue from below)
+- CentOS 8
 - AlmaLinux 8
 - Rocky Linux 8
 - Debian 10
@@ -72,22 +40,42 @@ Script supports following Linux distributions and versions:
 - Ubuntu 18.04
 - Ubuntu 16.04
 
-Note that even though multiple distributions and versions are supported, tests are ran only against newest Debian/Centos/Ubuntu. 
+I suggest using a fresh OS installation and not to use the VM for anything else besides Xen Orchestra.
 
-Your distribution not in the list? Set OS_CHECK variable to false in xo-install.cfg to skip operating system version check.
+If you plan on using the prebuilt appliance VM for XenServer/XCP-ng, see the appliance section below.
 
-In order to use file level restore from delta backups, the service needs to be ran as root.
+#### Installation
 
-CentOS setup is confirmed to work with fresh minimal installation and SELinux enabled.
-Although script doesn't do any SELinux checks or modifications, so you need to take care of possible changes by yourself according to your system.
+Start by cloning this repository to the machine you wish to install to.
 
-Script makes all necessary changes required for Xen-Orchestra to run (including packages, user creation, permissions). Please evaluate script if needed.
-I take no responsibility of possible damage caused by this script.
+There is a file called `sample.xo-install.cfg` which you should copy as `xo-install.cfg`. This file holds some editable configuration settings you might want to change depending on your needs.
 
-Below is a list of packages that will be installed if missing.
+When done editing configuration, just run the script with root privileges:
+```
+sudo xo-install.sh
+```
+
+There are few options you can choose from:
+
+* `Install`
+install all dependencies, necessary configuration and xen orchestra itself
+* `Update`
+update existing installation to the newest version available
+* `Rollback to another existing installation`
+should be self explanatory. if you wish to rollback to another installation after doing update or whatever
+
+Each of these options can be run non interactively like so:
 
 ```
-CentOS:
+sudo xo-install.sh --install
+sudo xo install.sh --update [--force]
+sudo xo-install.sh --rollback
+```
+
+As mentioned before, Xen Orchestra has some external dependencies from different operating system packages. All listed below will be installed if missing:
+
+```
+rpm:
 - curl
 - epel-release
 - nodejs (v14)
@@ -106,7 +94,7 @@ CentOS:
 - cifs-utils
 - lvm2
 
-Debian/Ubuntu:
+deb:
 - apt-transport-https
 - ca-certificates
 - libcap2-bin
@@ -127,14 +115,14 @@ Debian/Ubuntu:
 - gnupg (debian 10)
 ```
 
-# Appliance
+#### Appliance
 
 If you need to import an appliance directly to your host, you may use xo-appliance.sh script for this. It'll download a prebuilt Debian 10 image which has Xen Orchestra and XenOrchestraInstallerUpdater installed.
 
-Run on your Xenserver/XCP-ng host as root:
+Run on your Xenserver/XCP-ng host with root privileges:
 
 ```
-bash -c "$(curl -s https://raw.githubusercontent.com/ronivay/XenOrchestraInstallerUpdater/master/xo-appliance.sh)"
+sudo bash -c "$(curl -s https://raw.githubusercontent.com/ronivay/XenOrchestraInstallerUpdater/master/xo-appliance.sh)"
 ```
 
 Default username for UI is admin@admin.net with password admin
@@ -152,3 +140,13 @@ xo user has full sudo access. Xen Orchestra updates etc should be ran with sudo.
 This image is updated weekly. Latest build date and MD5 checksum can be checked from [here](https://xo-appliance.yawn.fi/downloads/image.txt)
 
 Built and tested on XCP-ng 7.x
+
+#### Tests and appliance image
+
+I run my own little implementation of automation consisting of ansible and virtual machines to test the installation on regular bases with CentOS 8, Ubuntu 20 and Debian 10. Test results are visible in badges on top of this readme.
+
+Appliance image is also built by me and distributed from webservers i maintain.
+
+#### Contributing
+
+Pull requests and issues (either real issues or just suggestions) are more than welcome. Note that i do not wish to make any modifications to Xen Orchestra source code as part of this script. 
