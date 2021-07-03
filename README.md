@@ -13,22 +13,22 @@ Script to install/update [Xen Orchestra](https://xen-orchestra.com/#!/) and all 
 
 Xen Orchestra is a web interface used to manage XenServer/XCP-ng hosts and pools. It runs separately and one can manage multiple different virtualization environments from one single management interface. 
 
-Xen Orchestra is developed and maintained by company called Vates. They offer Xen Orchestra as a turnkey appliance with different pricing models for different needs. This is the preferred method of using Xen Orchestra product as each of the plans come with support. I highly recommend using the official appliance to support a great product and it's development now, and in the future.
+Xen Orchestra is developed by company called [Vates](https://vates.fr/). They offer Xen Orchestra as a turnkey appliance with different pricing models for different needs. This is the preferred method of using Xen Orchestra product as each of the plans come with support. I highly recommend using the official appliance to support a great product and it's development now, and in the future.
 
 
 #### Why to use this script?
 
 If you're a home user/enthusiast with simple environment you want to manage but can't justify the cost of Xen Orchestra appliance.
 
-Since Xen Orchestra is open source and majority of the features included in the official appliance are part of the sources, one can build it on their own. This [procedure](https://xen-orchestra.com/docs/from_the_sources.html) is even documented. 
+Since Xen Orchestra is open source and majority of the features included in the official appliance are part of the sources, one can build it on their own. This [procedure](https://xen-orchestra.com/docs/from_the_sources.html) is even documented.
 
 This script offers an easy way to install all dependencies, fetch source code, compile it and do all the little details for you which you'd have to do manually otherwise. Other than that, it follows the steps described in the official documentation. All source code for Xen Orchestra is by default pulled from the official [repository](https://github.com/vatesfr/xen-orchestra). Note that even though this method is documented, it's not supported and using this script has no support whatsoever from Xen Orchestra team. Any issue you may have, please report it first to this repository.
 
-The very first version of this script i did purely for myself. Now i'm mainly trying to keep it up to date for others who might already rely on it frequently.
+The very first version of this script i did purely for myself. Now i'm mainly trying to keep it up to date for others who might already rely on it frequently. My intentions are to offer an easy way for people to get into Xen Orchestra without restricted features which could potentially help this piece of software to evolve and grow.
 
 #### Preparations
 
-First thing you need is a VM (or even a physical machine if you wish) where to install the software. This should have at least 4GB of free RAM and ~1GB of free disk space. Having more CPU does speed a the build procedure a bit but isn't really a requirement. 2vCPU's on most systems are more than fine.
+First thing you need is a VM (or even a physical machine if you wish) where to install the software. This should have at least 4GB of RAM and ~1GB of free disk space. Having more CPU does speed a the build procedure a bit but isn't really a requirement. 2vCPU's on most systems are more than fine.
 
 Supported Linux distributions and versions:
 
@@ -54,7 +54,7 @@ There is a file called `sample.xo-install.cfg` which you should copy as `xo-inst
 
 When done editing configuration, just run the script with root privileges:
 ```
-sudo xo-install.sh
+sudo ./xo-install.sh
 ```
 
 There are few options you can choose from:
@@ -65,16 +65,16 @@ install all dependencies, necessary configuration and xen orchestra itself
 * `Update`
 
 update existing installation to the newest version available
-* `Rollback to another existing installation`
+* `Rollback`
 
 should be self explanatory. if you wish to rollback to another installation after doing update or whatever
 
 Each of these options can be run non interactively like so:
 
 ```
-sudo xo-install.sh --install
-sudo xo install.sh --update [--force]
-sudo xo-install.sh --rollback
+sudo ./xo-install.sh --install
+sudo ./xo install.sh --update [--force]
+sudo ./xo-install.sh --rollback
 ```
 
 As mentioned before, Xen Orchestra has some external dependencies from different operating system packages. All listed below will be installed if missing:

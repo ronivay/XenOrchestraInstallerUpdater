@@ -1129,7 +1129,7 @@ echo "-----------------------------------------"
 echo
 echo -e "${COLOR_WHITE}1. Install${COLOR_N}"
 echo -e "${COLOR_WHITE}2. Update${COLOR_N}"
-echo -e "${COLOR_WHITE}3. Rollback to another existing installation${COLOR_N}"
+echo -e "${COLOR_WHITE}3. Rollback${COLOR_N}"
 echo -e "${COLOR_WHITE}4. Exit${COLOR_N}"
 echo
 read -r -p ": " option
