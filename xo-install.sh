@@ -82,7 +82,7 @@ function CheckUser {
 
 function scriptInfo {
 
-	SCRIPTVERSION=$(cd "$(dirname "$0")" 2>/dev/null && git rev-parse --short HEAD 2>/dev/null)
+	SCRIPTVERSION=$(runcmd_nolog "cd '$(dirname "$0")' 2>/dev/null && git rev-parse --short HEAD 2>/dev/null")
 
 	[ -z "$SCRIPTVERSION" ] && SCRIPTVERSION="undefined"
 	echo "Running script version $SCRIPTVERSION with config:" >> "$LOGFILE"
@@ -92,9 +92,16 @@ function scriptInfo {
 	echo >> "$LOGFILE"
 }
 
-function cmdlog {
-	echo "=== CMD ===: $*" >> "$LOGFILE"
-	echo >> "$LOGFILE"
+function runcmd {
+
+	echo "+ $1" >>"$LOGFILE"
+	bash -c "$1" >>"$LOGFILE" 2>&1
+}
+
+function runcmd_nolog {
+
+	echo "+ $1" >>"$LOGFILE"
+	bash -c "$1" 2>>"$LOGFILE"
 }
 
 function printprog {
@@ -124,8 +131,7 @@ function ErrorHandling {
 	if [[ -d "$INSTALLDIR/xo-builds/xen-orchestra-$TIME" ]]; then
 		echo
 		printfail "Removing $INSTALLDIR/xo-builds/xen-orchestra-$TIME because of failed installation."
-		cmdlog "rm -rf $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
-		rm -rf "$INSTALLDIR/xo-builds/xen-orchestra-$TIME" >> "$LOGFILE" 2>&1
+		runcmd "rm -rf $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
 	fi
 
 	exit 1
@@ -133,7 +139,7 @@ function ErrorHandling {
 
 function InstallDependenciesRPM {
 
-	set -euo pipefail
+	set -uo pipefail
 
 	trap ErrorHandling ERR INT
 
@@ -142,74 +148,60 @@ function InstallDependenciesRPM {
 	# install packages
 	echo
 	printprog "Installing build dependencies, redis server, python, git, nfs-utils, cifs-utils"
-	cmdlog "yum -y install gcc gcc-c++ make openssl-devel redis libpng-devel python3 git nfs-utils cifs-utils lvm2"
-	yum -y install gcc gcc-c++ make openssl-devel redis libpng-devel python3 git nfs-utils cifs-utils lvm2 >>"$LOGFILE" 2>&1
+	runcmd "yum -y install gcc gcc-c++ make openssl-devel redis libpng-devel python3 git nfs-utils cifs-utils lvm2"
 	printok "Installing build dependencies, redis server, python, git, nfs-utils, cifs-utils"
 
 	# only run automated node install if executable not found
-	cmdlog "command -v node"
-	if [[ -z $(command -v node 2>>"$LOGFILE") ]]; then
+	if [[ -z $(runcmd_nolog "command -v node") ]]; then
 		echo
 		printprog "Installing node.js"
-		cmdlog "curl -s -L https://rpm.nodesource.com/setup_${NODEVERSION}.x | bash -"
-		curl -s -L "https://rpm.nodesource.com/setup_${NODEVERSION}.x" | bash - >>"$LOGFILE" 2>&1
+		runcmd "curl -s -L https://rpm.nodesource.com/setup_${NODEVERSION}.x | bash -"
 		printok "Installing node.js"
 	else
 		UpdateNodeYarn
 	fi
 
 	# only install yarn repo and package if not found
-	cmdlog "command -v yarn"
-	if [[ -z $(command -v yarn 2>>"$LOGFILE") ]] ; then
+	if [[ -z $(runcmd_nolog "command -v yarn") ]] ; then
 		echo
 		printprog "Installing yarn"
-		cmdlog "curl -s -o /etc/yum.repos.d/yarn.repo https://dl.yarnpkg.com/rpm/yarn.repo && yum -y install yarn"
-		curl -s -o /etc/yum.repos.d/yarn.repo "https://dl.yarnpkg.com/rpm/yarn.repo" >>"$LOGFILE" 2>&1 && \
-		yum -y install yarn >>"$LOGFILE" 2>&1
+		runcmd "curl -s -o /etc/yum.repos.d/yarn.repo https://dl.yarnpkg.com/rpm/yarn.repo && yum -y install yarn"
 		printok "Installing yarn"
 	fi
 
 	# only install epel-release if doesn't exist
-	cmdlog "rpm -q epel-release"
-	if [[ -z $(rpm -q epel-release 2>>"$LOGFILE") ]] ; then
+	if [[ -z $(runcmd_nolog "rpm -q epel-release") ]] ; then
 		echo
 		printprog "Installing epel-repo"
-		cmdlog "yum -y install epel-release"
-		yum -y install epel-release >>"$LOGFILE" 2>&1
+		runcmd "yum -y install epel-release"
 		printok "Installing epel-repo"
 	fi
 
 	# only install libvhdi-tools if vhdimount is not present
-	cmdlog "command -v vhdimount"
-	if [[ -z $(command -v vhdimount 2>>"$LOGFILE") ]] ; then
+	if [[ -z $(runcmd_nolog "command -v vhdimount") ]] ; then
 		echo
 		printprog "Installing libvhdi-tools from forensics repository"
-		cmdlog "rpm -ivh https://forensics.cert.org/cert-forensics-tools-release-el8.rpm"
-		rpm -ivh https://forensics.cert.org/cert-forensics-tools-release-el8.rpm >>"$LOGFILE" 2>&1
-		cmdlog "sed -i 's/enabled=1/enabled=0/g' /etc/yum.repos.d/cert-forensics-tools.repo"
-		sed -i 's/enabled=1/enabled=0/g' /etc/yum.repos.d/cert-forensics-tools.repo >>"$LOGFILE" 2>&1
-		cmdlog "yum --enablerepo=forensics install -y libvhdi-tools"
-		yum --enablerepo=forensics install -y libvhdi-tools >>"$LOGFILE" 2>&1
+		runcmd "rpm -ivh https://forensics.cert.org/cert-forensics-tools-release-el8.rpm"
+		runcmd "sed -i 's/enabled=1/enabled=0/g' /etc/yum.repos.d/cert-forensics-tools.repo"
+		runcmd "yum --enablerepo=forensics install -y libvhdi-tools"
 		printok "Installing libvhdi-tools from forensics repository"
 	fi
 
 	echo
 	printprog "Enabling and starting redis service"
-	cmdlog "/bin/systemctl enable redis && /bin/systemctl start redis"
-	/bin/systemctl enable redis >>"$LOGFILE" 2>&1  && /bin/systemctl start redis >>"$LOGFILE" 2>&1 || false
+	runcmd "/bin/systemctl enable redis && /bin/systemctl start redis"
 	printok "Enabling and starting redis service"
 
 	echo
 	printprog "Enabling and starting rpcbind service"
-	cmdlog "/bin/systemctl enable rpcbind && /bin/systemctl start rpcbind"
-	/bin/systemctl enable rpcbind >>"$LOGFILE" 2>&1 && /bin/systemctl start rpcbind >>"$LOGFILE" 2>&1 || false
+	runcmd "/bin/systemctl enable rpcbind && /bin/systemctl start rpcbind"
 	printok "Enabling and starting rpcbind service"
 
 }
 
 function InstallDependenciesDeb {
 
-	set -euo pipefail
+	set -uo pipefail
 
 	trap ErrorHandling ERR INT
 
@@ -218,15 +210,13 @@ function InstallDependenciesDeb {
 	if [[ "$OSNAME" == "Ubuntu" ]]; then
 		echo
 		printprog "OS Ubuntu so making sure universe repository is enabled"
-		cmdlog "add-apt-repository -y universe"
-		add-apt-repository -y universe >>"$LOGFILE" 2>&1
+		runcmd "add-apt-repository -y universe"
 		printok "OS Ubuntu so making sure universe repository is enabled"
 	fi
 
 	echo
 	printprog "Running apt-get update"
-	cmdlog "apt-get update"
-	apt-get update >>"$LOGFILE" 2>&1
+	runcmd "apt-get update"
 	printok "Running apt-get update"
 
 	#determine which python package is needed. Ubuntu 20 requires python2-minimal, 16 and 18 are python-minimal
@@ -239,77 +229,61 @@ function InstallDependenciesDeb {
 	# install packages
 	echo
 	printprog "Installing build dependencies, redis server, python, git, libvhdi-utils, lvm2, nfs-common, cifs-utils, curl"
-	cmdlog "apt-get install -y build-essential redis-server libpng-dev git libvhdi-utils $PYTHON lvm2 nfs-common cifs-utils curl"
-	apt-get install -y build-essential redis-server libpng-dev git libvhdi-utils "$PYTHON" lvm2 nfs-common cifs-utils curl >>"$LOGFILE" 2>&1
+	runcmd "apt-get install -y build-essential redis-server libpng-dev git libvhdi-utils $PYTHON lvm2 nfs-common cifs-utils curl"
 	printok "Installing build dependencies, redis server, python, git, libvhdi-utils, lvm2, nfs-common, cifs-utils, curl"
 
 	# Install apt-transport-https and ca-certificates because of yarn https repo url
 	echo
 	printprog "Installing apt-transport-https and ca-certificates packages to support https repos"
-	cmdlog "apt-get install -y apt-transport-https ca-certificates"
-	apt-get install -y apt-transport-https ca-certificates >>"$LOGFILE" 2>&1
+	runcmd "apt-get install -y apt-transport-https ca-certificates"
 	printok "Installing apt-transport-https and ca-certificates packages to support https repos"
 
 	if [[ "$OSNAME" == "Debian" ]] && [[ "$OSVERSION" == "10" ]]; then
 		echo
 		printprog "Debian 10, so installing gnupg also"
-		cmdlog "apt-get install gnupg -y"
-		apt-get install gnupg -y >>"$LOGFILE" 2>&1
+		runcmd "apt-get install gnupg -y"
 		printok "Debian 10, so installing gnupg also"
 	fi
 
 	# install setcap for non-root port binding if missing
-	cmdlog "command -v setcap"
-	if [[ -z $(command -v setcap 2>>"$LOGFILE") ]]; then
+	if [[ -z $(runcmd_nolog "command -v setcap") ]]; then
 		echo
 		printprog "Installing setcap"
-		cmdlog "apt-get install -y libcap2-bin"
-		apt-get install -y libcap2-bin >>"$LOGFILE" 2>&1
+		runcmd "apt-get install -y libcap2-bin"
 		printok "Installing setcap"
 	fi
 
 
 	# only run automated node install if executable not found
-	cmdlog "command -v node"
-	cmdlog "command -v npm"
-	if [[ -z $(command -v node 2>>"$LOGFILE") ]] || [[ -z $(command -v npm 2>>"$LOGFILE") ]]; then
+	if [[ -z $(runcmd_nolog "command -v node") ]] || [[ -z $(runcmd_nolog "command -v npm") ]]; then
 		echo
 		printprog "Installing node.js"
-		cmdlog "curl -sL https://deb.nodesource.com/setup_${NODEVERSION}.x | bash -"
-		curl -sL "https://deb.nodesource.com/setup_${NODEVERSION}.x" | bash - >>"$LOGFILE" 2>&1
-		cmdlog "apt-get install -y nodejs"
-		apt-get install -y nodejs >>"$LOGFILE" 2>&1
+		runcmd "curl -sL https://deb.nodesource.com/setup_${NODEVERSION}.x | bash -"
+		runcmd "apt-get install -y nodejs"
 		printok "Installing node.js"
 	else
 		UpdateNodeYarn
 	fi
 
 	# only install yarn repo and package if not found
-	cmdlog "command -v yarn"
-	if [[ -z $(command -v yarn 2>>"$LOGFILE") ]]; then
+	if [[ -z $(runcmd_nolog "command -v yarn") ]]; then
 		echo
 		printprog "Installing yarn"
-		cmdlog "curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add -"
-		curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - >>"$LOGFILE" 2>&1
-		cmdlog "echo \"deb https://dl.yarnpkg.com/debian/ stable main\" | tee /etc/apt/sources.list.d/yarn.list"
-		echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list >>"$LOGFILE" 2>&1
-		cmdlog "apt-get update"
-		apt-get update >>"$LOGFILE" 2>&1
-		cmdlog "apt-get install -y yarn"
-		apt-get install -y yarn >>"$LOGFILE" 2>&1
+		runcmd "curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add -"
+		runcmd "echo \"deb https://dl.yarnpkg.com/debian/ stable main\" | tee /etc/apt/sources.list.d/yarn.list"
+		runcmd "apt-get update"
+		runcmd "apt-get install -y yarn"
 		printok "Installing yarn"
 	fi
 
 	echo
 	printprog "Enabling and starting redis service"
-	cmdlog "/bin/systemctl enable redis-server && /bin/systemctl start redis-server"
-	/bin/systemctl enable redis-server >>"$LOGFILE" 2>&1 && /bin/systemctl start redis-server >>"$LOGFILE" 2>&1 || false
+	runcmd "/bin/systemctl enable redis-server && /bin/systemctl start redis-server"
 	printok "Enabling and starting redis service"
 
 	echo
 	printprog "Enabling and starting rpcbind service"
-	cmdlog "/bin/systemctl enable rpcbind && /bin/systemctl start rpcbind"
-	/bin/systemctl enable rpcbind >>"$LOGFILE" 2>&1 && /bin/systemctl start rpcbind >>"$LOGFILE" 2>&1 || false
+	runcmd "/bin/systemctl enable rpcbind && /bin/systemctl start rpcbind"
 	printok "Enabling and starting rpcbind service"
 
 }
@@ -328,19 +302,15 @@ function UpdateNodeYarn {
 		if [[ -n "$NODEV" ]] && [[ "$NODEV" -lt "${NODEVERSION}" ]]; then
 			echo
 			printprog "node.js version is $NODEV, upgrading to ${NODEVERSION}.x"
-			cmdlog "curl -sL https://rpm.nodesource.com/setup_${NODEVERSION}.x | bash -"
-			curl -sL "https://rpm.nodesource.com/setup_${NODEVERSION}.x" | bash - >>"$LOGFILE" 2>&1
-			cmdlog "yum clean all"
-			yum clean all >> "$LOGFILE" 2>&1
-			cmdlog "yum install -y nodejs"
-			yum install -y nodejs >>LOGFILE 2>&1
+			runcmd "curl -sL https://rpm.nodesource.com/setup_${NODEVERSION}.x | bash -"
+			runcmd "yum clean all"
+			runcmd "yum install -y nodejs"
 			printok "node.js version is $NODEV, upgrading to ${NODEVERSION}.x"
 		else
 			if [[ "$TASK" == "Update" ]]; then
 				echo
 				printprog "node.js version already on $NODEV, checking updates"
-				cmdlog "yum update -y nodejs yarn"
-				yum update -y nodejs yarn >>"$LOGFILE" 2>&1
+				runcmd "yum update -y nodejs yarn"
 				printok "node.js version already on $NODEV, checking updates"
 			elif [[ "$TASK" == "Installation" ]]; then
 				echo
@@ -353,17 +323,14 @@ function UpdateNodeYarn {
 		if [[ -n "$NODEV" ]] && [[ "$NODEV" -lt "${NODEVERSION}" ]]; then
 			echo
 			printprog "node.js version is $NODEV, upgrading to ${NODEVERSION}.x"
-			cmdlog "curl -sL https://deb.nodesource.com/setup_${NODEVERSION}.x | bash -"
-			curl -sL "https://deb.nodesource.com/setup_${NODEVERSION}.x" | bash - >>"$LOGFILE" 2>&1
-			cmdlog "apt-get install -y nodejs"
-			apt-get install -y nodejs >>"$LOGFILE" 2>&1
+			runcmd "curl -sL https://deb.nodesource.com/setup_${NODEVERSION}.x | bash -"
+			runcmd "apt-get install -y nodejs"
 			printok	"node.js version is $NODEV, upgrading to ${NODEVERSION}.x"
 		else
 			if [[ "$TASK" == "Update" ]]; then
 				echo
 				printprog "node.js version already on $NODEV, checking updates"
-				cmdlog "apt-get install -y --only-upgrade nodejs yarn"
-				apt-get install -y --only-upgrade nodejs yarn >>"$LOGFILE" 2>&1
+				runcmd "apt-get install -y --only-upgrade nodejs yarn"
 				printok "node.js version already on $NODEV, checking updates"
 			elif [[ "$TASK" == "Installation" ]]; then
 				echo
@@ -375,7 +342,7 @@ function UpdateNodeYarn {
 
 function InstallAdditionalXOPlugins {
 
-	set -euo pipefail
+	set -uo pipefail
 
 	trap ErrorHandling ERR INT
 
@@ -390,32 +357,25 @@ function InstallAdditionalXOPlugins {
 
 	local ADDITIONAL_PLUGINSARRAY=($(echo "$ADDITIONAL_PLUGINS" | tr ',' ' '))
 	for x in "${ADDITIONAL_PLUGINSARRAY[@]}"; do
-		local PLUGIN_NAME=$(basename "$x" | rev | cut -c 5- | rev)
-		local PLUGIN_SRC_DIR=$(realpath -m "$XO_SRC_DIR/../$PLUGIN_NAME")
+		local PLUGIN_NAME=$(runcmd_nolog "basename '$x' | rev | cut -c 5- | rev")
+		local PLUGIN_SRC_DIR=$(runcmd_nolog "realpath -m '$XO_SRC_DIR/../$PLUGIN_NAME'")
 
 		if [[ ! -d "$PLUGIN_SRC_DIR" ]]; then
-			cmdlog "mkdir -p \"$PLUGIN_SRC_DIR\""
-			mkdir -p "$PLUGIN_SRC_DIR"
-			cmdlog "git clone \"${x}\" \"$PLUGIN_SRC_DIR\""
-			git clone "${x}" "$PLUGIN_SRC_DIR" >>"$LOGFILE" 2>&1
+			runcmd "mkdir -p \"$PLUGIN_SRC_DIR\""
+			runcmd "git clone \"${x}\" \"$PLUGIN_SRC_DIR\""
 		else
-			cmdlog "cd \"$PLUGIN_SRC_DIR\""
-			cd "$PLUGIN_SRC_DIR" >>"$LOGFILE" 2>&1
-			cmdlog "git pull"
-			git pull >>"$LOGFILE" 2>&1
-			cd "$(dirname "$0")" >>"$LOGFILE" 2>&1
-			cmdlog "cd $(dirname "$0")"
+			runcmd "cd \"$PLUGIN_SRC_DIR\" && git pull"
+			runcmd "cd $(dirname "$0")"
 		fi
 
-		cmdlog "cp -r $PLUGIN_SRC_DIR $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/"
-		cp -r "$PLUGIN_SRC_DIR" "$INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/" >>"$LOGFILE" 2>&1
+		runcmd "cp -r $PLUGIN_SRC_DIR $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/"
 	done
 	printok "Fetching 3rd party plugin(s) source code"
 }
 
 function InstallXOPlugins {
 
-	set -euo pipefail
+	set -uo pipefail
 
 	trap ErrorHandling ERR INT
 
@@ -429,14 +389,13 @@ function InstallXOPlugins {
 	printprog "Installing plugins"
 
 	if [[ "$PLUGINS" == "all" ]]; then
-		cmdlog "find \"$INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/\" -maxdepth 1 -mindepth 1 -not -name \"xo-server\" -not -name \"xo-web\" -not -name \"xo-server-cloud\" -exec ln -sn {} \"$INSTALLDIR/xo-builds/xen-orchestra-$TIME/\""
-		find "$INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/" -maxdepth 1 -mindepth 1 -not -name "xo-server" -not -name "xo-web" -not -name "xo-server-cloud" -exec ln -sn {} "$INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/node_modules/" \; >>"$LOGFILE" 2>&1
+		# shellcheck disable=SC1117
+		runcmd "find \"$INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/\" -maxdepth 1 -mindepth 1 -not -name \"xo-server\" -not -name \"xo-web\" -not -name \"xo-server-cloud\" -exec ln -sn {} \"$INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/node_modules/\" \;"
 	else
 		local PLUGINSARRAY=($(echo "$PLUGINS" | tr ',' ' '))
 		for x in "${PLUGINSARRAY[@]}"; do
 		if [[ $(find "$INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages" -type d -name "$x") ]]; then
-			cmdlog "ln -sn $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/$x $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/node_modules/"
-			ln -sn "$INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/$x" "$INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/node_modules/" >>"$LOGFILE" 2>&1
+			runcmd "ln -sn $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/$x $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/node_modules/"
 		fi
 		done
 	fi
@@ -447,7 +406,7 @@ function InstallXOPlugins {
 
 function InstallXO {
 
-	set -euo pipefail
+	set -uo pipefail
 
 	trap ErrorHandling ERR INT
 
@@ -457,8 +416,7 @@ function InstallXO {
 		if [[ -z $(getent passwd "$XOUSER") ]]; then
 			echo
 			printprog "Creating missing $XOUSER user"
-			cmdlog "useradd -s /sbin/nologin $XOUSER"
-			useradd -s /sbin/nologin "$XOUSER" >>"$LOGFILE" 2>&1
+			runcmd "useradd -s /sbin/nologin $XOUSER -m"
 			printok "Creating missing $XOUSER user"
 			sleep 2
 		fi
@@ -468,8 +426,7 @@ function InstallXO {
 	if [[ ! -d "$INSTALLDIR" ]] ; then
 		echo
 		printprog "Creating missing basedir to $INSTALLDIR"
-		cmdlog "mkdir -p \"$INSTALLDIR\""
-		mkdir -p "$INSTALLDIR"
+		runcmd "mkdir -p \"$INSTALLDIR\""
 		printok "Creating missing basedir to $INSTALLDIR"
 	fi
 
@@ -477,83 +434,59 @@ function InstallXO {
 	if [[ ! -d "$INSTALLDIR/xo-builds" ]]; then
 		echo
 		printprog "Creating missing xo-builds directory to $INSTALLDIR/xo-builds"
-		cmdlog "mkdir \"$INSTALLDIR/xo-builds\""
-		mkdir "$INSTALLDIR/xo-builds"
+		runcmd "mkdir \"$INSTALLDIR/xo-builds\""
 		printok "Creating missing xo-builds directory to $INSTALLDIR/xo-builds"
 	fi
 
 	echo
 	printinfo "Fetching Xen Orchestra source code"
 	if [[ ! -d "$XO_SRC_DIR" ]]; then
-		cmdlog "mkdir -p \"$XO_SRC_DIR\""
-		mkdir -p "$XO_SRC_DIR"
-		cmdlog "git clone \"${REPOSITORY}\" \"$XO_SRC_DIR\""
-		git clone "${REPOSITORY}" "$XO_SRC_DIR" >>"$LOGFILE" 2>&1
+		runcmd "mkdir -p \"$XO_SRC_DIR\""
+		runcmd "git clone \"${REPOSITORY}\" \"$XO_SRC_DIR\""
 	else
-		cmdlog "cd \"$XO_SRC_DIR\""
-		cd "$XO_SRC_DIR" >>"$LOGFILE" 2>&1
-		cmdlog "git pull"
-		git pull >>"$LOGFILE" 2>&1
-		cd "$(dirname "$0")" >>"$LOGFILE" 2>&1
-		cmdlog "cd $(dirname "$0")"
+		runcmd "cd \"$XO_SRC_DIR\" && git pull"
+		runcmd "cd $(dirname "$0")"
 	fi
 
 	# Deploy the latest xen-orchestra source to the new install directory.
 	echo
 	printinfo "Creating install directory: $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
-	cmdlog "rm -rf \"$INSTALLDIR/xo-builds/xen-orchestra-$TIME\""
-	rm -rf "$INSTALLDIR/xo-builds/xen-orchestra-$TIME" >>"$LOGFILE" 2>&1
-	cmdlog "cp -r \"$XO_SRC_DIR" "$INSTALLDIR/xo-builds/xen-orchestra-$TIME\""
-	cp -r "$XO_SRC_DIR" "$INSTALLDIR/xo-builds/xen-orchestra-$TIME" >>"$LOGFILE" 2>&1
+	runcmd "rm -rf \"$INSTALLDIR/xo-builds/xen-orchestra-$TIME\""
+	runcmd "cp -r \"$XO_SRC_DIR\" \"$INSTALLDIR/xo-builds/xen-orchestra-$TIME\""
 
 	if [[ "$BRANCH" == "release" ]]; then
-		cmdlog "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
-		cd "$INSTALLDIR/xo-builds/xen-orchestra-$TIME"
-		TAG=$(git describe --tags "$(git rev-list --tags --max-count=1)")
+		runcmd "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
+		TAG=$(runcmd_nolog "git describe --tags '$(git rev-list --tags --max-count=1)'")
 
 		echo
 		printinfo "Checking out latest tagged release '$TAG'"
 
-		cmdlog "git checkout $TAG"
-		git checkout "$TAG" >>"$LOGFILE" 2>&1
-		cmdlog "cd $(dirname "$0")"
-		cd "$(dirname "$0")"
+		runcmd "git checkout $TAG"
+		runcmd "cd $(dirname "$0")"
 	elif [[ "$BRANCH" != "master" ]]; then
 		echo
 		printinfo "Checking out source code from branch '$BRANCH'"
 
-		cmdlog "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
-		cd "$INSTALLDIR/xo-builds/xen-orchestra-$TIME" >>"$LOGFILE" 2>&1
-		cmdlog "git checkout $BRANCH"
-		git checkout "$BRANCH" >>"$LOGFILE" 2>&1
-		cmdlog "cd $(dirname "$0")"
-		cd "$(dirname "$0")" >>"$LOGFILE" 2>&1
+		runcmd "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
+		runcmd "git checkout $BRANCH"
+		runcmd "cd $(dirname "$0")"
 	fi
 
 	# Check if the new repo is any different from the currently-installed
 	# one. If not, then skip the build and delete the repo we just cloned.
 
 	# Get the commit ID of the to-be-installed xen-orchestra.
-	cmdlog "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
-	cd "$INSTALLDIR/xo-builds/xen-orchestra-$TIME"
-	cmdlog "git rev-parse HEAD"
-	NEW_REPO_HASH=$(git rev-parse HEAD 2>>"$LOGFILE")
-	cmdlog "git rev-parse --short HEAD"
-	NEW_REPO_HASH_SHORT=$(git rev-parse --short HEAD 2>>"$LOGFILE")
-	cmdlog "cd $(dirname "$0")"
-	cd "$(dirname "$0")" >>"$LOGFILE" 2>&1
+#	runcmd "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
+	NEW_REPO_HASH=$(runcmd_nolog "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && git rev-parse HEAD")
+	NEW_REPO_HASH_SHORT=$(runcmd_nolog "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && git rev-parse --short HEAD")
+	runcmd "cd $(dirname "$0")"
 
 	# Get the commit ID of the currently-installed xen-orchestra (if one
 	# exists).
 	if [[ -L "$INSTALLDIR/xo-server" ]] && [[ -n $(readlink -e "$INSTALLDIR/xo-server") ]]; then
-		cmdlog "cd $INSTALLDIR/xo-server"
-		cd "$INSTALLDIR/xo-server" >>"$LOGFILE" 2>&1
-		cmdlog "git rev-parse HEAD"
-		OLD_REPO_HASH=$(git rev-parse HEAD 2>>"$LOGFILE")
-		cmdlog "git rev-parse --short HEAD"
-		OLD_REPO_HASH_SHORT=$(git rev-parse --short HEAD 2>>"$LOGFILE")
-		cmdlog "cd $(dirname "$0")"
-		cd "$(dirname "$0")" >>"$LOGFILE" 2>&1
+		OLD_REPO_HASH=$(runcmd_nolog "cd $INSTALLDIR/xo-server && git rev-parse HEAD")
+		OLD_REPO_HASH_SHORT=$(runcmd_nolog "cd $INSTALLDIR/xo-server && git rev-parse --short HEAD")
+		runcmd "cd $(dirname "$0")"
 	else
 		# If there's no existing installation, then we definitely want
 		# to proceed with the bulid.
@@ -575,16 +508,14 @@ function InstallXO {
 				;;
 				n)
 				printinfo "Cleaning up install directory: $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
-				cmdlog "rm -rf $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
-				rm -rf "$INSTALLDIR/xo-builds/xen-orchestra-$TIME" >>"$LOGFILE" 2>&1
+				runcmd "rm -rf $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
 				exit 0
 				;;
 			esac
 		else
 			printinfo "No changes to xen-orchestra since previous install. Skipping xo-server and xo-web build."
 			printinfo "Cleaning up install directory: $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
-			cmdlog "rm -rf $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
-			rm -rf "$INSTALLDIR/xo-builds/xen-orchestra-$TIME" >>"$LOGFILE" 2>&1
+			runcmd "rm -rf $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
 			exit 0
 		fi
 	fi
@@ -594,7 +525,6 @@ function InstallXO {
 	if [[ $(pgrep -f xo-server) ]]; then
 		echo
 		printprog "Shutting down xo-server"
-		cmdlog "/bin/systemctl stop xo-server"
 		/bin/systemctl stop xo-server || { printfail "failed to stop service, exiting..." ; exit 1; }
 		printok "Shutting down xo-server"
 	fi
@@ -622,8 +552,7 @@ function InstallXO {
 	printinfo "xo-server and xo-web build takes quite a while. Grab a cup of coffee and lay back"
 	echo
 	printprog "Running installation"
-	cmdlog "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn  && yarn build"
-	cd "$INSTALLDIR/xo-builds/xen-orchestra-$TIME" >>"$LOGFILE" 2>&1 && yarn >>"$LOGFILE" 2>&1 && yarn build >>"$LOGFILE" 2>&1 || false
+	runcmd "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn && yarn build"
 	printok "Running installation"
 
 	# Install plugins
@@ -632,33 +561,26 @@ function InstallXO {
 	echo
 	printinfo "Fixing binary path in systemd service configuration file"
 	# shellcheck disable=SC1117
-	cmdlog "sed -i \"s#ExecStart=.*#ExecStart=$INSTALLDIR\/xo-server\/dist\/cli.mjs#\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service"
-	# shellcheck disable=SC1117
-	sed -i "s#ExecStart=.*#ExecStart=$INSTALLDIR\/xo-server\/dist\/cli.mjs#" "$INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service"
+	runcmd "sed -i \"s#ExecStart=.*#ExecStart=$INSTALLDIR\/xo-server\/dist\/cli.mjs#\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service"
 	printinfo "Adding WorkingDirectory parameter to systemd service configuration file"
 	# shellcheck disable=SC1117
-	cmdlog "sed -i \"/ExecStart=.*/a WorkingDirectory=$INSTALLDIR/xo-server\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service"
-	# shellcheck disable=SC1117
-	sed -i "/ExecStart=.*/a WorkingDirectory=$INSTALLDIR/xo-server" "$INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service" >>"$LOGFILE" 2>&1
+	runcmd "sed -i \"/ExecStart=.*/a WorkingDirectory=$INSTALLDIR/xo-server\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service"
 
 	if [[ "$XOUSER" != "root" ]]; then
 		printinfo "Adding user to systemd config"
 		# shellcheck disable=SC1117
-		cmdlog "sed -i \"/SyslogIdentifier=.*/a User=$XOUSER\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service"
-		# shellcheck disable=SC1117
-		sed -i "/SyslogIdentifier=.*/a User=$XOUSER" "$INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service" >>"$LOGFILE" 2>&1
+		runcmd "sed -i \"/SyslogIdentifier=.*/a User=$XOUSER\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service"
 
 		if [ "$PORT" -le "1024" ]; then
-			NODEBINARY="$(command -v node)"
+			NODEBINARY=$(runcmd_nolog "command -v node")
 			if [[ -L "$NODEBINARY" ]]; then
-				NODEBINARY=$(readlink -e "$NODEBINARY")
+				NODEBINARY=$(runcmd_nolog "readlink -e $NODEBINARY")
 			fi
 
 			if [[ -n "$NODEBINARY" ]]; then
 				printprog "Attempting to set cap_net_bind_service permission for $NODEBINARY"
-				cmdlog "setcap 'cap_net_bind_service=+ep' $NODEBINARY"
-				setcap 'cap_net_bind_service=+ep' "$NODEBINARY" >>"$LOGFILE" 2>&1 \
-				&& printok " Attempting to set cap_net_bind_service permission for $NODEBINARY" || { printfail "Attempting to set cap_net_bind_service permission for $NODEBINARY" ; echo "	Non-privileged user might not be able to bind to <1024 port. xo-server won't start most likely" ; }
+				runcmd "setcap 'cap_net_bind_service=+ep' $NODEBINARY" && printok "Attempting to set cap_net_bind_service permission for $NODEBINARY" \
+				|| { printfail "Attempting to set cap_net_bind_service permission for $NODEBINARY" ; echo "	Non-privileged user might not be able to bind to <1024 port. xo-server won't start most likely" ; }
 			else
 				printfail "Can't find node executable, or it's a symlink to non existing file. Not trying to setcap. xo-server won't start most likely"
 			fi
@@ -671,93 +593,71 @@ function InstallXO {
 
 		INSTALLDIRESC=$(echo "$INSTALLDIR" | sed 's/\//\\\//g')
 		# shellcheck disable=SC1117
-		cmdlog "sed -i \"s/#'\/any\/url' = '\/path\/to\/directory'/'\/' = '$INSTALLDIRESC\/xo-web\/dist\/'/\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
-		# shellcheck disable=SC1117
-		sed -i "s/#'\/any\/url' = '\/path\/to\/directory'/'\/' = '$INSTALLDIRESC\/xo-web\/dist\/'/" "$INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml" >>"$LOGFILE" 2>&1
+		runcmd "sed -i \"s/#'\/any\/url' = '\/path\/to\/directory'/'\/' = '$INSTALLDIRESC\/xo-web\/dist\/'/\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
                 sleep 2
 
                 if [[ "$PORT" != "80" ]]; then
 			printinfo "Changing port in xo-server configuration file"
 			# shellcheck disable=SC1117
-			cmdlog "sed -i \"s/port = 80/port = $PORT/\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
-			# shellcheck disable=SC1117
-			sed -i "s/port = 80/port = $PORT/" "$INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml" >>"$LOGFILE" 2>&1
+			runcmd "sed -i \"s/port = 80/port = $PORT/\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
 			sleep 2
                 fi
 
                 if [[ "$HTTPS" == "true" ]] ; then
 			printinfo "Enabling HTTPS in xo-server configuration file"
 			# shellcheck disable=SC1117
-			cmdlog "sed -i \"s%# cert = '.\/certificate.pem'%cert = '$PATH_TO_HTTPS_CERT'%\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
+			runcmd "sed -i \"s%# cert = '.\/certificate.pem'%cert = '$PATH_TO_HTTPS_CERT'%\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
 			# shellcheck disable=SC1117
-			sed -i "s%# cert = '.\/certificate.pem'%cert = '$PATH_TO_HTTPS_CERT'%" "$INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml" >>"$LOGFILE" 2>&1
+			runcmd "sed -i \"s%# key = '.\/key.pem'%key = '$PATH_TO_HTTPS_KEY'%\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
 			# shellcheck disable=SC1117
-			cmdlog \"sed -i "s%# key = '.\/key.pem'%key = '$PATH_TO_HTTPS_KEY'%\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
-			# shellcheck disable=SC1117
-			sed -i "s%# key = '.\/key.pem'%key = '$PATH_TO_HTTPS_KEY'%" "$INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml" >>"$LOGFILE" 2>&1
-			# shellcheck disable=SC1117
-			cmdlog "sed -i \"s/# redirectToHttps/redirectToHttps/\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
-			# shellcheck disable=SC1117
-			sed -i "s/# redirectToHttps/redirectToHttps/" "$INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml" >>"$LOGFILE" 2>&1
+			runcmd "sed -i \"s/# redirectToHttps/redirectToHttps/\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
 			sleep 2
 		fi
 
 		printinfo "Activating modified configuration file"
-		cmdlog "mkdir -p $CONFIGPATH/.config/xo-server"
-		mkdir -p "$CONFIGPATH/.config/xo-server"
-		cmdlog "mv -f $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml $CONFIGPATH/.config/xo-server/config.toml"
-                mv -f "$INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml" "$CONFIGPATH/.config/xo-server/config.toml"
+		runcmd "mkdir -p $CONFIGPATH/.config/xo-server"
+		runcmd "mv -f $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml $CONFIGPATH/.config/xo-server/config.toml"
 
 
         fi
 
 	echo
 	printinfo "Symlinking fresh xo-server install/update to $INSTALLDIR/xo-server"
-	cmdlog "ln -sfn $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server $INSTALLDIR/xo-server"
-	ln -sfn "$INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server" "$INSTALLDIR/xo-server" >>"$LOGFILE" 2>&1
+	runcmd "ln -sfn $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server $INSTALLDIR/xo-server"
 	sleep 2
 	printinfo "Symlinking fresh xo-web install/update to $INSTALLDIR/xo-web"
-	cmdlog "ln -sfn $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-web $INSTALLDIR/xo-web"
-	ln -sfn "$INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-web" "$INSTALLDIR/xo-web" >>"$LOGFILE" 2>&1
+	runcmd "ln -sfn $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-web $INSTALLDIR/xo-web"
 
 	if [[ "$XOUSER" != "root" ]]; then
-		cmdlog "chown -R $XOUSER:$XOUSER $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
-		chown -R "$XOUSER:$XOUSER" "$INSTALLDIR/xo-builds/xen-orchestra-$TIME" >>"$LOGFILE" 2>&1
+		runcmd "chown -R $XOUSER:$XOUSER $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
 
 		if [ ! -d /var/lib/xo-server ]; then
-			cmdlog "mkdir /var/lib/xo-server"
-			mkdir /var/lib/xo-server >>"$LOGFILE" 2>&1
+			runcmd "mkdir /var/lib/xo-server"
 		fi
 
-		cmdlog "chown -R $XOUSER:$XOUSER /var/lib/xo-server"
-		chown -R "$XOUSER:$XOUSER" /var/lib/xo-server >>"$LOGFILE" 2>&1
+		runcmd "chown -R $XOUSER:$XOUSER /var/lib/xo-server"
 
-		cmdlog "chown -R $XOUSER:$XOUSER $CONFIGPATH/.config/xo-server"
-		chown -R "$XOUSER:$XOUSER" "$CONFIGPATH/.config/xo-server" >>"$LOGFILE" 2>&1
+		runcmd "chown -R $XOUSER:$XOUSER $CONFIGPATH/.config/xo-server"
 	fi
 
 	# fix to prevent older installations to not update because systemd service is not symlinked anymore
 	if [[ $(find /etc/systemd/system -maxdepth 1 -type l -name "xo-server.service") ]]; then
-		cmdlog "rm -f /etc/systemd/system/xo-server.service"
-		rm -f /etc/systemd/system/xo-server.service >>"$LOGFILE" 2>&1
+		runcmd "rm -f /etc/systemd/system/xo-server.service"
 	fi
 
 	echo
 	printinfo "Replacing systemd service configuration file"
 
-	cmdlog "/bin/cp -f $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service /etc/systemd/system/xo-server.service"
-	/bin/cp -f "$INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service" /etc/systemd/system/xo-server.service >>"$LOGFILE" 2>&1
+	runcmd "/bin/cp -f $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service /etc/systemd/system/xo-server.service"
 	sleep 2
 	printinfo "Reloading systemd configuration"
 	echo
-	cmdlog "/bin/systemctl daemon-reload"
-	/bin/systemctl daemon-reload >>"$LOGFILE" 2>&1
+	runcmd "/bin/systemctl daemon-reload"
 	sleep 2
 
 	echo
 	printinfo "Starting xo-server..."
-	cmdlog "/bin/systemctl start xo-server"
-	/bin/systemctl start xo-server >>"$LOGFILE" 2>&1
+	runcmd "/bin/systemctl start xo-server"
 
 	# no need to exit/trap on errors anymore
 	set +eo pipefail
@@ -766,12 +666,12 @@ function InstallXO {
 	count=0
 	limit=6
 	# shellcheck disable=SC1117
-	servicestatus="$(journalctl --since "$LOGTIME" -u xo-server | grep "https\{0,1\}:\/\/.*:$PORT")"
+	servicestatus="$(journalctl --since "$LOGTIME" -u xo-server | grep "Web server listening on https\{0,1\}:\/\/.*:$PORT")"
 	while [[ -z "$servicestatus" ]] && [[ "$count" -lt "$limit" ]]; do
 		echo " waiting for port to be open"
 		sleep 10
 		# shellcheck disable=SC1117
-		servicestatus="$(journalctl --since "$LOGTIME" -u xo-server | grep "https\{0,1\}:\/\/.*:$PORT")"
+		servicestatus="$(journalctl --since "$LOGTIME" -u xo-server | grep "Web server listening on https\{0,1\}:\/\/.*:$PORT")"
 		(( count++ ))
 	done
 
@@ -785,9 +685,8 @@ function InstallXO {
 		printinfo "$TASK successful. Enabling xo-server service to start on reboot"
 		echo "" >> "$LOGFILE"
 		echo "$TASK succesful" >> "$LOGFILE"
-		cmdlog "/bin/systemctl enable xo-server"
+		runcmd "/bin/systemctl enable xo-server"
 		echo
-		/bin/systemctl enable xo-server >>"$LOGFILE" 2>&1
 	else
 		echo
 		printfail "$TASK completed, but looks like there was a problem when starting xo-server/reading journalctl. Please see logs for more details"
@@ -809,7 +708,7 @@ function UpdateXO {
 
 	InstallXO
 
-	set -euo pipefail
+	set -uo pipefail
 
 	if [[ "$PRESERVE" == "0" ]]; then
 		printinfo "PRESERVE variable is set to 0. This needs to be at least 1. Not doing a cleanup"
@@ -819,9 +718,7 @@ function UpdateXO {
 	# remove old builds. leave as many as defined in PRESERVE variable
 	echo
 	printprog "Removing old installations. Leaving $PRESERVE latest"
-	cmdlog "find $INSTALLDIR/xo-builds/ -maxdepth 1 -type d -name \"xen-orchestra*\" -printf \"%T@ %p\\n\" | sort -n | cut -d' ' -f2- | head -n -$PRESERVE | xargs -r rm -r"
-	# shellcheck disable=SC1117
-	find "$INSTALLDIR/xo-builds/" -maxdepth 1 -type d -name "xen-orchestra*" -printf "%T@ %p\n" | sort -n | cut -d' ' -f2- | head -n -"$PRESERVE" | xargs -r rm -r >>"$LOGFILE" 2>&1
+	runcmd "find $INSTALLDIR/xo-builds/ -maxdepth 1 -type d -name \"xen-orchestra*\" -printf \"%T@ %p\\n\" | sort -n | cut -d' ' -f2- | head -n -$PRESERVE | xargs -r rm -r"
 	printok "Removing old installations. Leaving $PRESERVE latest"
 
 }
@@ -905,9 +802,9 @@ function HandleArgs {
 
 function RollBackInstallation {
 
-	set -euo pipefail
+	set -uo pipefail
 
-	INSTALLATIONS=($(find "$INSTALLDIR/xo-builds/" -maxdepth 1 -type d -name "xen-orchestra-*" 2>/dev/null))
+	INSTALLATIONS=($(runcmd_nolog "find '$INSTALLDIR/xo-builds/' -maxdepth 1 -type d -name 'xen-orchestra-*'"))
 
 	if [[ ${#INSTALLATIONS[@]} -le 1 ]]; then
 		printinfo "One or less installations exist, nothing to change"
@@ -922,21 +819,16 @@ function RollBackInstallation {
 			*xen-orchestra*)
 				echo
 				printinfo "Setting $INSTALLDIR/xo-server symlink to $INSTALLATION/packages/xo-server"
-				cmdlog "ln -sfn $INSTALLATION/packages/xo-server $INSTALLDIR/xo-server"
-				ln -sfn "$INSTALLATION/packages/xo-server" "$INSTALLDIR/xo-server" >>"$LOGFILE" 2>&1
+				runcmd "ln -sfn $INSTALLATION/packages/xo-server $INSTALLDIR/xo-server"
 				printinfo "Setting $INSTALLDIR/xo-web symlink to $INSTALLATION/packages/xo-web"
-				cmdlog "ln -sfn $INSTALLATION/packages/xo-web $INSTALLDIR/xo-web"
-				ln -sfn "$INSTALLATION/packages/xo-web" "$INSTALLDIR/xo-web" >>"$LOGFILE" 2>&1
+				runcmd "ln -sfn $INSTALLATION/packages/xo-web $INSTALLDIR/xo-web"
 				echo
 				printinfo "Replacing xo.server.service systemd configuration file"
-				cmdlog "/bin/cp -f $INSTALLATION/packages/xo-server/xo-server.service /etc/systemd/system/xo-server.service"
-				/bin/cp -f "$INSTALLATION/packages/xo-server/xo-server.service" /etc/systemd/system/xo-server.service >>"$LOGFILE" 2>&1
-				cmdlog "/bin/systemctl daemon-reload"
-				/bin/systemctl daemon-reload >>"$LOGFILE" 2>&1
+				runcmd "/bin/cp -f $INSTALLATION/packages/xo-server/xo-server.service /etc/systemd/system/xo-server.service"
+				runcmd "/bin/systemctl daemon-reload"
 				echo
 				printinfo "Restarting xo-server..."
-				cmdlog "/bin/systemctl restart xo-server"
-				/bin/systemctl restart xo-server >>"$LOGFILE" 2>&1
+				runcmd "/bin/systemctl restart xo-server"
 				echo
 				break
 			;;
@@ -950,16 +842,14 @@ function RollBackInstallation {
 
 function CheckOS {
 
-	OSVERSION=$(grep ^VERSION_ID /etc/os-release | cut -d'=' -f2 | grep -Eo "[0-9]{1,2}" | head -1)
-	OSNAME=$(grep ^NAME /etc/os-release | cut -d'=' -f2 | sed 's/"//g' | awk '{print $1}')
+	OSVERSION=$(runcmd_nolog "grep ^VERSION_ID /etc/os-release | cut -d'=' -f2 | grep -Eo '[0-9]{1,2}' | head -1")
+	OSNAME=$(runcmd_nolog "grep ^NAME /etc/os-release | cut -d'=' -f2 | sed 's/\"//g' | awk '{print \$1}'")
 
-	cmdlog "command -v yum"
-	if [[ $(command -v yum 2>>"$LOGFILE") ]]; then
+	if [[ $(runcmd_nolog "command -v yum") ]]; then
 		PKG_FORMAT="rpm"
 	fi
 
-	cmdlog "command -v apt-get"
-	if [[ $(command -v apt-get 2>>"$LOGFILE") ]]; then
+	if [[ $(runcmd_nolog "command -v apt-get") ]]; then
 		PKG_FORMAT="deb"
 	fi
 
@@ -1007,8 +897,7 @@ function CheckOS {
 
 function CheckXE {
 
-	cmdlog "command -v xe"
-	if [[ $(command -v xe 2>>"$LOGFILE") ]]; then
+	if [[ $(runcmd_nolog "command -v xe") ]]; then
 		printfail "xe binary found, don't try to run install on xcp-ng/xenserver host. use xo-appliance.sh instead"
 		exit 1
 	fi
@@ -1053,7 +942,7 @@ function CheckCertificate {
 }
 
 function CheckMemory {
-	SYSMEM=$(grep MemTotal /proc/meminfo | awk '{print $2}')
+	SYSMEM=$(runcmd_nolog "grep MemTotal /proc/meminfo | awk '{print \$2}'")
 
 	if [[ "$SYSMEM" -lt 3000000 ]]; then
 		echo
@@ -1076,7 +965,7 @@ function CheckMemory {
 }
 
 function CheckDiskFree {
-	FREEDISK="$(df -P -k "${INSTALLDIR%/*}" | tail -1 | awk '{print $4}')"
+	FREEDISK=$(runcmd_nolog "df -P -k '${INSTALLDIR%/*}' | tail -1 | awk '{print \$4}'")
 
 	if [[ "$FREEDISK" -lt 1048576 ]]; then
 		echo
@@ -1142,8 +1031,8 @@ read -r -p ": " option
 					case $answer in
 						y)
 						echo "Stopping xo-server..."
-						cmdlog "/bin/systemctl stop xo-server"
-						/bin/systemctl stop xo-server >>"$LOGFILE" 2>&1 || { printfail "failed to stop service, exiting..." ; exit 1; }
+						runcmd "/bin/systemctl stop xo-server" \
+						|| { printfail "failed to stop service, exiting..." ; exit 1; }
 					;;
 						n)
 						exit 0
