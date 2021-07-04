@@ -33,6 +33,8 @@ ADDITIONAL_PLUGINS="${ADDITIONAL_PLUGINS:-"none"}"
 REPOSITORY="${REPOSITORY:-"https://github.com/vatesfr/xen-orchestra"}"
 OS_CHECK="${OS_CHECK:-"true"}"
 ARCH_CHECK="${ARCH_CHECK:-"true"}"
+PATH_TO_HTTPS_CERT="${PATH_TO_HTTPS_CERT:-""}"
+PATH_TO_HTTPS_KEY="${PATH_TO_HTTPS_KEY:-""}"
 
 # set variables not changeable in configfile
 TIME=$(date +%Y%m%d%H%M)
