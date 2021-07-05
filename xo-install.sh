@@ -84,7 +84,7 @@ function CheckUser {
 
 function scriptInfo {
 
-	SCRIPTVERSION=$(runcmd_nolog "cd '$(dirname "$0")' 2>/dev/null && git rev-parse --short HEAD 2>/dev/null")
+	SCRIPTVERSION=$(runcmd_stdout "cd '$(dirname "$0")' 2>/dev/null && git rev-parse --short HEAD 2>/dev/null")
 
 	[ -z "$SCRIPTVERSION" ] && SCRIPTVERSION="undefined"
 	echo "Running script version $SCRIPTVERSION with config:" >> "$LOGFILE"
@@ -97,13 +97,13 @@ function scriptInfo {
 function runcmd {
 
 	echo "+ $1" >>"$LOGFILE"
-	bash -c "$1" >>"$LOGFILE" 2>&1
+	bash -c -o pipefail "$1" >>"$LOGFILE" 2>&1
 }
 
-function runcmd_nolog {
+function runcmd_stdout {
 
 	echo "+ $1" >>"$LOGFILE"
-	bash -c "$1" 2>>"$LOGFILE"
+	bash -c -o pipefail "$1" 2>>"$LOGFILE" | tee -a "$LOGFILE"
 }
 
 function printprog {
@@ -154,7 +154,7 @@ function InstallDependenciesRPM {
 	printok "Installing build dependencies, redis server, python, git, nfs-utils, cifs-utils"
 
 	# only run automated node install if executable not found
-	if [[ -z $(runcmd_nolog "command -v node") ]]; then
+	if [[ -z $(runcmd_stdout "command -v node") ]]; then
 		echo
 		printprog "Installing node.js"
 		runcmd "curl -s -L https://rpm.nodesource.com/setup_${NODEVERSION}.x | bash -"
@@ -164,7 +164,7 @@ function InstallDependenciesRPM {
 	fi
 
 	# only install yarn repo and package if not found
-	if [[ -z $(runcmd_nolog "command -v yarn") ]] ; then
+	if [[ -z $(runcmd_stdout "command -v yarn") ]] ; then
 		echo
 		printprog "Installing yarn"
 		runcmd "curl -s -o /etc/yum.repos.d/yarn.repo https://dl.yarnpkg.com/rpm/yarn.repo && yum -y install yarn"
@@ -172,7 +172,7 @@ function InstallDependenciesRPM {
 	fi
 
 	# only install epel-release if doesn't exist
-	if [[ -z $(runcmd_nolog "rpm -q epel-release") ]] ; then
+	if [[ -z $(runcmd_stdout "rpm -q epel-release") ]] ; then
 		echo
 		printprog "Installing epel-repo"
 		runcmd "yum -y install epel-release"
@@ -180,7 +180,7 @@ function InstallDependenciesRPM {
 	fi
 
 	# only install libvhdi-tools if vhdimount is not present
-	if [[ -z $(runcmd_nolog "command -v vhdimount") ]] ; then
+	if [[ -z $(runcmd_stdout "command -v vhdimount") ]] ; then
 		echo
 		printprog "Installing libvhdi-tools from forensics repository"
 		runcmd "rpm -ivh https://forensics.cert.org/cert-forensics-tools-release-el8.rpm"
@@ -248,7 +248,7 @@ function InstallDependenciesDeb {
 	fi
 
 	# install setcap for non-root port binding if missing
-	if [[ -z $(runcmd_nolog "command -v setcap") ]]; then
+	if [[ -z $(runcmd_stdout "command -v setcap") ]]; then
 		echo
 		printprog "Installing setcap"
 		runcmd "apt-get install -y libcap2-bin"
@@ -257,7 +257,7 @@ function InstallDependenciesDeb {
 
 
 	# only run automated node install if executable not found
-	if [[ -z $(runcmd_nolog "command -v node") ]] || [[ -z $(runcmd_nolog "command -v npm") ]]; then
+	if [[ -z $(runcmd_stdout "command -v node") ]] || [[ -z $(runcmd_stdout "command -v npm") ]]; then
 		echo
 		printprog "Installing node.js"
 		runcmd "curl -sL https://deb.nodesource.com/setup_${NODEVERSION}.x | bash -"
@@ -268,7 +268,7 @@ function InstallDependenciesDeb {
 	fi
 
 	# only install yarn repo and package if not found
-	if [[ -z $(runcmd_nolog "command -v yarn") ]]; then
+	if [[ -z $(runcmd_stdout "command -v yarn") ]]; then
 		echo
 		printprog "Installing yarn"
 		runcmd "curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add -"
@@ -359,8 +359,8 @@ function InstallAdditionalXOPlugins {
 
 	local ADDITIONAL_PLUGINSARRAY=($(echo "$ADDITIONAL_PLUGINS" | tr ',' ' '))
 	for x in "${ADDITIONAL_PLUGINSARRAY[@]}"; do
-		local PLUGIN_NAME=$(runcmd_nolog "basename '$x' | rev | cut -c 5- | rev")
-		local PLUGIN_SRC_DIR=$(runcmd_nolog "realpath -m '$XO_SRC_DIR/../$PLUGIN_NAME'")
+		local PLUGIN_NAME=$(runcmd_stdout "basename '$x' | rev | cut -c 5- | rev")
+		local PLUGIN_SRC_DIR=$(runcmd_stdout "realpath -m '$XO_SRC_DIR/../$PLUGIN_NAME'")
 
 		if [[ ! -d "$PLUGIN_SRC_DIR" ]]; then
 			runcmd "mkdir -p \"$PLUGIN_SRC_DIR\""
@@ -415,7 +415,7 @@ function InstallXO {
 	# Create user if doesn't exist (if defined)
 
 	if [[ "$XOUSER" != "root" ]]; then
-		if [[ -z $(getent passwd "$XOUSER") ]]; then
+		if [[ -z $(runcmd_stdout "getent passwd $XOUSER") ]]; then
 			echo
 			printprog "Creating missing $XOUSER user"
 			runcmd "useradd -s /sbin/nologin $XOUSER -m"
@@ -458,7 +458,7 @@ function InstallXO {
 
 	if [[ "$BRANCH" == "release" ]]; then
 		runcmd "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
-		TAG=$(runcmd_nolog "git describe --tags '$(git rev-list --tags --max-count=1)'")
+		TAG=$(runcmd_stdout "git describe --tags '$(git rev-list --tags --max-count=1)'")
 
 		echo
 		printinfo "Checking out latest tagged release '$TAG'"
@@ -479,15 +479,15 @@ function InstallXO {
 
 	# Get the commit ID of the to-be-installed xen-orchestra.
 #	runcmd "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
-	NEW_REPO_HASH=$(runcmd_nolog "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && git rev-parse HEAD")
-	NEW_REPO_HASH_SHORT=$(runcmd_nolog "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && git rev-parse --short HEAD")
+	NEW_REPO_HASH=$(runcmd_stdout "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && git rev-parse HEAD")
+	NEW_REPO_HASH_SHORT=$(runcmd_stdout "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && git rev-parse --short HEAD")
 	runcmd "cd $(dirname "$0")"
 
 	# Get the commit ID of the currently-installed xen-orchestra (if one
 	# exists).
-	if [[ -L "$INSTALLDIR/xo-server" ]] && [[ -n $(readlink -e "$INSTALLDIR/xo-server") ]]; then
-		OLD_REPO_HASH=$(runcmd_nolog "cd $INSTALLDIR/xo-server && git rev-parse HEAD")
-		OLD_REPO_HASH_SHORT=$(runcmd_nolog "cd $INSTALLDIR/xo-server && git rev-parse --short HEAD")
+	if [[ -L "$INSTALLDIR/xo-server" ]] && [[ -n $(runcmd_stdout "readlink -e $INSTALLDIR/xo-server") ]]; then
+		OLD_REPO_HASH=$(runcmd_stdout "cd $INSTALLDIR/xo-server && git rev-parse HEAD")
+		OLD_REPO_HASH_SHORT=$(runcmd_stdout "cd $INSTALLDIR/xo-server && git rev-parse --short HEAD")
 		runcmd "cd $(dirname "$0")"
 	else
 		# If there's no existing installation, then we definitely want
@@ -524,7 +524,7 @@ function InstallXO {
 
 	# Now that we know we're going to be building a new xen-orchestra, make
 	# sure there's no already-running xo-server process.
-	if [[ $(pgrep -f xo-server) ]]; then
+	if [[ $(runcmd_stdout "pgrep -f xo-server") ]]; then
 		echo
 		printprog "Shutting down xo-server"
 		/bin/systemctl stop xo-server || { printfail "failed to stop service, exiting..." ; exit 1; }
@@ -574,9 +574,9 @@ function InstallXO {
 		runcmd "sed -i \"/SyslogIdentifier=.*/a User=$XOUSER\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service"
 
 		if [ "$PORT" -le "1024" ]; then
-			NODEBINARY=$(runcmd_nolog "command -v node")
+			NODEBINARY=$(runcmd_stdout "command -v node")
 			if [[ -L "$NODEBINARY" ]]; then
-				NODEBINARY=$(runcmd_nolog "readlink -e $NODEBINARY")
+				NODEBINARY=$(runcmd_stdout "readlink -e $NODEBINARY")
 			fi
 
 			if [[ -n "$NODEBINARY" ]]; then
@@ -806,7 +806,7 @@ function RollBackInstallation {
 
 	set -uo pipefail
 
-	INSTALLATIONS=($(runcmd_nolog "find '$INSTALLDIR/xo-builds/' -maxdepth 1 -type d -name 'xen-orchestra-*'"))
+	INSTALLATIONS=($(runcmd_stdout "find '$INSTALLDIR/xo-builds/' -maxdepth 1 -type d -name 'xen-orchestra-*'"))
 
 	if [[ ${#INSTALLATIONS[@]} -le 1 ]]; then
 		printinfo "One or less installations exist, nothing to change"
@@ -844,14 +844,14 @@ function RollBackInstallation {
 
 function CheckOS {
 
-	OSVERSION=$(runcmd_nolog "grep ^VERSION_ID /etc/os-release | cut -d'=' -f2 | grep -Eo '[0-9]{1,2}' | head -1")
-	OSNAME=$(runcmd_nolog "grep ^NAME /etc/os-release | cut -d'=' -f2 | sed 's/\"//g' | awk '{print \$1}'")
+	OSVERSION=$(runcmd_stdout "grep ^VERSION_ID /etc/os-release | cut -d'=' -f2 | grep -Eo '[0-9]{1,2}' | head -1")
+	OSNAME=$(runcmd_stdout "grep ^NAME /etc/os-release | cut -d'=' -f2 | sed 's/\"//g' | awk '{print \$1}'")
 
-	if [[ $(runcmd_nolog "command -v yum") ]]; then
+	if [[ $(runcmd_stdout "command -v yum") ]]; then
 		PKG_FORMAT="rpm"
 	fi
 
-	if [[ $(runcmd_nolog "command -v apt-get") ]]; then
+	if [[ $(runcmd_stdout "command -v apt-get") ]]; then
 		PKG_FORMAT="deb"
 	fi
 
@@ -899,7 +899,7 @@ function CheckOS {
 
 function CheckXE {
 
-	if [[ $(runcmd_nolog "command -v xe") ]]; then
+	if [[ $(runcmd_stdout "command -v xe") ]]; then
 		printfail "xe binary found, don't try to run install on xcp-ng/xenserver host. use xo-appliance.sh instead"
 		exit 1
 	fi
@@ -911,7 +911,7 @@ function CheckArch {
 		return 0
 	fi
 
-	if [[ $(uname -m) != "x86_64" ]]; then
+	if [[ $(runcmd_stdout "uname -m") != "x86_64" ]]; then
 		printfail "Installation supports only x86_64. You seem to be running architecture: $(uname -m)"
 		exit 1
 	fi
@@ -919,7 +919,7 @@ function CheckArch {
 
 function CheckSystemd {
 
-	if [[ -z $(command -v systemctl) ]]; then
+	if [[ -z $(runcmd_stdout "command -v systemctl") ]]; then
 		printfail "This tool is designed to work with systemd enabled systems only"
 		exit 1
 	fi
@@ -927,8 +927,8 @@ function CheckSystemd {
 
 function CheckCertificate {
 	if [[ "$HTTPS" == "true" ]]; then
-		local CERT="$(openssl x509 -modulus -noout -in "$PATH_TO_HTTPS_CERT" | openssl md5)"
-		local KEY="$(openssl rsa -modulus -noout -in "$PATH_TO_HTTPS_KEY" | openssl md5)"
+		local CERT="$(runcmd_stdout "openssl x509 -modulus -noout -in $PATH_TO_HTTPS_CERT | openssl md5")"
+		local KEY="$(runcmd_stdout "openssl rsa -modulus -noout -in $PATH_TO_HTTPS_KEY | openssl md5")"
 		if [[ "$CERT" != "$KEY" ]]; then
 			echo
 			printinfo "$PATH_TO_HTTPS_CERT:"
@@ -944,7 +944,7 @@ function CheckCertificate {
 }
 
 function CheckMemory {
-	SYSMEM=$(runcmd_nolog "grep MemTotal /proc/meminfo | awk '{print \$2}'")
+	SYSMEM=$(runcmd_stdout "grep MemTotal /proc/meminfo | awk '{print \$2}'")
 
 	if [[ "$SYSMEM" -lt 3000000 ]]; then
 		echo
@@ -967,7 +967,7 @@ function CheckMemory {
 }
 
 function CheckDiskFree {
-	FREEDISK=$(runcmd_nolog "df -P -k '${INSTALLDIR%/*}' | tail -1 | awk '{print \$4}'")
+	FREEDISK=$(runcmd_stdout "df -P -k '${INSTALLDIR%/*}' | tail -1 | awk '{print \$4}'")
 
 	if [[ "$FREEDISK" -lt 1048576 ]]; then
 		echo
