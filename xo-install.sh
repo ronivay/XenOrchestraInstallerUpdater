@@ -1086,9 +1086,9 @@ esac
 scriptInfo
 CheckUser
 CheckArch
+CheckXE
 CheckOS
 CheckSystemd
-CheckXE
 CheckCertificate
 
 if [[ $# != "0" ]]; then
