@@ -479,7 +479,6 @@ function InstallXO {
 	# one. If not, then skip the build and delete the repo we just cloned.
 
 	# Get the commit ID of the to-be-installed xen-orchestra.
-#	runcmd "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
 	NEW_REPO_HASH=$(runcmd_stdout "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && git rev-parse HEAD")
 	NEW_REPO_HASH_SHORT=$(runcmd_stdout "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && git rev-parse --short HEAD")
 	runcmd "cd $(dirname "$0")"
