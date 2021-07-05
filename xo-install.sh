@@ -103,6 +103,7 @@ function runcmd {
 function runcmd_stdout {
 
 	echo "+ $1" >>"$LOGFILE"
+	# shellcheck disable=SC2094
 	bash -c -o pipefail "$1" 2>>"$LOGFILE" | tee -a "$LOGFILE"
 }
 
