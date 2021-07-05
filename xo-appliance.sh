@@ -18,7 +18,7 @@ function OSCheck {
 
 	echo
 	echo "Welcome. This script will import a working Xen Orchestra appliance built using https://github.com/ronivay/XenOrchestraInstallerUpdater"
-	echo "You need at least 2vCPU/4GB/10GB disk free resources to import VM"	
+	echo "You need at least 2vCPU/4GB/10GB disk free resources to import VM"
 	echo
 	echo "Please report any issues to this github project"
 	echo
@@ -41,8 +41,6 @@ function NetworkChoose {
 	do
 		read -r -a network_split <<< "$network"
 		networkuuid=${network_split[0]}
-		# shellcheck disable=SC2124,SC2034
-		networkname=${network_split[@]:1}
 
 		case $network in
 			*)
@@ -162,7 +160,7 @@ function VMImport {
 		echo "Check VM status/ip-address manually. If VM started correctly, it should have Web UI and SSH accessible at it's ip-address"
 		echo "Default credentials for UI: admin@admin.net/admin"
 		echo "Default credentials for SSH: xo/xopass"
-		echo 
+		echo
 		echo "Remember to change both passwords before putting VM to use!"
 	fi
 
