@@ -127,6 +127,8 @@ deb:
 
 If you need to import an appliance directly to your host, you may use xo-appliance.sh script for this. It'll download a prebuilt Debian 10 image which has Xen Orchestra and XenOrchestraInstallerUpdater installed.
 
+Details of appliance build process [here](https://github.com/ronivay/xen-orchestra-appliance)
+
 Run on your Xenserver/XCP-ng host with root privileges:
 
 ```
