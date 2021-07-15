@@ -33,7 +33,7 @@ function NetworkChoose {
 	# shellcheck disable=SC1117
 	IFS=$'\n' read -r -d '' -a networks <<< "$(xe network-list | grep "uuid\|name-label" | cut -d':' -f2 | sed 's/^ //' | paste - -)"
 
-
+	echo
 	echo "Which network should the VM use?"
 	echo
 	local PS3="Pick a number. CTRL+C to exit: "
@@ -45,6 +45,42 @@ function NetworkChoose {
 		case $network in
 			*)
 			vifuuid="$networkuuid"
+			break
+			;;
+		esac
+	done
+
+}
+
+function StorageChoose {
+
+	set +e
+
+	# shellcheck disable=SC1117
+	IFS=$'\n' read -r -d '' -a storages <<< "$(xe sr-list content-type=user | grep "uuid\|name-description" | cut -d':' -f2 | sed 's/^ //' | paste - -)"
+
+	if [[ ${#storages[@]} -eq 0 ]]; then
+		echo "No storage repositories found, can't import VM"
+		echo "Create SR and try again. More information: https://xcp-ng.org/docs/storage.html"
+		exit 1
+	fi
+
+	echo "Which storage repository should the VM use?"
+	echo "default will attempt to use pool default SR"
+	echo
+	local PS3="Pick a number. CTRL+C to exit: "
+	select storage in "${storages[@]}" "default"
+	do
+		read -r	-a storage_split <<< "$storage"
+		storageuuid=${storage_split[0]}
+
+		case $storage in
+			default)
+			sruuid=default
+			break
+			;;
+			*)
+			sruuid=$storageuuid
 			break
 			;;
 		esac
@@ -102,7 +138,11 @@ function VMImport {
 	echo "Downloading and importing XVA image..."
 	echo
 
-	uuid=$(curl "$IMAGE_URL" | xe vm-import filename=/dev/stdin)
+	if [[ $sruuid == "default" ]]; then
+		uuid=$(curl "$IMAGE_URL" | xe vm-import filename=/dev/stdin)
+	else
+		uuid=$(curl "$IMAGE_URL" | xe vm-import filename=/dev/stdin sr-uuid="$sruuid")
+	fi
 
 	# shellcheck disable=SC2181
 	if [[ $? != "0" ]]; then
@@ -167,6 +207,7 @@ function VMImport {
 }
 
 OSCheck
+StorageChoose
 NetworkChoose
 NetworkSettings
 VMImport
