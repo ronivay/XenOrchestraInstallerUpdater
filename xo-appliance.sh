@@ -6,7 +6,7 @@
 # Repository: https://github.com/ronivay/XenOrchestraInstallerUpdater   #
 #########################################################################
 
-IMAGE_URL="https://xo-appliance.yawn.fi/downloads/image.xva"
+IMAGE_URL="https://xo-appliance.yawn.fi/downloads/image.xva.gz"
 
 function OSCheck {
 	set -e
@@ -138,10 +138,11 @@ function VMImport {
 	echo "Downloading and importing XVA image..."
 	echo
 
+	# Import image. We pipe through zcat because xe vm-import should transparently decompress gzipped image, but doesn't seem to understand when stream ends when piped through curl/wget whatnot.
 	if [[ $sruuid == "default" ]]; then
-		uuid=$(curl "$IMAGE_URL" | xe vm-import filename=/dev/stdin)
+		uuid=$(curl "$IMAGE_URL" | zcat | xe vm-import filename=/dev/stdin)
 	else
-		uuid=$(curl "$IMAGE_URL" | xe vm-import filename=/dev/stdin sr-uuid="$sruuid")
+		uuid=$(curl "$IMAGE_URL" | zcat | xe vm-import filename=/dev/stdin sr-uuid="$sruuid")
 	fi
 
 	# shellcheck disable=SC2181
