@@ -66,29 +66,29 @@ function NetworkSettings {
 	ipaddress=${ipaddress:-dhcp}
 
 	if [[ "$ipaddress" != "dhcp" ]]; then
-		if ! [[ $ipaddress =~ $ipregex ]]; then
-			echo "Check ip-address format"
-			exit 1
-		fi
+		while ! [[ $ipaddress =~ $ipregex ]]; do
+			echo "Check IP address format"
+			read -r -p "IP address: " ipaddress
+		done
 		read -r -p "Netmask [255.255.255.0]: " netmask
 		netmask=${netmask:-255.255.255.0}
-		if ! [[	$netmask =~ $ipregex ]]; then
-                	echo "Check netmask format"
-                	exit 1
-                fi
+		while ! [[ $netmask =~ $ipregex ]]; do
+			echo "Check gateway format"
+			read -r -p "Netmask [255.255.255.0]: " netmask
+			netmask=${netmask:-255.255.255.0}
+		done
 		read -r -p "Gateway: " gateway
-		if [[ $gateway != "" ]]; then
-			if ! [[ $gateway =~ $ipregex ]]; then
-				echo "Check gateway format"
-				exit 1
-			fi
-		fi
+		while ! [[ $gateway =~ $ipregex ]] && [[ $gateway != "" ]]; do
+			echo "Check gateway format"
+			read -r -p "Gateway: " gateway
+		done
 		read -r -p "DNS [8.8.8.8]: " dns
 		dns=${dns:-8.8.8.8}
-		if ! [[ $dns =~ $ipregex ]]; then
+		while ! [[ $dns =~ $ipregex ]]; do
 			echo "Check dns format"
-			exit 1
-		fi
+			read -r -p "DNS [8.8.8.8]: " dns
+			dns=${dns:-8.8.8.8}
+		done
 
 	fi
 
