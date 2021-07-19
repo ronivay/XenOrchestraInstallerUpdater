@@ -160,7 +160,7 @@ function VMImport {
 	fi
 
 	xe vm-param-remove uuid="$uuid" param-name=HVM-boot-params param-key=order
-	xe vm-param-set uuid="$uuid" HVM-boot-params:"order: c"
+	xe vm-param-set uuid="$uuid" HVM-boot-params:"order=c"
 
 	echo
 	echo "Starting VM..."
