@@ -82,6 +82,7 @@ function CheckUser {
 
 }
 
+# log script version (git commit) and configuration variables to logfile
 function scriptInfo {
 
 	SCRIPTVERSION=$(runcmd_stdout "cd '$(dirname "$0")' 2>/dev/null && git rev-parse --short HEAD 2>/dev/null")
@@ -94,12 +95,14 @@ function scriptInfo {
 	echo >> "$LOGFILE"
 }
 
+# log actual command and it's stderr/stdout to logfile in one go
 function runcmd {
 
 	echo "+ $1" >>"$LOGFILE"
 	bash -c -o pipefail "$1" >>"$LOGFILE" 2>&1
 }
 
+# log actual command and it's stderr to logfile in one go
 function runcmd_stdout {
 
 	echo "+ $1" >>"$LOGFILE"
@@ -107,6 +110,7 @@ function runcmd_stdout {
 	bash -c -o pipefail "$1" 2>>"$LOGFILE" | tee -a "$LOGFILE"
 }
 
+# make output we print pretty
 function printprog {
 	echo -ne "${PROGRESS} $*"
 }
@@ -124,6 +128,8 @@ function printinfo {
 	echo -e "${INFO} $*"
 }
 
+# if script fails at a stage where installation is not complete, we don't want to keep the install specific directory and content
+# this is called by trap inside different functions
 function ErrorHandling {
 
 	set -eu
@@ -140,6 +146,7 @@ function ErrorHandling {
 	exit 1
 }
 
+# install package dependencies to rpm distros, based on: https://xen-orchestra.com/docs/from_the_sources.html
 function InstallDependenciesRPM {
 
 	set -uo pipefail
@@ -202,6 +209,7 @@ function InstallDependenciesRPM {
 
 }
 
+# install package dependencies to deb distros, based on: https://xen-orchestra.com/docs/from_the_sources.html
 function InstallDependenciesDeb {
 
 	set -uo pipefail
@@ -292,8 +300,10 @@ function InstallDependenciesDeb {
 
 }
 
+# keep node.js and yarn up to date
 function UpdateNodeYarn {
 
+	# user has an option to disable this behaviour in xo-install.cfg
 	if [[ "$AUTOUPDATE" != "true" ]]; then
 		return 0
 	fi
@@ -344,6 +354,7 @@ function UpdateNodeYarn {
 	fi
 }
 
+# get source code for 3rd party plugins if any configured in xo-install.cfg
 function InstallAdditionalXOPlugins {
 
 	set -uo pipefail
@@ -377,6 +388,7 @@ function InstallAdditionalXOPlugins {
 	printok "Fetching 3rd party plugin(s) source code"
 }
 
+# symlink plugins in place based on what is set in xo-install.cfg
 function InstallXOPlugins {
 
 	set -uo pipefail
@@ -408,6 +420,7 @@ function InstallXOPlugins {
 
 }
 
+# run actual xen orchestra installation. procedure is the same for new installation and update. we always build it from scratch.
 function InstallXO {
 
 	set -uo pipefail
@@ -443,6 +456,7 @@ function InstallXO {
 	fi
 
 	echo
+	# keep the actual source code in one directory and either clone or git pull depending on if directory exists already
 	printinfo "Fetching Xen Orchestra source code"
 	if [[ ! -d "$XO_SRC_DIR" ]]; then
 		runcmd "mkdir -p \"$XO_SRC_DIR\""
@@ -458,6 +472,7 @@ function InstallXO {
 	runcmd "rm -rf \"$INSTALLDIR/xo-builds/xen-orchestra-$TIME\""
 	runcmd "cp -r \"$XO_SRC_DIR\" \"$INSTALLDIR/xo-builds/xen-orchestra-$TIME\""
 
+	# get the latest available tagged release if branch is set to release. this is to make configuration more simple to user
 	if [[ "$BRANCH" == "release" ]]; then
 		runcmd "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
 		TAG=$(runcmd_stdout "git describe --tags '$(git rev-list --tags --max-count=1)'")
@@ -467,6 +482,7 @@ function InstallXO {
 
 		runcmd "git checkout $TAG"
 		runcmd "cd $(dirname "$0")"
+	# we don't need to do much magic if specific branch set so just checkout
 	elif [[ "$BRANCH" != "master" ]]; then
 		echo
 		printinfo "Checking out source code from branch '$BRANCH'"
@@ -501,6 +517,7 @@ function InstallXO {
 	# proceed with the build.
 	if [[ "$NEW_REPO_HASH" == "$OLD_REPO_HASH" ]] && [[ "$FORCE" != "true" ]]; then
 		echo
+		# if any non interactive arguments used in script startup, we don't want to show any prompts
 		if [[ "$INTERACTIVE" == "true" ]]; then
 			printinfo "No changes to xen-orchestra since previous install. Run update anyway?"
 			read -r -p "[y/N]: " answer
@@ -548,7 +565,7 @@ function InstallXO {
 		TASK="Installation"
 	fi
 
-	# Install additional plugins
+	# Fetch 3rd party plugins source code
 	InstallAdditionalXOPlugins
 
 	echo
@@ -558,7 +575,7 @@ function InstallXO {
 	runcmd "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn && yarn build"
 	printok "Running installation"
 
-	# Install plugins
+	# Install plugins (takes care of 3rd party plugins as well)
 	InstallXOPlugins
 
 	echo
@@ -569,6 +586,7 @@ function InstallXO {
 	# shellcheck disable=SC1117
 	runcmd "sed -i \"/ExecStart=.*/a WorkingDirectory=$INSTALLDIR/xo-server\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service"
 
+	# if service not running as root, we need to deal with the fact that port binding might not be allowed
 	if [[ "$XOUSER" != "root" ]]; then
 		printinfo "Adding user to systemd config"
 		# shellcheck disable=SC1117
@@ -590,6 +608,7 @@ function InstallXO {
 		fi
 	fi
 
+	# if xen orchestra configuration file doesn't exist or configuration update is not disabled in xo-install.cfg, we create it
         if [[ ! -f "$CONFIGPATH/.config/xo-server/config.toml" ]] || [[ "$CONFIGUPDATE" == "true" ]]; then
 
 		printinfo "Fixing relative path to xo-web installation in xo-server configuration file"
@@ -625,12 +644,14 @@ function InstallXO {
         fi
 
 	echo
+	# install/update is the same procedure so always symlink to most recent installation
 	printinfo "Symlinking fresh xo-server install/update to $INSTALLDIR/xo-server"
 	runcmd "ln -sfn $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server $INSTALLDIR/xo-server"
 	sleep 2
 	printinfo "Symlinking fresh xo-web install/update to $INSTALLDIR/xo-web"
 	runcmd "ln -sfn $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-web $INSTALLDIR/xo-web"
 
+	# if not running as root, xen orchestra startup might not be able to create data directory so we create it here just in case
 	if [[ "$XOUSER" != "root" ]]; then
 		runcmd "chown -R $XOUSER:$XOUSER $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
 
@@ -651,6 +672,7 @@ function InstallXO {
 	echo
 	printinfo "Replacing systemd service configuration file"
 
+	# always replace systemd service configuration if it changes in future updates
 	runcmd "/bin/cp -f $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service /etc/systemd/system/xo-server.service"
 	sleep 2
 	printinfo "Reloading systemd configuration"
@@ -666,6 +688,7 @@ function InstallXO {
 	set +eo pipefail
 	trap - ERR INT
 
+	# loop xo-server service logs for 60 seconds and look for line that indicates service was started. we only care about lines generated after script was started (LOGTIME)
 	count=0
 	limit=6
 	# shellcheck disable=SC1117
@@ -678,9 +701,11 @@ function InstallXO {
 		(( count++ ))
 	done
 
+	# if it looks like service started successfully based on logs..
 	if [[ -n "$servicestatus" ]]; then
 		echo
 		echo -e "	${COLOR_GREEN}WebUI started in port $PORT. Make sure you have firewall rules in place to allow access.${COLOR_N}"
+		# print username and password only when install was ran and skip while updating
 		if [[ "$TASK" == "Installation" ]]; then
 			echo -e "	${COLOR_GREEN}Default username: admin@admin.net password: admin${COLOR_N}"
 		fi
@@ -690,6 +715,7 @@ function InstallXO {
 		echo "$TASK succesful" >> "$LOGFILE"
 		runcmd "/bin/systemctl enable xo-server"
 		echo
+	# if service startup failed...
 	else
 		echo
 		printfail "$TASK completed, but looks like there was a problem when starting xo-server/reading journalctl. Please see logs for more details"
@@ -707,6 +733,7 @@ function InstallXO {
 }
 
 
+# run xen orchestra installation but also cleanup old installations based on value in xo-install.cfg
 function UpdateXO {
 
 	InstallXO
@@ -726,6 +753,7 @@ function UpdateXO {
 
 }
 
+# if any arguments were given to script, handle them here
 function HandleArgs {
 
 	OPTS=$(getopt -o: --long force,rollback,update,install -- "$@")
@@ -773,6 +801,7 @@ function HandleArgs {
 		esac
 	done
 
+	# can't run more than one task at the same time
 	if [[ "$((INSTALLARG+UPDATEARG+ROLLBACKARG))" -gt 1 ]]; then
 		echo "Define either install/update or rollback"
 		exit 1
@@ -803,6 +832,7 @@ function HandleArgs {
 
 }
 
+# all updates are individual complete installations so we have a possibility to rollback by just symlinking to different installation
 function RollBackInstallation {
 
 	set -uo pipefail
@@ -843,6 +873,7 @@ function RollBackInstallation {
 
 }
 
+# only specific list of operating systems are supported. check operating system name/version here
 function CheckOS {
 
 	OSVERSION=$(runcmd_stdout "grep ^VERSION_ID /etc/os-release | cut -d'=' -f2 | grep -Eo '[0-9]{1,2}' | head -1")
@@ -856,11 +887,13 @@ function CheckOS {
 		PKG_FORMAT="deb"
 	fi
 
+	# hard dependency which we can't skip so bail out if no yum/apt-get present
 	if [[ -z "$PKG_FORMAT" ]]; then
 		printfail "this script requires either yum or apt-get"
 		exit 1
 	fi
 
+	# OS check can be skipped in xo-install.cfg for experimental purposes, skip the rest of this function if set to false
 	if [[ "$OS_CHECK" != "true" ]]; then
 		return 0
 	fi
@@ -898,6 +931,7 @@ function CheckOS {
 
 }
 
+# we don't want anyone to attempt running this on xcp-ng/xenserver host, bail out if xe command is present
 function CheckXE {
 
 	if [[ $(runcmd_stdout "command -v xe") ]]; then
@@ -906,8 +940,11 @@ function CheckXE {
 	fi
 }
 
+# x86_64 is defined as one of the requirements in xen orchestra documentation so we want to check that's the case
+# https://xen-orchestra.com/docs/from_the_sources.html
 function CheckArch {
 
+	# can be disabled in xo-install.cfg for experimental purposes
 	if [[ "$ARCH_CHECK" != "true" ]]; then
 		return 0
 	fi
@@ -918,6 +955,7 @@ function CheckArch {
 	fi
 }
 
+# script does alot of systemd related stuff so it's a hard requirement. bail out if not present
 function CheckSystemd {
 
 	if [[ -z $(runcmd_stdout "command -v systemctl") ]]; then
@@ -926,6 +964,7 @@ function CheckSystemd {
 	fi
 }
 
+# do not let the user define non functional cert/key pair
 function CheckCertificate {
 	if [[ "$HTTPS" == "true" ]]; then
 		local CERT="$(runcmd_stdout "openssl x509 -modulus -noout -in $PATH_TO_HTTPS_CERT | openssl md5")"
@@ -944,6 +983,7 @@ function CheckCertificate {
 
 }
 
+# building xen orchestra from source is quite memory heavy and there has been cases with OOM when running with less than 3GB of memory. warn if running less
 function CheckMemory {
 	SYSMEM=$(runcmd_stdout "grep MemTotal /proc/meminfo | awk '{print \$2}'")
 
@@ -967,6 +1007,7 @@ function CheckMemory {
 
 }
 
+# we don't want to fill disk with new install/update so warn if there is too little disk space available
 function CheckDiskFree {
 	FREEDISK=$(runcmd_stdout "df -P -k '${INSTALLDIR%/*}' | tail -1 | awk '{print \$4}'")
 
@@ -989,6 +1030,7 @@ function CheckDiskFree {
 	fi
 }
 
+# interactive menu for different options
 function StartUpScreen {
 
 echo "-----------------------------------------"
@@ -1084,6 +1126,7 @@ esac
 
 }
 
+# these functions check specific requirements and are run everytime
 scriptInfo
 CheckUser
 CheckArch
@@ -1096,7 +1139,9 @@ if [[ $# != "0" ]]; then
 	HandleArgs "$@"
 	exit 0
 else
+	# we only want to execute disk/memory functions when non-interactive args given as they might prompt for user input
 	CheckDiskFree
 	CheckMemory
+	# menu starts only when no args given
 	StartUpScreen
 fi
