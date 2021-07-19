@@ -213,6 +213,7 @@ function InstallDependenciesDeb {
 	if [[ "$OSNAME" == "Ubuntu" ]]; then
 		echo
 		printprog "OS Ubuntu so making sure universe repository is enabled"
+		runcmd "apt-get install -y software-properties-common"
 		runcmd "add-apt-repository -y universe"
 		printok "OS Ubuntu so making sure universe repository is enabled"
 	fi

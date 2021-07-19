@@ -121,6 +121,7 @@ deb:
 - nfs-common
 - cifs-utils
 - gnupg (debian 10)
+- software-properties-common (ubuntu)
 ```
 
 #### Plugins
