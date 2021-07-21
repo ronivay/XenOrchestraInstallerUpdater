@@ -344,6 +344,7 @@ function UpdateNodeYarn {
 			if [[ "$TASK" == "Update" ]]; then
 				echo
 				printprog "node.js version already on $NODEV, checking updates"
+				runcmd "apt-get update"
 				runcmd "apt-get install -y --only-upgrade nodejs yarn"
 				printok "node.js version already on $NODEV, checking updates"
 			elif [[ "$TASK" == "Installation" ]]; then
