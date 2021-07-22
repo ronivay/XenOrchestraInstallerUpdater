@@ -989,10 +989,12 @@ function CheckMemory {
 	SYSMEM=$(runcmd_stdout "grep MemTotal /proc/meminfo | awk '{print \$2}'")
 
 	if [[ "$SYSMEM" -lt 3000000 ]]; then
-		echo
-		echo -e "${COLOR_RED}WARNING: you have less than 3GB of RAM in your system. Installation might run out of memory, continue anyway?${COLOR_N}"
-		echo
-		read -r -p "y/N: " answer
+		echo -e "${COLOR_RED}WARNING: you have less than 3GB of RAM in your system. Installation might run out of memory${COLOR_N}"
+		# no prompt when running non interactive options
+		if [[ "$INTERACTIVE" == "false" ]]; then
+			return 0
+		fi
+		read -r -p "continue anyway? y/N: " answer
 		case $answer in
 			y)
 				:
@@ -1013,10 +1015,12 @@ function CheckDiskFree {
 	FREEDISK=$(runcmd_stdout "df -P -k '${INSTALLDIR%/*}' | tail -1 | awk '{print \$4}'")
 
 	if [[ "$FREEDISK" -lt 1048576 ]]; then
-		echo
-		echo -e "${COLOR_RED}free disk space in ${INSTALLDIR%/*} seems to be less than 1GB. Install/update will most likely fail, continue anyway?${COLOR_N}"
-		echo
-		read -r -p "y/N: " answer
+		echo -e "${COLOR_RED}WARNING: free disk space in ${INSTALLDIR%/*} seems to be less than 1GB. Install/update will most likely fail${COLOR_N}"
+		# no prompt when running non interactive options
+		if [[ "$INTERACTIVE" == "false" ]]; then
+			return 0
+		fi
+		read -r -p "continue anyway? y/N: " answer
 			case $answer in
 			y)
 				:
@@ -1091,14 +1095,12 @@ read -r -p ": " option
 
 			if [ "$PKG_FORMAT" == "rpm" ]; then
 				TASK="Installation"
-				INTERACTIVE="true"
 				InstallDependenciesRPM
 				InstallXO
 				exit 0
 			fi
 			if [ "$PKG_FORMAT" == "deb" ]; then
 				TASK="Installation"
-				INTERACTIVE="true"
 				InstallDependenciesDeb
 				InstallXO
 				exit 0
@@ -1106,7 +1108,6 @@ read -r -p ": " option
 		;;
 		2)
 			TASK="Update"
-			INTERACTIVE="true"
 			UpdateNodeYarn
 			UpdateXO
 			exit 0
@@ -1127,6 +1128,12 @@ esac
 
 }
 
+# if no arguments given, we assume interactive mode.
+# set here because some of the following checks either prompt user input or not.
+if [[ $# == "0" ]]; then
+	INTERACTIVE="true"
+fi
+
 # these functions check specific requirements and are run everytime
 scriptInfo
 CheckUser
@@ -1135,14 +1142,16 @@ CheckXE
 CheckOS
 CheckSystemd
 CheckCertificate
+# skip disk/memory check when using rollback as nothing new installed
+if [[ "$1" != "--rollback" ]]; then
+	CheckDiskFree
+	CheckMemory
+fi
 
 if [[ $# != "0" ]]; then
 	HandleArgs "$@"
 	exit 0
 else
-	# we only want to execute disk/memory functions when non-interactive args given as they might prompt for user input
-	CheckDiskFree
-	CheckMemory
 	# menu starts only when no args given
 	StartUpScreen
 fi
