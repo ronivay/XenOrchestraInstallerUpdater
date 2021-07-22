@@ -534,7 +534,7 @@ function InstallXO {
 				;;
 			esac
 		else
-			printinfo "No changes to xen-orchestra since previous install. Skipping xo-server and xo-web build."
+			printinfo "No changes to xen-orchestra since previous install. Skipping xo-server and xo-web build. Use the --force to update anyway."
 			printinfo "Cleaning up install directory: $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
 			runcmd "rm -rf $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
 			exit 0
