@@ -968,8 +968,8 @@ function CheckSystemd {
 # do not let the user define non functional cert/key pair
 function CheckCertificate {
 	if [[ "$HTTPS" == "true" ]]; then
-		local CERT="$(runcmd_stdout "openssl x509 -modulus -noout -in $PATH_TO_HTTPS_CERT | openssl md5")"
-		local KEY="$(runcmd_stdout "openssl rsa -modulus -noout -in $PATH_TO_HTTPS_KEY | openssl md5")"
+		local CERT="$(runcmd_stdout "openssl x509 -pubkey -noout -in $PATH_TO_HTTPS_CERT | openssl md5")"
+		local KEY="$(runcmd_stdout "openssl pkey -pubout -in $PATH_TO_HTTPS_KEY -outform PEM | openssl md5")"
 		if [[ "$CERT" != "$KEY" ]]; then
 			echo
 			printinfo "$PATH_TO_HTTPS_CERT:"
