@@ -87,7 +87,7 @@ function scriptInfo {
 
 	set -o pipefail
 
-	SCRIPTVERSION=$(cd "$(dirname "$0")" 2>/dev/null && git rev-parse --short HEAD 2>/dev/null)
+	local SCRIPTVERSION=$(cd "$(dirname "$0")" 2>/dev/null && git rev-parse --short HEAD 2>/dev/null)
 
 	[ -z "$SCRIPTVERSION" ] && SCRIPTVERSION="undefined"
 	echo "Running script version $SCRIPTVERSION with config:" >> "$LOGFILE"
@@ -234,9 +234,9 @@ function InstallDependenciesDeb {
 
 	#determine which python package is needed. Ubuntu 20 requires python2-minimal, 16 and 18 are python-minimal
 	if [[ "$OSNAME" == "Ubuntu" ]] && [[ "$OSVERSION" == "20" ]]; then
-		PYTHON="python2-minimal"
+		local PYTHON="python2-minimal"
 	else
-		PYTHON="python-minimal"
+		local PYTHON="python-minimal"
 	fi
 
 	# install packages
@@ -311,7 +311,7 @@ function UpdateNodeYarn {
 
 	echo
 	printinfo "Checking current node.js version"
-	NODEV=$(runcmd_stdout "node -v 2>/dev/null| grep -Eo '[0-9.]+' | cut -d'.' -f1")
+	local NODEV=$(runcmd_stdout "node -v 2>/dev/null| grep -Eo '[0-9.]+' | cut -d'.' -f1")
 
 	if [ "$PKG_FORMAT" == "rpm" ]; then
 		if [[ -n "$NODEV" ]] && [[ "$NODEV" -lt "${NODEVERSION}" ]]; then
@@ -374,6 +374,7 @@ function InstallAdditionalXOPlugins {
 
 	# shellcheck disable=SC1117
 	local ADDITIONAL_PLUGIN_REGEX="^https?:\/\/.*.git$"
+	local ADDITIONAL_PLUGIN
 	IFS=',' read -ra ADDITIONAL_PLUGIN <<< "$ADDITIONAL_PLUGINS"
 	for x in "${ADDITIONAL_PLUGIN[@]}"; do
 		if ! [[ $x =~ $ADDITIONAL_PLUGIN_REGEX ]]; then
@@ -418,6 +419,7 @@ function InstallXOPlugins {
 		# shellcheck disable=SC1117
 		runcmd "find \"$INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/\" -maxdepth 1 -mindepth 1 -not -name \"xo-server\" -not -name \"xo-web\" -not -name \"xo-server-cloud\" -exec ln -sn {} \"$INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/node_modules/\" \;"
 	else
+		local PLUGIN
 		IFS=',' read -ra PLUGIN <<< "$PLUGINS"
 		for x in "${PLUGIN[@]}"; do
 			if [[ $(runcmd_stdout "find $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages -type d -name '$x'") ]]; then
@@ -483,7 +485,7 @@ function InstallXO {
 	# get the latest available tagged release if branch is set to release. this is to make configuration more simple to user
 	if [[ "$BRANCH" == "release" ]]; then
 		runcmd "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
-		TAG=$(runcmd_stdout "git describe --tags '$(git rev-list --tags --max-count=1)'")
+		local TAG=$(runcmd_stdout "git describe --tags '$(git rev-list --tags --max-count=1)'")
 
 		echo
 		printinfo "Checking out latest tagged release '$TAG'"
@@ -504,21 +506,21 @@ function InstallXO {
 	# one. If not, then skip the build and delete the repo we just cloned.
 
 	# Get the commit ID of the to-be-installed xen-orchestra.
-	NEW_REPO_HASH=$(runcmd_stdout "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && git rev-parse HEAD")
-	NEW_REPO_HASH_SHORT=$(runcmd_stdout "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && git rev-parse --short HEAD")
+	local NEW_REPO_HASH=$(runcmd_stdout "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && git rev-parse HEAD")
+	local NEW_REPO_HASH_SHORT=$(runcmd_stdout "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && git rev-parse --short HEAD")
 	runcmd "cd $(dirname "$0")"
 
 	# Get the commit ID of the currently-installed xen-orchestra (if one
 	# exists).
 	if [[ -L "$INSTALLDIR/xo-server" ]] && [[ -n $(runcmd_stdout "readlink -e $INSTALLDIR/xo-server") ]]; then
-		OLD_REPO_HASH=$(runcmd_stdout "cd $INSTALLDIR/xo-server && git rev-parse HEAD")
-		OLD_REPO_HASH_SHORT=$(runcmd_stdout "cd $INSTALLDIR/xo-server && git rev-parse --short HEAD")
+		local OLD_REPO_HASH=$(runcmd_stdout "cd $INSTALLDIR/xo-server && git rev-parse HEAD")
+		local OLD_REPO_HASH_SHORT=$(runcmd_stdout "cd $INSTALLDIR/xo-server && git rev-parse --short HEAD")
 		runcmd "cd $(dirname "$0")"
 	else
 		# If there's no existing installation, then we definitely want
 		# to proceed with the bulid.
-		OLD_REPO_HASH=""
-		OLD_REPO_HASH_SHORT=""
+		local OLD_REPO_HASH=""
+		local OLD_REPO_HASH_SHORT=""
 	fi
 
 	# If the new install is no different from the existing install, then don't
@@ -601,9 +603,9 @@ function InstallXO {
 		runcmd "sed -i \"/SyslogIdentifier=.*/a User=$XOUSER\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service"
 
 		if [ "$PORT" -le "1024" ]; then
-			NODEBINARY=$(runcmd_stdout "command -v node")
+			local NODEBINARY=$(runcmd_stdout "command -v node")
 			if [[ -L "$NODEBINARY" ]]; then
-				NODEBINARY=$(runcmd_stdout "readlink -e $NODEBINARY")
+				local NODEBINARY=$(runcmd_stdout "readlink -e $NODEBINARY")
 			fi
 
 			if [[ -n "$NODEBINARY" ]]; then
@@ -696,15 +698,15 @@ function InstallXO {
 	trap - ERR INT
 
 	# loop xo-server service logs for 60 seconds and look for line that indicates service was started. we only care about lines generated after script was started (LOGTIME)
-	count=0
-	limit=6
+	local count=0
+	local limit=6
 	# shellcheck disable=SC1117
-	servicestatus="$(runcmd_stdout "journalctl --since '$LOGTIME' -u xo-server | grep 'Web server listening on https\{0,1\}:\/\/.*:$PORT'")"
+	local servicestatus="$(runcmd_stdout "journalctl --since '$LOGTIME' -u xo-server | grep 'Web server listening on https\{0,1\}:\/\/.*:$PORT'")"
 	while [[ -z "$servicestatus" ]] && [[ "$count" -lt "$limit" ]]; do
 		echo " waiting for port to be open"
 		sleep 10
 		# shellcheck disable=SC1117
-		servicestatus="$(runcmd_stdout "journalctl --since '$LOGTIME' -u xo-server | grep 'Web server listening on https\{0,1\}:\/\/.*:$PORT'")"
+		local servicestatus="$(runcmd_stdout "journalctl --since '$LOGTIME' -u xo-server | grep 'Web server listening on https\{0,1\}:\/\/.*:$PORT'")"
 		(( count++ ))
 	done
 
@@ -763,7 +765,7 @@ function UpdateXO {
 # if any arguments were given to script, handle them here
 function HandleArgs {
 
-	OPTS=$(getopt -o: --long force,rollback,update,install -- "$@")
+	local OPTS=$(getopt -o: --long force,rollback,update,install -- "$@")
 
         #shellcheck disable=SC2181
 	if [[ $? != 0 ]]; then
@@ -844,7 +846,7 @@ function RollBackInstallation {
 
 	set -uo pipefail
 
-	INSTALLATIONS=($(runcmd_stdout "find '$INSTALLDIR/xo-builds/' -maxdepth 1 -type d -name 'xen-orchestra-*'"))
+	local INSTALLATIONS=($(runcmd_stdout "find '$INSTALLDIR/xo-builds/' -maxdepth 1 -type d -name 'xen-orchestra-*'"))
 
 	if [[ ${#INSTALLATIONS[@]} -le 1 ]]; then
 		printinfo "One or less installations exist, nothing to change"
@@ -854,6 +856,7 @@ function RollBackInstallation {
 	echo "Which installation to roll back?"
 	echo
 	local PS3="Pick a number. CTRL+C to exit: "
+	local INSTALLATION
 	select INSTALLATION in "${INSTALLATIONS[@]}"; do
 		case $INSTALLATION in
 			*xen-orchestra*)
@@ -992,7 +995,7 @@ function CheckCertificate {
 
 # building xen orchestra from source is quite memory heavy and there has been cases with OOM when running with less than 3GB of memory. warn if running less
 function CheckMemory {
-	SYSMEM=$(runcmd_stdout "grep MemTotal /proc/meminfo | awk '{print \$2}'")
+	local SYSMEM=$(runcmd_stdout "grep MemTotal /proc/meminfo | awk '{print \$2}'")
 
 	if [[ "$SYSMEM" -lt 3000000 ]]; then
 		echo -e "${COLOR_RED}WARNING: you have less than 3GB of RAM in your system. Installation might run out of memory${COLOR_N}"
@@ -1018,7 +1021,7 @@ function CheckMemory {
 
 # we don't want to fill disk with new install/update so warn if there is too little disk space available
 function CheckDiskFree {
-	FREEDISK=$(runcmd_stdout "df -P -k '${INSTALLDIR%/*}' | tail -1 | awk '{print \$4}'")
+	local FREEDISK=$(runcmd_stdout "df -P -k '${INSTALLDIR%/*}' | tail -1 | awk '{print \$4}'")
 
 	if [[ "$FREEDISK" -lt 1048576 ]]; then
 		echo -e "${COLOR_RED}WARNING: free disk space in ${INSTALLDIR%/*} seems to be less than 1GB. Install/update will most likely fail${COLOR_N}"
