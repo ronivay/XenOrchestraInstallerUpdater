@@ -75,7 +75,7 @@ function CheckUser {
 
 	# Make sure the script is ran as root
 
-	if [[ ! "$(id -u)" == "0" ]]; then
+	if [[ ! $(runcmd_stdout "id -u") == "0" ]]; then
 		printfail "This script needs to be ran as root"
 		exit 1
 	fi
@@ -85,13 +85,14 @@ function CheckUser {
 # log script version (git commit) and configuration variables to logfile
 function scriptInfo {
 
-	SCRIPTVERSION=$(runcmd_stdout "cd '$(dirname "$0")' 2>/dev/null && git rev-parse --short HEAD 2>/dev/null")
+	set -o pipefail
+
+	SCRIPTVERSION=$(cd "$(dirname "$0")" 2>/dev/null && git rev-parse --short HEAD 2>/dev/null)
 
 	[ -z "$SCRIPTVERSION" ] && SCRIPTVERSION="undefined"
 	echo "Running script version $SCRIPTVERSION with config:" >> "$LOGFILE"
 	echo >> "$LOGFILE"
-        # shellcheck disable=SC2005,SC2002
-	[ -s "$CONFIG_FILE" ] && echo "$(cat "$CONFIG_FILE" | grep -Eo '^[A-Z_]+.*')" >> "$LOGFILE" || echo "No config file found" >> "$LOGFILE"
+	[ -s "$CONFIG_FILE" ] && grep -Eo '^[A-Z_]+.*' "$CONFIG_FILE" >> "$LOGFILE" || echo "No config file found" >> "$LOGFILE"
 	echo >> "$LOGFILE"
 }
 
@@ -310,7 +311,7 @@ function UpdateNodeYarn {
 
 	echo
 	printinfo "Checking current node.js version"
-	NODEV=$(node -v 2>/dev/null| grep -Eo '[0-9.]+' | cut -d'.' -f1)
+	NODEV=$(runcmd_stdout "node -v 2>/dev/null| grep -Eo '[0-9.]+' | cut -d'.' -f1")
 
 	if [ "$PKG_FORMAT" == "rpm" ]; then
 		if [[ -n "$NODEV" ]] && [[ "$NODEV" -lt "${NODEVERSION}" ]]; then
@@ -409,9 +410,9 @@ function InstallXOPlugins {
 		# shellcheck disable=SC1117
 		runcmd "find \"$INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/\" -maxdepth 1 -mindepth 1 -not -name \"xo-server\" -not -name \"xo-web\" -not -name \"xo-server-cloud\" -exec ln -sn {} \"$INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/node_modules/\" \;"
 	else
-		local PLUGINSARRAY=($(echo "$PLUGINS" | tr ',' ' '))
+		local PLUGINSARRAY=($(runcmd_stdout "echo '$PLUGINS' | tr ',' ' '"))
 		for x in "${PLUGINSARRAY[@]}"; do
-		if [[ $(find "$INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages" -type d -name "$x") ]]; then
+		if [[ $(runcmd_stdout "find $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages -type d -name '$x'") ]]; then
 			runcmd "ln -sn $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/$x $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/node_modules/"
 		fi
 		done
@@ -443,17 +444,15 @@ function InstallXO {
 	# Create installation directory if doesn't exist already
 	if [[ ! -d "$INSTALLDIR" ]] ; then
 		echo
-		printprog "Creating missing basedir to $INSTALLDIR"
+		printinfo "Creating missing basedir to $INSTALLDIR"
 		runcmd "mkdir -p \"$INSTALLDIR\""
-		printok "Creating missing basedir to $INSTALLDIR"
 	fi
 
 	# Create missing xo-builds directory if doesn't exist already
 	if [[ ! -d "$INSTALLDIR/xo-builds" ]]; then
 		echo
-		printprog "Creating missing xo-builds directory to $INSTALLDIR/xo-builds"
+		printinfo "Creating missing xo-builds directory to $INSTALLDIR/xo-builds"
 		runcmd "mkdir \"$INSTALLDIR/xo-builds\""
-		printok "Creating missing xo-builds directory to $INSTALLDIR/xo-builds"
 	fi
 
 	echo
@@ -546,7 +545,7 @@ function InstallXO {
 	if [[ $(runcmd_stdout "pgrep -f xo-server") ]]; then
 		echo
 		printprog "Shutting down xo-server"
-		/bin/systemctl stop xo-server || { printfail "failed to stop service, exiting..." ; exit 1; }
+		runcmd "/bin/systemctl stop xo-server" || { printfail "failed to stop service, exiting..." ; exit 1; }
 		printok "Shutting down xo-server"
 	fi
 
@@ -666,7 +665,7 @@ function InstallXO {
 	fi
 
 	# fix to prevent older installations to not update because systemd service is not symlinked anymore
-	if [[ $(find /etc/systemd/system -maxdepth 1 -type l -name "xo-server.service") ]]; then
+	if [[ $(runcmd_stdout "find /etc/systemd/system -maxdepth 1 -type l -name 'xo-server.service'") ]]; then
 		runcmd "rm -f /etc/systemd/system/xo-server.service"
 	fi
 
@@ -693,12 +692,12 @@ function InstallXO {
 	count=0
 	limit=6
 	# shellcheck disable=SC1117
-	servicestatus="$(journalctl --since "$LOGTIME" -u xo-server | grep "Web server listening on https\{0,1\}:\/\/.*:$PORT")"
+	servicestatus="$(runcmd_stdout "journalctl --since '$LOGTIME' -u xo-server | grep 'Web server listening on https\{0,1\}:\/\/.*:$PORT'")"
 	while [[ -z "$servicestatus" ]] && [[ "$count" -lt "$limit" ]]; do
 		echo " waiting for port to be open"
 		sleep 10
 		# shellcheck disable=SC1117
-		servicestatus="$(journalctl --since "$LOGTIME" -u xo-server | grep "Web server listening on https\{0,1\}:\/\/.*:$PORT")"
+		servicestatus="$(runcmd_stdout "journalctl --since '$LOGTIME' -u xo-server | grep 'Web server listening on https\{0,1\}:\/\/.*:$PORT'")"
 		(( count++ ))
 	done
 
@@ -725,7 +724,7 @@ function InstallXO {
 		echo "$TASK failed" >> "$LOGFILE"
 		echo "xo-server service log:" >> "$LOGFILE"
 		echo "" >> "$LOGFILE"
-		journalctl --since "$LOGTIME" -u xo-server >> "$LOGFILE"
+		runcmd "journalctl --since '$LOGTIME' -u xo-server >> $LOGFILE"
 		echo
 		echo "Control xo-server service with systemctl for stop/start/restart etc."
 		exit 1
@@ -1075,7 +1074,7 @@ read -r -p ": " option
 
 		case $option in
 		1)
-			if [[ $(pgrep -f xo-server) ]]; then
+			if [[ $(runcmd_stdout "pgrep -f xo-server") ]]; then
 				echo "Looks like xo-server process is already running, consider running update instead. Continue anyway?"
 				read -r -p "[y/N]: " answer
 					case $answer in
