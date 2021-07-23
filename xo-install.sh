@@ -372,8 +372,15 @@ function InstallAdditionalXOPlugins {
 	echo
 	printprog "Fetching 3rd party plugin(s) source code"
 
-	local ADDITIONAL_PLUGINSARRAY=($(runcmd_stdout "echo '$ADDITIONAL_PLUGINS' | tr ',' ' '"))
-	for x in "${ADDITIONAL_PLUGINSARRAY[@]}"; do
+	# shellcheck disable=SC1117
+	local ADDITIONAL_PLUGIN_REGEX="^https?:\/\/.*.git$"
+	IFS=',' read -ra ADDITIONAL_PLUGIN <<< "$ADDITIONAL_PLUGINS"
+	for x in "${ADDITIONAL_PLUGIN[@]}"; do
+		if ! [[ $x =~ $ADDITIONAL_PLUGIN_REGEX ]]; then
+			echo
+			printfail "$x format is not correct for 3rd party plugin, skipping.."
+			continue
+		fi
 		local PLUGIN_NAME=$(runcmd_stdout "basename '$x' | rev | cut -c 5- | rev")
 		local PLUGIN_SRC_DIR=$(runcmd_stdout "realpath -m '$XO_SRC_DIR/../$PLUGIN_NAME'")
 
@@ -387,6 +394,7 @@ function InstallAdditionalXOPlugins {
 
 		runcmd "cp -r $PLUGIN_SRC_DIR $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/"
 	done
+
 	printok "Fetching 3rd party plugin(s) source code"
 }
 
@@ -410,11 +418,11 @@ function InstallXOPlugins {
 		# shellcheck disable=SC1117
 		runcmd "find \"$INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/\" -maxdepth 1 -mindepth 1 -not -name \"xo-server\" -not -name \"xo-web\" -not -name \"xo-server-cloud\" -exec ln -sn {} \"$INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/node_modules/\" \;"
 	else
-		local PLUGINSARRAY=($(runcmd_stdout "echo '$PLUGINS' | tr ',' ' '"))
-		for x in "${PLUGINSARRAY[@]}"; do
-		if [[ $(runcmd_stdout "find $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages -type d -name '$x'") ]]; then
-			runcmd "ln -sn $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/$x $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/node_modules/"
-		fi
+		IFS=',' read -ra PLUGIN <<< "$PLUGINS"
+		for x in "${PLUGIN[@]}"; do
+			if [[ $(runcmd_stdout "find $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages -type d -name '$x'") ]]; then
+				runcmd "ln -sn $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/$x $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/node_modules/"
+			fi
 		done
 	fi
 
