@@ -613,9 +613,8 @@ function InstallXO {
 
 		printinfo "Fixing relative path to xo-web installation in xo-server configuration file"
 
-		INSTALLDIRESC=$(echo "$INSTALLDIR" | sed 's/\//\\\//g')
 		# shellcheck disable=SC1117
-		runcmd "sed -i \"s/#'\/any\/url' = '\/path\/to\/directory'/'\/' = '$INSTALLDIRESC\/xo-web\/dist\/'/\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
+		runcmd "sed -i \"s%#'/any/url' = '/path/to/directory'%'/' = '$INSTALLDIR/xo-web/dist/'%\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
                 sleep 2
 
                 if [[ "$PORT" != "80" ]]; then
