@@ -372,7 +372,7 @@ function InstallAdditionalXOPlugins {
 	echo
 	printprog "Fetching 3rd party plugin(s) source code"
 
-	local ADDITIONAL_PLUGINSARRAY=($(echo "$ADDITIONAL_PLUGINS" | tr ',' ' '))
+	local ADDITIONAL_PLUGINSARRAY=($(runcmd_stdout "echo '$ADDITIONAL_PLUGINS' | tr ',' ' '"))
 	for x in "${ADDITIONAL_PLUGINSARRAY[@]}"; do
 		local PLUGIN_NAME=$(runcmd_stdout "basename '$x' | rev | cut -c 5- | rev")
 		local PLUGIN_SRC_DIR=$(runcmd_stdout "realpath -m '$XO_SRC_DIR/../$PLUGIN_NAME'")
