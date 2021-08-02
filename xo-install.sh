@@ -620,8 +620,8 @@ function InstallXO {
 
 	echo
 	printprog "Fixing binary path in systemd service configuration file"
-	cmdlog "sed -i \"s#ExecStart=.*#ExecStart=$INSTALLDIR\/xo-server\/bin\/xo-server#\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service"
-	sed -i "s#ExecStart=.*#ExecStart=$INSTALLDIR\/xo-server\/bin\/xo-server#" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service
+	cmdlog "sed -i \"s#ExecStart=.*#ExecStart=$INSTALLDIR\/xo-server\/dist\/cli.mjs#\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service"
+	sed -i "sed -i \"s#ExecStart=.*#ExecStart=$INSTALLDIR\/xo-server\/dist\/cli.mjs#\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service
 	printok "Fixing binary path in systemd service configuration file"
 	
 	echo
