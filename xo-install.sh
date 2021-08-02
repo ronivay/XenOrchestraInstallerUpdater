@@ -588,12 +588,7 @@ function InstallXO {
 	printok "Removing open-source warning and banner"
 	
 	if [[ "$XOUSER" != "root" ]]; then
-		echo
-		printprog "Adding sudo to mount command to allow mounting partitions as non-root user"
-		#cmdlog "/usr/bin/sed -i "s%execa('mount', \[%execa('sudo', \[\`mount\`, %" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/src/xo-mixins/file-restore-ng.js"
-		/usr/bin/sed -i "s%execa('mount', \[%execa('sudo', \[\`mount\`, %" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/src/xo-mixins/file-restore-ng.js
-		printok "Adding sudo to mount command to allow mounting partitions as non-root user"
-
+		
 		if [[ ! -z "/usr/bin/sudo" ]]; then
 			echo
 			printprog "Setting use sudo option in config file"
