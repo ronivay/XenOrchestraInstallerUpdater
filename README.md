@@ -2,11 +2,11 @@
 
 [![](https://img.shields.io/endpoint?url=https://xo-build-status.yawn.fi/builds/debian/status.json)](https://xo-build-status.yawn.fi/builds/debian/details.html) [![](https://img.shields.io/endpoint?url=https://xo-build-status.yawn.fi/builds/centos/status.json)](https://xo-build-status.yawn.fi/builds/centos/details.html) [![](https://img.shields.io/endpoint?url=https://xo-build-status.yawn.fi/builds/ubuntu/status.json)](https://xo-build-status.yawn.fi/builds/ubuntu/details.html)
 
-[![](https://img.shields.io/endpoint?url=https://xo-appliance.yawn.fi/downloads/status.json)](https://xo-appliance.yawn.fi/downloads/image.txt)
+[![](https://img.shields.io/endpoint?url=https://xo-image.yawn.fi/downloads/status.json)](https://xo-image.yawn.fi/downloads/image.txt)
 
 [![](https://github.com/ronivay/XenOrchestraInstallerUpdater/actions/workflows/main.yml/badge.svg?branch=master)](https://github.com/ronivay/XenOrchestraInstallerUpdater/actions?query=workflow%3Axo-install) [![](https://github.com/ronivay/XenOrchestraInstallerUpdater/actions/workflows/lint.yml/badge.svg?branch=master)](https://github.com/ronivay/XenOrchestraInstallerUpdater/actions?query=workflow%3Alint)
 
-Script to install/update [Xen Orchestra](https://xen-orchestra.com/#!/) and all of it's dependencies on multiple different Linux distributions. Separate script to be used on XenServer/XCP-ng host that installs a readymade appliance utilizing the same installer script.
+Script to install/update [Xen Orchestra](https://xen-orchestra.com/#!/) and all of it's dependencies on multiple different Linux distributions. Separate script to be used on XenServer/XCP-ng host that installs a readymade VM image that has Xen Orchestra installed  utilizing the same installer script.
 
 
 ### What is Xen Orchestra?
@@ -47,7 +47,7 @@ Supported Linux distributions and versions:
 
 I suggest using a fresh OS installation and not to use the VM for anything else besides Xen Orchestra.
 
-If you plan on using the prebuilt appliance VM for XenServer/XCP-ng, see the appliance section below.
+If you plan on using the prebuilt VM image for XenServer/XCP-ng, see the image section below.
 
 ### Installation
 
@@ -128,16 +128,16 @@ deb:
 
 Plugins are installed according to what is specified in `PLUGINS` variable inside `xo-install.cfg` configuration file. By default all available plugins that are part of xen orchestra repository are installed. This list can be narrowed down if needed and 3rd party plugins included.
 
-### Appliance
+### Image
 
-If you need to import an appliance directly to your host, you may use xo-appliance.sh script for this. It'll download a prebuilt Debian 10 image which has Xen Orchestra and XenOrchestraInstallerUpdater installed.
+If you don't want to first install a VM and then use xo-install.sh script on it, you have the possibility to import VM image which has everything already setup. Use xo-vm-import.sh to do this, it'll download a prebuilt Debian 10 image which has Xen Orchestra and XenOrchestraInstallerUpdater installed.
 
-Details of appliance build process [here](https://github.com/ronivay/xen-orchestra-appliance)
+Details of image build process [here](https://github.com/ronivay/xen-orchestra-appliance)
 
 Run on your Xenserver/XCP-ng host with root privileges:
 
 ```
-sudo bash -c "$(curl -s https://raw.githubusercontent.com/ronivay/XenOrchestraInstallerUpdater/master/xo-appliance.sh)"
+sudo bash -c "$(curl -s https://raw.githubusercontent.com/ronivay/XenOrchestraInstallerUpdater/master/xo-vm-import.sh)"
 ```
 
 Default username for UI is admin@admin.net with password admin
@@ -152,15 +152,15 @@ xo-server runs as a systemd service.
 
 xo user has full sudo access. Xen Orchestra updates etc should be ran with sudo.
 
-This image is updated weekly. Latest build date and MD5/SHA256 checksum can be checked from [here](https://xo-appliance.yawn.fi/downloads/image.txt)
+This image is updated weekly. Latest build date and MD5/SHA256 checksum can be checked from [here](https://xo-image.yawn.fi/downloads/image.txt)
 
 Built and tested on XCP-ng 7.x
 
-### Tests and appliance image
+### Tests and VM image
 
 I run my own little implementation of automation consisting of ansible and virtual machines to test the installation on regular bases with CentOS 8, Ubuntu 20 and Debian 10. Test results are visible in badges on top of this readme.
 
-Appliance image is also built by me and distributed from webservers i maintain.
+VM image is also built totally by me and distributed from webservers i maintain.
 
 ### Contributing
 

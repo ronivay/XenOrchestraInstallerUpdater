@@ -3,11 +3,11 @@ on:
   push:
     paths:
       - 'xo-install.sh'
-      - 'xo-appliance.sh'
+      - 'xo-vm-import.sh'
   pull_request:
     paths:
       - 'xo-install.sh'
-      - 'xo-appliance.sh'
+      - 'xo-vm-import.sh'
     
 jobs:
   shellcheck:

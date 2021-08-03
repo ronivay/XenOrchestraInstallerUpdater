@@ -945,7 +945,7 @@ function CheckOS {
 function CheckXE {
 
 	if [[ $(runcmd_stdout "command -v xe") ]]; then
-		printfail "xe binary found, don't try to run install on xcp-ng/xenserver host. use xo-appliance.sh instead"
+		printfail "xe binary found, don't try to run install on xcp-ng/xenserver host. use xo-vm-import.sh instead"
 		exit 1
 	fi
 }

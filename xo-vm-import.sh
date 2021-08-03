@@ -7,7 +7,7 @@
 #########################################################################
 
 # image url is static and not configurable by user
-IMAGE_URL="https://xo-appliance.yawn.fi/downloads/image.xva.gz"
+IMAGE_URL="https://xo-image.yawn.fi/downloads/image.xva.gz"
 
 function OSCheck {
 	set -e
@@ -18,7 +18,7 @@ function OSCheck {
         fi
 
 	echo
-	echo "Welcome. This script will import a working Xen Orchestra appliance built using https://github.com/ronivay/XenOrchestraInstallerUpdater"
+	echo "Welcome. This script will import a preinstalled Debian 10 VM image which has Xen Orchestra installed using https://github.com/ronivay/XenOrchestraInstallerUpdater"
 	echo "You need at least 2vCPU/4GB/10GB disk free resources to import VM"
 	echo
 	echo "Please report any issues to this github project"
