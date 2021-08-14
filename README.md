@@ -8,7 +8,7 @@
 
 Script to install/update [Xen Orchestra](https://xen-orchestra.com/#!/) and all of it's dependencies on multiple different Linux distributions. Separate script to be used on XenServer/XCP-ng host that installs a readymade VM image that has Xen Orchestra installed  utilizing the same installer script.
 
-How about docker? No worries, check [Docker hub](https://hub.docker.com/u/ronivay)
+How about docker? No worries, check [Docker hub](https://hub.docker.com/r/ronivay/xen-orchestra)
 
 ### What is Xen Orchestra?
 
