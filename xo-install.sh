@@ -490,15 +490,14 @@ function InstallXO {
 		echo
 		printinfo "Checking out latest tagged release '$TAG'"
 
-		runcmd "git checkout $TAG"
+		runcmd "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && git checkout $TAG"
 		runcmd "cd $(dirname "$0")"
 	# we don't need to do much magic if specific branch set so just checkout
 	elif [[ "$BRANCH" != "master" ]]; then
 		echo
-		printinfo "Checking out source code from branch '$BRANCH'"
+		printinfo "Checking out source code from branch/commit '$BRANCH'"
 
-		runcmd "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
-		runcmd "git checkout $BRANCH"
+		runcmd "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && git checkout $BRANCH"
 		runcmd "cd $(dirname "$0")"
 	fi
 
