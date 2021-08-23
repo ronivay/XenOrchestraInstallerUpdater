@@ -39,6 +39,7 @@ Supported Linux distributions and versions:
 - CentOS 8
 - AlmaLinux 8
 - Rocky Linux 8
+- Debian 11
 - Debian 10
 - Debian 9
 - Debian 8
@@ -116,12 +117,12 @@ deb:
 - libpng-dev
 - git
 - python-minimal
-- python2-minimal (Ubuntu 20 only, replaces python-minimal)
+- python2-minimal (Ubuntu 20/Debian 11 only, replaces python-minimal)
 - libvhdi-utils
 - lvm2
 - nfs-common
 - cifs-utils
-- gnupg (debian 10)
+- gnupg (debian 10/11)
 - software-properties-common (ubuntu)
 ```
 

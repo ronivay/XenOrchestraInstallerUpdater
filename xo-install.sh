@@ -232,8 +232,8 @@ function InstallDependenciesDeb {
 	runcmd "apt-get update"
 	printok "Running apt-get update"
 
-	#determine which python package is needed. Ubuntu 20 requires python2-minimal, 16 and 18 are python-minimal
-	if [[ "$OSNAME" == "Ubuntu" ]] && [[ "$OSVERSION" == "20" ]]; then
+	#determine which python package is needed. Ubuntu 20/Debian 11 require python2-minimal, others have python-minimal
+	if [[ "$OSNAME" =~ ^(Ubuntu|Debian)$ ]] && [[ "$OSVERSION" =~ ^(20|11)$ ]]; then
 		local PYTHON="python2-minimal"
 	else
 		local PYTHON="python-minimal"
@@ -251,11 +251,11 @@ function InstallDependenciesDeb {
 	runcmd "apt-get install -y apt-transport-https ca-certificates"
 	printok "Installing apt-transport-https and ca-certificates packages to support https repos"
 
-	if [[ "$OSNAME" == "Debian" ]] && [[ "$OSVERSION" == "10" ]]; then
+	if [[ "$OSNAME" == "Debian" ]] && [[ "$OSVERSION" =~ ^(10|11)$ ]]; then
 		echo
-		printprog "Debian 10, so installing gnupg also"
+		printprog "Debian 10/11, so installing gnupg also"
 		runcmd "apt-get install gnupg -y"
-		printok "Debian 10, so installing gnupg also"
+		printok "Debian 10/11, so installing gnupg also"
 	fi
 
 	# install setcap for non-root port binding if missing
@@ -928,8 +928,8 @@ function CheckOS {
 		exit 1
 	fi
 
-	if [[ "$OSNAME" == "Debian" ]] && [[ ! "$OSVERSION" =~ ^(8|9|10)$ ]]; then
-		printfail "Only Debian 8/9/10 supported"
+	if [[ "$OSNAME" == "Debian" ]] && [[ ! "$OSVERSION" =~ ^(8|9|10|11)$ ]]; then
+		printfail "Only Debian 8/9/10/11 supported"
 		exit 1
 	fi
 
