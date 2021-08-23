@@ -78,7 +78,7 @@ Each of these options can be run non interactively like so:
 
 ```
 sudo ./xo-install.sh --install
-sudo ./xo install.sh --update [--force]
+sudo ./xo-install.sh --update [--force]
 sudo ./xo-install.sh --rollback
 ```
 
