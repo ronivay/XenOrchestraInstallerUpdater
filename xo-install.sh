@@ -21,6 +21,7 @@ fi
 source "$CONFIG_FILE"
 
 # Set some default variables if sourcing config file fails for some reason
+SELFUPGRADE=${SELFUPGRADE:-"true"}
 PORT=${PORT:-80}
 INSTALLDIR=${INSTALLDIR:-"/opt/xo"}
 BRANCH=${BRANCH:-"master"}
@@ -82,6 +83,31 @@ function CheckUser {
 	fi
 
 }
+
+# script self upgrade
+function selfUpgrade {
+
+	set -o pipefail
+
+	if [[ "$SELFUPGRADE" != "true" ]]; then
+		return 0
+	fi
+
+	if [[ -d "$SCRIPT_DIR/.git" ]]; then
+		local REMOTE="$(runcmd_stdout "cd $SCRIPT_DIR && git config --get remote.origin.url")"
+		if [[ "$REMOTE" == *"ronivay/XenOrchestraInstallerUpdater"* ]]; then
+			runcmd "cd $SCRIPT_DIR && git fetch"
+			if [[ $(runcmd_stdout "cd $SCRIPT_DIR && git diff --name-only @{upstream}| grep xo-install.sh") ]]; then
+				printinfo "Newer version of script available, attempting to self upgrade"
+				runcmd "cd $SCRIPT_DIR && git pull --ff-only" && \
+				{ printok "Self upgrade done" ; exec "$SCRIPT_DIR/xo-install.sh" "$@"; } || \
+				printfail "Failed to self upgrade. Check logs for more details"
+			fi
+		fi
+	fi
+
+}
+
 
 # log script version (git commit) and configuration variables to logfile
 function scriptInfo {
@@ -1143,7 +1169,9 @@ if [[ $# == "0" ]]; then
 	INTERACTIVE="true"
 fi
 
+
 # these functions check specific requirements and are run everytime
+selfUpgrade "$@"
 scriptInfo
 CheckUser
 CheckArch
