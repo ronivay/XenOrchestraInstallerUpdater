@@ -7,8 +7,9 @@
 # Repository: https://github.com/ronivay/XenOrchestraInstallerUpdater   #
 #########################################################################
 
-SAMPLE_CONFIG_FILE="$(dirname "$0")/sample.xo-install.cfg"
-CONFIG_FILE="$(dirname "$0")/xo-install.cfg"
+SCRIPT_DIR="$(dirname "$0")"
+SAMPLE_CONFIG_FILE="$SCRIPT_DIR/sample.xo-install.cfg"
+CONFIG_FILE="$SCRIPT_DIR/xo-install.cfg"
 
 # Deploy default configuration file if the user doesn't have their own yet.
 if [[ ! -s "$CONFIG_FILE" ]]; then
@@ -87,7 +88,7 @@ function scriptInfo {
 
 	set -o pipefail
 
-	local SCRIPTVERSION=$(cd "$(dirname "$0")" 2>/dev/null && git rev-parse --short HEAD 2>/dev/null)
+	local SCRIPTVERSION=$(cd "$SCRIPT_DIR" 2>/dev/null && git rev-parse --short HEAD 2>/dev/null)
 
 	[ -z "$SCRIPTVERSION" ] && SCRIPTVERSION="undefined"
 	echo "Running script version $SCRIPTVERSION with config:" >> "$LOGFILE"
@@ -389,8 +390,8 @@ function InstallAdditionalXOPlugins {
 			runcmd "mkdir -p \"$PLUGIN_SRC_DIR\""
 			runcmd "git clone \"${x}\" \"$PLUGIN_SRC_DIR\""
 		else
-			runcmd "cd \"$PLUGIN_SRC_DIR\" && git pull"
-			runcmd "cd $(dirname "$0")"
+			runcmd "cd \"$PLUGIN_SRC_DIR\" && git pull --ff-only"
+			runcmd "cd $SCRIPT_DIR"
 		fi
 
 		runcmd "cp -r $PLUGIN_SRC_DIR $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/"
@@ -472,8 +473,8 @@ function InstallXO {
 		runcmd "mkdir -p \"$XO_SRC_DIR\""
 		runcmd "git clone \"${REPOSITORY}\" \"$XO_SRC_DIR\""
 	else
-		runcmd "cd \"$XO_SRC_DIR\" && git pull"
-		runcmd "cd $(dirname "$0")"
+		runcmd "cd \"$XO_SRC_DIR\" && git pull --ff-only"
+		runcmd "cd $SCRIPT_DIR"
 	fi
 
 	# Deploy the latest xen-orchestra source to the new install directory.
@@ -491,14 +492,14 @@ function InstallXO {
 		printinfo "Checking out latest tagged release '$TAG'"
 
 		runcmd "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && git checkout $TAG"
-		runcmd "cd $(dirname "$0")"
+		runcmd "cd $SCRIPT_DIR"
 	# we don't need to do much magic if specific branch set so just checkout
 	elif [[ "$BRANCH" != "master" ]]; then
 		echo
 		printinfo "Checking out source code from branch/commit '$BRANCH'"
 
 		runcmd "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && git checkout $BRANCH"
-		runcmd "cd $(dirname "$0")"
+		runcmd "cd $SCRIPT_DIR"
 	fi
 
 	# Check if the new repo is any different from the currently-installed
@@ -507,14 +508,14 @@ function InstallXO {
 	# Get the commit ID of the to-be-installed xen-orchestra.
 	local NEW_REPO_HASH=$(runcmd_stdout "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && git rev-parse HEAD")
 	local NEW_REPO_HASH_SHORT=$(runcmd_stdout "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && git rev-parse --short HEAD")
-	runcmd "cd $(dirname "$0")"
+	runcmd "cd $SCRIPT_DIR"
 
 	# Get the commit ID of the currently-installed xen-orchestra (if one
 	# exists).
 	if [[ -L "$INSTALLDIR/xo-server" ]] && [[ -n $(runcmd_stdout "readlink -e $INSTALLDIR/xo-server") ]]; then
 		local OLD_REPO_HASH=$(runcmd_stdout "cd $INSTALLDIR/xo-server && git rev-parse HEAD")
 		local OLD_REPO_HASH_SHORT=$(runcmd_stdout "cd $INSTALLDIR/xo-server && git rev-parse --short HEAD")
-		runcmd "cd $(dirname "$0")"
+		runcmd "cd $SCRIPT_DIR"
 	else
 		# If there's no existing installation, then we definitely want
 		# to proceed with the bulid.
@@ -764,11 +765,11 @@ function UpdateXO {
 # if any arguments were given to script, handle them here
 function HandleArgs {
 
-	local OPTS=$(getopt -o: --long force,rollback,update,install -- "$@")
+	OPTS=$(getopt -o: --long force,rollback,update,install -- "$@")
 
         #shellcheck disable=SC2181
 	if [[ $? != 0 ]]; then
-		echo "Usage: $(dirname "$0")/$(basename "$0") [--install | --update | --rollback ] [--force]"
+		echo "Usage: $SCRIPT_DIR/$(basename "$0") [--install | --update | --rollback ] [--force]"
 		exit 1
 	fi
 
