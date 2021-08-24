@@ -85,7 +85,7 @@ function CheckUser {
 }
 
 # script self upgrade
-function selfUpgrade {
+function SelfUpgrade {
 
     set -o pipefail
 
@@ -112,7 +112,7 @@ function selfUpgrade {
 }
 
 # log script version (git commit) and configuration variables to logfile
-function scriptInfo {
+function ScriptInfo {
 
     set -o pipefail
 
@@ -1178,8 +1178,8 @@ if [[ $# == "0" ]]; then
 fi
 
 # these functions check specific requirements and are run everytime
-selfUpgrade "$@"
-scriptInfo
+SelfUpgrade "$@"
+ScriptInfo
 CheckUser
 CheckArch
 CheckXE
