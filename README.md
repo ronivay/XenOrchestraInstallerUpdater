@@ -47,7 +47,11 @@ Supported Linux distributions and versions:
 - Ubuntu 18.04
 - Ubuntu 16.04
 
-I suggest using a fresh OS installation and not to use the VM for anything else besides Xen Orchestra.
+Only x86_64 architecture is supported. For all those raspberry pi users out there, check [container](https://hub.docker.com/r/ronivay/xen-orchestra) instead.
+
+All OS/Architecture checks can be disabled in xo-install.cfg for experimental purposes. Not recommended obviously.
+
+I suggest using a fresh OS installation, let script install all necessary dependencies and dedicate the VM for running Xen Orchestra.
 
 If you plan on using the prebuilt VM image for XenServer/XCP-ng, see the image section below.
 
