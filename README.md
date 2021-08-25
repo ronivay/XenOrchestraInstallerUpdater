@@ -49,7 +49,7 @@ Supported Linux distributions and versions:
 
 Only x86_64 architecture is supported. For all those raspberry pi users out there, check [container](https://hub.docker.com/r/ronivay/xen-orchestra) instead.
 
-All OS/Architecture checks can be disabled in xo-install.cfg for experimental purposes. Not recommended obviously.
+All OS/Architecture checks can be disabled in `xo-install.cfg` for experimental purposes. Not recommended obviously.
 
 I suggest using a fresh OS installation, let script install all necessary dependencies and dedicate the VM for running Xen Orchestra.
 
@@ -136,7 +136,7 @@ Plugins are installed according to what is specified in `PLUGINS` variable insid
 
 ### Image
 
-If you don't want to first install a VM and then use xo-install.sh script on it, you have the possibility to import VM image which has everything already setup. Use xo-vm-import.sh to do this, it'll download a prebuilt Debian 10 image which has Xen Orchestra and XenOrchestraInstallerUpdater installed.
+If you don't want to first install a VM and then use `xo-install.sh` script on it, you have the possibility to import VM image which has everything already setup. Use `xo-vm-import.sh` to do this, it'll download a prebuilt Debian 10 image which has Xen Orchestra and XenOrchestraInstallerUpdater installed.
 
 Details of image build process [here](https://github.com/ronivay/xen-orchestra-vm)
 
@@ -146,9 +146,9 @@ Run on your Xenserver/XCP-ng host with root privileges:
 sudo bash -c "$(curl -s https://raw.githubusercontent.com/ronivay/XenOrchestraInstallerUpdater/master/xo-vm-import.sh)"
 ```
 
-Default username for UI is admin@admin.net with password admin
+Default username for UI is `admin@admin.net` with password `admin`
 
-SSH is accessible with username xo with password xopass
+SSH is accessible with username `xo` with password `xopass`
 
 Remember to change both passwords before putting the VM to actual use.
 
