@@ -673,8 +673,6 @@ function InstallXO {
             runcmd "sed -i \"s%# cert = '.\/certificate.pem'%cert = '$PATH_TO_HTTPS_CERT'%\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
             # shellcheck disable=SC1117
             runcmd "sed -i \"s%# key = '.\/key.pem'%key = '$PATH_TO_HTTPS_KEY'%\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
-            # shellcheck disable=SC1117
-            runcmd "sed -i \"s/# redirectToHttps/redirectToHttps/\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
             sleep 2
         fi
 
