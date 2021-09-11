@@ -37,6 +37,7 @@ OS_CHECK="${OS_CHECK:-"true"}"
 ARCH_CHECK="${ARCH_CHECK:-"true"}"
 PATH_TO_HTTPS_CERT="${PATH_TO_HTTPS_CERT:-""}"
 PATH_TO_HTTPS_KEY="${PATH_TO_HTTPS_KEY:-""}"
+AUTOCERT="${AUTOCERT:-"false"}"
 
 # set variables not changeable in configfile
 TIME=$(date +%Y%m%d%H%M)
@@ -60,9 +61,9 @@ FAIL="[${COLOR_RED}fail${COLOR_N}]"
 INFO="[${COLOR_BLUE}info${COLOR_N}]"
 PROGRESS="[${COLOR_BLUE}..${COLOR_N}]"
 
-# Protocol to use for webserver. If both of the X.509 certificate files exist,
+# Protocol to use for webserver. If both of the X.509 certificate paths are defined,
 # then assume that we want to enable HTTPS for the server.
-if [[ -s "$PATH_TO_HTTPS_CERT" ]] && [[ -s "$PATH_TO_HTTPS_KEY" ]]; then
+if [[ -n "$PATH_TO_HTTPS_CERT" ]] && [[ -n "$PATH_TO_HTTPS_KEY" ]]; then
     HTTPS=true
 else
     HTTPS=false
@@ -673,6 +674,10 @@ function InstallXO {
             runcmd "sed -i \"s%# cert = '.\/certificate.pem'%cert = '$PATH_TO_HTTPS_CERT'%\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
             # shellcheck disable=SC1117
             runcmd "sed -i \"s%# key = '.\/key.pem'%key = '$PATH_TO_HTTPS_KEY'%\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
+	    if [[ "$AUTOCERT" == "true" ]]; then
+                # shellcheck disable=SC1117
+                runcmd "sed -i \"s%# autoCert = false%autoCert = true%\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
+	    fi
             sleep 2
         fi
 
@@ -1006,6 +1011,16 @@ function CheckSystemd {
 # do not let the user define non functional cert/key pair
 function CheckCertificate {
     if [[ "$HTTPS" == "true" ]]; then
+        # if defined cert/key files don't exist and autocert is set to true, skip verification. Otherwise bail out.
+        if [[ ! -f "$PATH_TO_HTTPS_CERT" ]] && [[ ! -f "$PATH_TO_HTTPS_KEY" ]]; then
+            if [[ "$AUTOCERT" == "true" ]]; then
+                return 0
+            else
+                printfail "Configured certificate: $PATH_TO_HTTPS_CERT and key: $PATH_TO_HTTPS_KEY missing. Check files and try again"
+                exit 1
+            fi
+        fi
+        # if defined cert/key files exist. check that they're compatible with each other.
         local CERT="$(runcmd_stdout "openssl x509 -pubkey -noout -in $PATH_TO_HTTPS_CERT | openssl md5")"
         local KEY="$(runcmd_stdout "openssl pkey -pubout -in $PATH_TO_HTTPS_KEY -outform PEM | openssl md5")"
         if [[ "$CERT" != "$KEY" ]]; then
