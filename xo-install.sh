@@ -98,8 +98,10 @@ function SelfUpgrade {
         local REMOTE="$(runcmd_stdout "cd $SCRIPT_DIR && git config --get remote.origin.url")"
         if [[ "$REMOTE" == *"ronivay/XenOrchestraInstallerUpdater"* ]]; then
             runcmd "cd $SCRIPT_DIR && git fetch"
+            local OLD_SCRIPT_VERSION="$(runcmd_stdout "cd $SCRIPT_DIR && git rev-parse --short HEAD")"
+            local NEW_SCRIPT_VERSION="$(runcmd_stdout "cd $SCRIPT_DIR && git rev-parse --short FETCH_HEAD")"
             if [[ $(runcmd_stdout "cd $SCRIPT_DIR && git diff --name-only @{upstream}| grep xo-install.sh") ]]; then
-                printinfo "Newer version of script available, attempting to self upgrade"
+                printinfo "Newer version of script available, attempting to self upgrade from '$OLD_SCRIPT_VERSION' to '$NEW_SCRIPT_VERSION'"
                 runcmd "cd $SCRIPT_DIR && git pull --ff-only" &&
                     {
                         printok "Self upgrade done"
@@ -674,10 +676,10 @@ function InstallXO {
             runcmd "sed -i \"s%# cert = '.\/certificate.pem'%cert = '$PATH_TO_HTTPS_CERT'%\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
             # shellcheck disable=SC1117
             runcmd "sed -i \"s%# key = '.\/key.pem'%key = '$PATH_TO_HTTPS_KEY'%\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
-	    if [[ "$AUTOCERT" == "true" ]]; then
+            if [[ "$AUTOCERT" == "true" ]]; then
                 # shellcheck disable=SC1117
                 runcmd "sed -i \"s%# autoCert = false%autoCert = true%\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
-	    fi
+            fi
             sleep 2
         fi
 
