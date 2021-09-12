@@ -107,7 +107,7 @@ function SelfUpgrade {
                         printok "Self upgrade done"
                         exec "$SCRIPT_DIR/xo-install.sh" "$@"
                     } ||
-                    printfail "Failed to self upgrade. Check logs for more details"
+                    printfail "Failed to self upgrade. Check logs for more details. Continuing with current version"
             fi
         fi
     fi
