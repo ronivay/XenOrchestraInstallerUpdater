@@ -1101,13 +1101,7 @@ function StartUpScreen {
     echo
     echo -e "OS: ${COLOR_WHITE}$OSNAME $OSVERSION ${COLOR_N}"
     echo -e "Basedir: ${COLOR_WHITE}$INSTALLDIR ${COLOR_N}"
-
-    if [ "$XOUSER" ]; then
-        echo -e "User: ${COLOR_WHITE}$XOUSER ${COLOR_N}"
-    else
-        echo -e "User: ${COLOR_WHITE}root ${COLOR_N}"
-    fi
-
+    echo -e "User: ${COLOR_WHITE}$XOUSER ${COLOR_N}"
     echo -e "Port: ${COLOR_WHITE}$PORT${COLOR_N}"
     echo -e "HTTPS: ${COLOR_WHITE}${HTTPS}${COLOR_N}"
     echo -e "Git Branch for source: ${COLOR_WHITE}$BRANCH${COLOR_N}"
