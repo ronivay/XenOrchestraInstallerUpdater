@@ -94,9 +94,13 @@ function SelfUpgrade {
         return 0
     fi
 
-    if [[ -d "$SCRIPT_DIR/.git" ]]; then
+    if [[ -d "$SCRIPT_DIR/.git" ]] && [[ -n $(runcmd_stdout "command -v git") ]]; then
         local REMOTE="$(runcmd_stdout "cd $SCRIPT_DIR && git config --get remote.origin.url")"
         if [[ "$REMOTE" == *"ronivay/XenOrchestraInstallerUpdater"* ]]; then
+            if [[ -n $(runcmd_stdout "cd $SCRIPT_DIR && git status --porcelain") ]]; then
+                printfail "Local changes in this script directory. Not attempting to self upgrade"
+                return 0
+            fi
             runcmd "cd $SCRIPT_DIR && git fetch"
             local OLD_SCRIPT_VERSION="$(runcmd_stdout "cd $SCRIPT_DIR && git rev-parse --short HEAD")"
             local NEW_SCRIPT_VERSION="$(runcmd_stdout "cd $SCRIPT_DIR && git rev-parse --short FETCH_HEAD")"
