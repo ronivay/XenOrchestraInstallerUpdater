@@ -929,6 +929,12 @@ function CheckOS {
     OSVERSION=$(runcmd_stdout "grep ^VERSION_ID /etc/os-release | cut -d'=' -f2 | grep -Eo '[0-9]{1,2}' | head -1")
     OSNAME=$(runcmd_stdout "grep ^NAME /etc/os-release | cut -d'=' -f2 | sed 's/\"//g' | awk '{print \$1}'")
 
+    # check that were not on official XOA VM. if yes, bail out
+    if [[ $(runcmd_stdout "grep ^GRUB_DISTRIBUTOR /etc/default/grub | grep 'Xen Orchestra'") ]]; then
+        printfail "Looks like this is the official XOA VM. Installation not supported, exiting"
+        exit 1
+    fi
+
     if [[ $(runcmd_stdout "command -v yum") ]]; then
         PKG_FORMAT="rpm"
     fi
