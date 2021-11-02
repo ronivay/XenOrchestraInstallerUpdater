@@ -85,6 +85,41 @@ function CheckUser {
 
 }
 
+# Custom script changes
+function CustomChanges {
+	printprog "Removing open-source warning and banner"
+	runcmd "/usr/bin/sed -i 's/plan === 'Community'/false/' $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-web/src/xo-app/index.js >/dev/null 2>&1"
+	runcmd "/usr/bin/sed -i 's/+process.env.XOA_PLAN === 5/false/' $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-web/src/xo-app/index.js >/dev/null 2>&1"
+	printok "Removing open-source warning and banner"
+	
+	#printprog "Adding sudo to mount command to allow mounting partitions as non-root user"
+	#runcmd "/usr/bin/sed -i \"s%execa('mount'%execa('sudo mount'%\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/src/xo-mixins/file-restore-ng.js"
+	#printok "Adding sudo to mount command to allow mounting partitions as non-root user"
+	
+	if [[ "$XOUSER" != "root" ]]; then
+		printprog "Updating mounts dir in config file"
+		runcmd "/usr/bin/sed -i \"s%#mountsDir = '/run/xo-server/mounts'%mountsDir = '$INSTALLDIR/remotes/mounts'%\" $CONFIGPATH/.config/xo-server/config.toml"
+		printok "Updating mounts dir in config file"
+
+		printprog "Setting useSudo option in config file"
+		runcmd "/usr/bin/sed -i 's/#useSudo = false/useSudo = true/' $CONFIGPATH/.config/xo-server/config.toml"
+		printok "Setting useSudo option in config file"
+		
+		if [[ ! -e "/etc/sudoers.d/$XOUSER" ]]; then
+			printprog "Adding permissions to sudoers file for $XOUSER"
+			runcmd "echo \"$XOUSER  ALL=NOPASSWD:/bin/mount, NOPASSWD:/bin/umount, NOPASSWD:/bin/mkdir, NOPASSWD:/bin/findmnt\" > /etc/sudoers.d/$XOUSER"
+			printok "Adding permissions to sudoers file for $XOUSER"
+		fi
+		
+		if [[ ! -d "$INSTALLDIR/remotes/mounts" ]] ; then
+			printinfo "Creating new mounts directory and setting permissions"
+			runcmd "/usr/bin/mkdir -p $INSTALLDIR/remotes/mounts"
+			runcmd "/usr/bin/chown $XOUSER.$XOUSER $INSTALLDIR/remotes"
+			runcmd "/usr/bin/chown $XOUSER.$XOUSER $INSTALLDIR/remotes/mounts"
+		fi
+	fi
+}
+
 # script self upgrade
 function SelfUpgrade {
 
@@ -1222,37 +1257,3 @@ else
     # menu starts only when no args given
     StartUpScreen
 fi
-
-function CustomChanges {
-	printprog "Removing open-source warning and banner"
-	runcmd "/usr/bin/sed -i 's/plan === 'Community'/false/' $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-web/src/xo-app/index.js >/dev/null 2>&1"
-	runcmd "/usr/bin/sed -i 's/+process.env.XOA_PLAN === 5/false/' $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-web/src/xo-app/index.js >/dev/null 2>&1"
-	printok "Removing open-source warning and banner"
-	
-	#printprog "Adding sudo to mount command to allow mounting partitions as non-root user"
-	#runcmd "/usr/bin/sed -i \"s%execa('mount'%execa('sudo mount'%\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/src/xo-mixins/file-restore-ng.js"
-	#printok "Adding sudo to mount command to allow mounting partitions as non-root user"
-	
-	if [[ "$XOUSER" != "root" ]]; then
-		printprog "Updating mounts dir in config file"
-		runcmd "/usr/bin/sed -i \"s%#mountsDir = '/run/xo-server/mounts'%mountsDir = '$INSTALLDIR/remotes/mounts'%\" $CONFIGPATH/.config/xo-server/config.toml"
-		printok "Updating mounts dir in config file"
-
-		printprog "Setting useSudo option in config file"
-		runcmd "/usr/bin/sed -i 's/#useSudo = false/useSudo = true/' $CONFIGPATH/.config/xo-server/config.toml"
-		printok "Setting useSudo option in config file"
-		
-		if [[ ! -e "/etc/sudoers.d/$XOUSER" ]]; then
-			printprog "Adding permissions to sudoers file for $XOUSER"
-			runcmd "echo \"$XOUSER  ALL=NOPASSWD:/bin/mount, NOPASSWD:/bin/umount, NOPASSWD:/bin/mkdir, NOPASSWD:/bin/findmnt\" > /etc/sudoers.d/$XOUSER"
-			printok "Adding permissions to sudoers file for $XOUSER"
-		fi
-		
-		if [[ ! -d "$INSTALLDIR/remotes/mounts" ]] ; then
-			printinfo "Creating new mounts directory and setting permissions"
-			runcmd "/usr/bin/mkdir -p $INSTALLDIR/remotes/mounts"
-			runcmd "/usr/bin/chown $XOUSER.$XOUSER $INSTALLDIR/remotes"
-			runcmd "/usr/bin/chown $XOUSER.$XOUSER $INSTALLDIR/remotes/mounts"
-		fi
-	fi
-}
