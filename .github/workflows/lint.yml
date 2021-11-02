@@ -1,0 +1,26 @@
+name: 'lint'
+on:
+  push:
+    paths:
+      - 'xo-install.sh'
+      - 'xo-vm-import.sh'
+  pull_request:
+    paths:
+      - 'xo-install.sh'
+      - 'xo-vm-import.sh'
+    
+jobs:
+  shellcheck:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: run shellcheck
+      uses: ludeeus/action-shellcheck@1.1.0
+    
+    - name: run shfmt
+      uses: luizm/action-sh-checker@v0.3.0
+      env:
+        SHFMT_OPTS: -i 4 -d
+      with:
+        sh_checker_comment: false
+        sh_checker_shellcheck_disable: true
