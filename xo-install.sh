@@ -87,6 +87,7 @@ function CheckUser {
 
 # Custom script changes
 function CustomChanges {
+	echo
 	printprog "Removing open-source warning and banner"
 	runcmd "/usr/bin/sed -i 's/plan === 'Community'/false/' $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-web/src/xo-app/index.js >/dev/null 2>&1"
 	runcmd "/usr/bin/sed -i 's/+process.env.XOA_PLAN === 5/false/' $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-web/src/xo-app/index.js >/dev/null 2>&1"
