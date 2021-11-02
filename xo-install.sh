@@ -99,11 +99,11 @@ function CustomChanges {
 	
 	if [[ "$XOUSER" != "root" ]]; then
 		printprog "Updating mounts dir in config file"
-		runcmd "/usr/bin/sed -i \"s%#mountsDir = '/run/xo-server/mounts'%mountsDir = '$INSTALLDIR/remotes/mounts'%\" $CONFIGPATH/.config/xo-server/config.toml"
+		runcmd "/usr/bin/sed -i \"s%#mountsDir = '/run/xo-server/mounts'%mountsDir = '$INSTALLDIR/remotes/mounts'%\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
 		printok "Updating mounts dir in config file"
 
 		printprog "Setting useSudo option in config file"
-		runcmd "/usr/bin/sed -i 's/#useSudo = false/useSudo = true/' $CONFIGPATH/.config/xo-server/config.toml"
+		runcmd "/usr/bin/sed -i 's/#useSudo = false/useSudo = true/' $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
 		printok "Setting useSudo option in config file"
 		
 		if [[ ! -e "/etc/sudoers.d/$XOUSER" ]]; then
