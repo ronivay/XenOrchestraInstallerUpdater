@@ -89,7 +89,8 @@ function CheckUser {
 function CustomChanges {
 	echo
 	printprog "Disabling open-source warning and banner"
-	runcmd "/usr/bin/sed -i 's/dismissedSourceBanner: Boolean(cookies.get('dismissedSourceBanner'))/dismissedSourceBanner: true/' $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-web/src/xo-app/index.js"
+	runcmd "/usr/bin/sed -i \"s/dismissedSourceBanner: Boolean(cookies.get('dismissedSourceBanner'))/dismissedSourceBanner: true/\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-web/src/xo-app/index.js"
+	runcmd "/usr/bin/sed -i \"s/previousDisclaimer = cookies.get('previousDisclaimer')/previousDisclaimer = true/\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-web/src/xo-app/index.js"
 	printok "Disabling open-source warning and banner"
 	
 	#printprog "Adding sudo to mount command to allow mounting partitions as non-root user"
