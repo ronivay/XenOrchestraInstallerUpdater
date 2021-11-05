@@ -88,10 +88,9 @@ function CheckUser {
 # Custom script changes
 function CustomChanges {
 	echo
-	printprog "Removing open-source warning and banner"
-	runcmd "/usr/bin/sed -i 's/plan === 'Community'/false/' $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-web/src/xo-app/index.js >/dev/null 2>&1"
-	runcmd "/usr/bin/sed -i 's/+process.env.XOA_PLAN === 5/false/' $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-web/src/xo-app/index.js >/dev/null 2>&1"
-	printok "Removing open-source warning and banner"
+	printprog "Disabling open-source warning and banner"
+	runcmd "/usr/bin/sed -i 's/dismissedSourceBanner: Boolean(cookies.get('dismissedSourceBanner'))/dismissedSourceBanner: true/' $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-web/src/xo-app/index.js"
+	printok "Disabling open-source warning and banner"
 	
 	#printprog "Adding sudo to mount command to allow mounting partitions as non-root user"
 	#runcmd "/usr/bin/sed -i \"s%execa('mount'%execa('sudo mount'%\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/src/xo-mixins/file-restore-ng.js"
