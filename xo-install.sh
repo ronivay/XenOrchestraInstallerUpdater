@@ -228,6 +228,14 @@ function InstallDependenciesRPM {
 
     # Install necessary dependencies for XO build
 
+    # only install epel-release if doesn't exist
+    if [[ -z $(runcmd_stdout "rpm -qa epel-release") ]]; then
+        echo
+        printprog "Installing epel-repo"
+        runcmd "yum -y install epel-release"
+        printok "Installing epel-repo"
+    fi
+
     # install packages
     echo
     printprog "Installing build dependencies, redis server, python, git, nfs-utils, cifs-utils"
@@ -250,14 +258,6 @@ function InstallDependenciesRPM {
         printprog "Installing yarn"
         runcmd "curl -s -o /etc/yum.repos.d/yarn.repo https://dl.yarnpkg.com/rpm/yarn.repo && yum -y install yarn"
         printok "Installing yarn"
-    fi
-
-    # only install epel-release if doesn't exist
-    if [[ -z $(runcmd_stdout "rpm -q epel-release") ]]; then
-        echo
-        printprog "Installing epel-repo"
-        runcmd "yum -y install epel-release"
-        printok "Installing epel-repo"
     fi
 
     # only install libvhdi-tools if vhdimount is not present
