@@ -136,7 +136,7 @@ Plugins are installed according to what is specified in `PLUGINS` variable insid
 
 ### Image
 
-If you don't want to first install a VM and then use `xo-install.sh` script on it, you have the possibility to import VM image which has everything already setup. Use `xo-vm-import.sh` to do this, it'll download a prebuilt Debian 10 image which has Xen Orchestra and XenOrchestraInstallerUpdater installed.
+If you don't want to first install a VM and then use `xo-install.sh` script on it, you have the possibility to import VM image which has everything already setup. Use `xo-vm-import.sh` to do this, it'll download a prebuilt Debian 11 image which has Xen Orchestra and XenOrchestraInstallerUpdater installed.
 
 Details of image build process [here](https://github.com/ronivay/xen-orchestra-vm)
 
@@ -164,7 +164,7 @@ Built and tested on XCP-ng 7.x
 
 ### Tests and VM image
 
-I run my own little implementation of automation consisting of ansible and virtual machines to test the installation on regular bases with CentOS 8, Ubuntu 20, Debian 10 and AlmaLinux 8. Test results are visible in badges on top of this readme.
+I run my own little implementation of automation consisting of ansible and virtual machines to test the installation on regular bases with CentOS 8, Ubuntu 20, Debian 11 and AlmaLinux 8. Test results are visible in badges on top of this readme.
 
 VM image is also built totally by me and distributed from webservers i maintain.
 
