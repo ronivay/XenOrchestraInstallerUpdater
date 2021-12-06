@@ -38,6 +38,8 @@ ARCH_CHECK="${ARCH_CHECK:-"true"}"
 PATH_TO_HTTPS_CERT="${PATH_TO_HTTPS_CERT:-""}"
 PATH_TO_HTTPS_KEY="${PATH_TO_HTTPS_KEY:-""}"
 AUTOCERT="${AUTOCERT:-"false"}"
+USESUDO="${USESUDO:-"false"}"
+GENSUDO="${GENSUDO:-"false"}"
 
 # set variables not changeable in configfile
 TIME=$(date +%Y%m%d%H%M)
@@ -46,6 +48,7 @@ LOGFILE="${LOGPATH}/xo-install.log-$TIME"
 NODEVERSION="14"
 FORCE="false"
 INTERACTIVE="false"
+SUDOERSFILE="/etc/sudoers.d/xo-server-$XOUSER"
 
 # Set path where new source is cloned/pulled
 XO_SRC_DIR="$INSTALLDIR/xo-src/xen-orchestra"
@@ -467,6 +470,42 @@ function InstallXOPlugins {
 
 }
 
+# install sudo package and generate config if defined in configuration
+function InstallSudo {
+
+    set -uo pipefail
+
+    trap ErrorHandling ERR INT
+
+    if [[ -z $(runcmd_stdout "command -v sudo") ]]; then
+        if [[ "$PKG_FORMAT" == "deb" ]]; then
+            echo
+            printprog "Installing sudo"
+            runcmd "apt-get install -y sudo"
+            printok "Installing sudo"
+        elif [[ "$PKG_FORMAT" == "rpm" ]]; then
+            printprog "Installing sudo"
+            runcmd "yum install -y sudo"
+            printok "Installing sudo"
+        fi
+    fi
+
+    if [[ "$GENSUDO" == "true" ]] && [[ ! -f "$SUDOERSFILE" ]]; then
+        echo
+        printinfo "Generating sudoers configuration to $SUDOERSFILE"
+        TMPSUDOERS="$(mktemp /tmp/xo-sudoers.XXXXXX)"
+        runcmd "echo '$XOUSER ALL=(root) NOPASSWD: /bin/mount, /bin/umount' > '$TMPSUDOERS'"
+        if runcmd "visudo -cf $TMPSUDOERS"; then
+	    runcmd "mv $TMPSUDOERS $SUDOERSFILE"
+        else
+            printfail "sudoers syntax check failed, not activating $SUDOERSFILE"
+            runcmd "rm -f $TMPSUDOERS"
+        fi
+    fi
+
+}
+
+
 # run actual xen orchestra installation. procedure is the same for new installation and update. we always build it from scratch.
 function InstallXO {
 
@@ -482,9 +521,11 @@ function InstallXO {
             printprog "Creating missing $XOUSER user"
             runcmd "useradd -s /sbin/nologin $XOUSER -m"
             printok "Creating missing $XOUSER user"
-            sleep 2
         fi
-    fi
+        if [[ "$USESUDO" == "true" ]]; then
+            InstallSudo
+        fi
+   fi
 
     # Create installation directory if doesn't exist already
     if [[ ! -d "$INSTALLDIR" ]]; then
@@ -686,6 +727,14 @@ function InstallXO {
             fi
             sleep 2
         fi
+        if [[ "$USESUDO" == "true" ]]; then
+            printinfo "Enabling useSudo in xo-server configuration file"
+            runcmd "sed -i \"s/#useSudo = false/useSudo = true/\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
+            printinfo "Changing default mountsDir in xo-server configuration file"
+            runcmd "sed -i \"s%#mountsDir.*%mountsDir = '$INSTALLDIR/mounts'%\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
+            runcmd "mkdir -p $INSTALLDIR/mounts"
+            runcmd "chown -R $XOUSER:$XOUSER $INSTALLDIR/mounts"
+        fi
 
         printinfo "Activating modified configuration file"
         runcmd "mkdir -p $CONFIGPATH/.config/xo-server"
@@ -712,6 +761,7 @@ function InstallXO {
         runcmd "chown -R $XOUSER:$XOUSER /var/lib/xo-server"
 
         runcmd "chown -R $XOUSER:$XOUSER $CONFIGPATH/.config/xo-server"
+
     fi
 
     # fix to prevent older installations to not update because systemd service is not symlinked anymore
