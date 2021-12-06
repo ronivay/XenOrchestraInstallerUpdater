@@ -107,6 +107,7 @@ rpm:
 - libvhdi-tools
 - cifs-utils
 - lvm2
+- sudo (if set in xo-install.cfg)
 
 deb:
 - apt-transport-https
@@ -128,6 +129,7 @@ deb:
 - cifs-utils
 - gnupg (debian 10/11)
 - software-properties-common (ubuntu)
+- sudo (if set in xo-install.cfg)
 ```
 
 #### Plugins
