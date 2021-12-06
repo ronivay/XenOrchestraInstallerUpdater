@@ -520,6 +520,7 @@ function InstallXO {
             printprog "Creating missing $XOUSER user"
             runcmd "useradd -s /sbin/nologin $XOUSER -m"
             printok "Creating missing $XOUSER user"
+            CONFIGPATH=$(getent passwd "$XOUSER" | cut -d: -f6)
         fi
         if [[ "$USESUDO" == "true" ]]; then
             InstallSudo
