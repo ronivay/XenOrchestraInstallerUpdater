@@ -727,7 +727,7 @@ function InstallXO {
             fi
             sleep 2
         fi
-        if [[ "$USESUDO" == "true" ]]; then
+        if [[ "$USESUDO" == "true" ]] && [[ "$XOUSER" != "root" ]]; then
             printinfo "Enabling useSudo in xo-server configuration file"
             runcmd "sed -i \"s/#useSudo = false/useSudo = true/\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
             printinfo "Changing default mountsDir in xo-server configuration file"
