@@ -496,7 +496,7 @@ function InstallSudo {
         TMPSUDOERS="$(mktemp /tmp/xo-sudoers.XXXXXX)"
         runcmd "echo '$XOUSER ALL=(root) NOPASSWD: /bin/mount, /bin/umount' > '$TMPSUDOERS'"
         if runcmd "visudo -cf $TMPSUDOERS"; then
-	    runcmd "mv $TMPSUDOERS $SUDOERSFILE"
+            runcmd "mv $TMPSUDOERS $SUDOERSFILE"
         else
             printfail "sudoers syntax check failed, not activating $SUDOERSFILE"
             runcmd "rm -f $TMPSUDOERS"
@@ -504,7 +504,6 @@ function InstallSudo {
     fi
 
 }
-
 
 # run actual xen orchestra installation. procedure is the same for new installation and update. we always build it from scratch.
 function InstallXO {
@@ -525,7 +524,7 @@ function InstallXO {
         if [[ "$USESUDO" == "true" ]]; then
             InstallSudo
         fi
-   fi
+    fi
 
     # Create installation directory if doesn't exist already
     if [[ ! -d "$INSTALLDIR" ]]; then
