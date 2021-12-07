@@ -59,6 +59,8 @@ If you plan on using the prebuilt VM image for XenServer/XCP-ng, see the image s
 
 Start by cloning this repository to the machine you wish to install to.
 
+See [Wiki](https://github.com/ronivay/XenOrchestraInstallerUpdater/wiki) for common configuration options
+
 There is a file called `sample.xo-install.cfg` which you should copy as `xo-install.cfg`. This file holds some editable configuration settings you might want to change depending on your needs.
 
 When done editing configuration, just run the script with root privileges:
