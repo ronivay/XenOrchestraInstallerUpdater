@@ -806,11 +806,13 @@ function InstallXO {
 
 function VerifyServiceStart {
 
-    set -uo pipefail
+    set -u
 
     if [[ "$XO_SVC" == "xo-proxy" ]]; then
         local PORT="443"
     fi
+
+    PROXY_CONFIG_UPDATED=${PROXY_CONFIG_UPDATED:-"false"}
 
     # loop service logs for 60 seconds and look for line that indicates service was started. we only care about lines generated after script was started (LOGTIME)
     local count=0
@@ -838,7 +840,7 @@ function VerifyServiceStart {
         if [[ "$XO_SVC" == "xo-proxy" ]]; then
             echo -e "       ${COLOR_GREEN}Proxy started in port $PORT. Make sure you have firewall rules in place to allow access from xen orchestra.${COLOR_N}"
             # print json config only when install was ran and skip while Updating
-            if [[ "$TASK" == "Installation" ]]; then
+            if [[ "$TASK" == "Installation" ]] && [[ "$PROXY_CONFIG_UPDATED" == "true" ]]; then
                 echo -e "       ${COLOR_GREEN}Save following line as json file and use config import in Xen Orchestra to add proxy${COLOR_N}"
                 echo
                 echo "{\"proxies\":[{\"authenticationToken\":\"${PROXY_TOKEN}\",\"name\":\"${PROXY_NAME}\",\"vmUuid\":\"${PROXY_VM_UUID}\",\"id\":\"${PROXY_RANDOM_UUID}\"}]}"
@@ -935,13 +937,13 @@ EOF
     printinfo "Reloading systemd configuration"
     runcmd "/bin/systemctl daemon-reload"
 
-    PROXY_VM_UUID="$(dmidecode -t system | grep UUID | awk '{print $NF}')"
-    PROXY_RANDOM_UUID="$(cat /proc/sys/kernel/random/uuid)"
-    PROXY_TOKEN="$(tr -dc A-Z-a-z0-9_- </dev/urandom | head -c 43)"
-    PROXY_NAME="xo-ce-proxy-$TIME"
-
     # if xen orchestra proxy configuration file doesn't exist or configuration update is not disabled in xo-install.cfg, we create it
     if [[ ! -f "$CONFIGPATH/.config/xo-proxy/config.toml" ]]; then
+        PROXY_VM_UUID="$(dmidecode -t system | grep UUID | awk '{print $NF}')"
+        PROXY_RANDOM_UUID="$(cat /proc/sys/kernel/random/uuid)"
+        PROXY_TOKEN="$(tr -dc A-Z-a-z0-9_- </dev/urandom | head -c 43)"
+        PROXY_NAME="xo-ce-proxy-$TIME"
+        PROXY_CONFIG_UPDATED="true"
         printinfo "No xo-proxy configuration present, copying default config to $CONFIGPATH/.config/xo-proxy/config.toml"
         runcmd "mkdir -p $CONFIGPATH/.config/xo-proxy"
         runcmd "cp $INSTALLDIR/xo-builds/xen-orchestra-$TIME/@xen-orchestra/proxy/config.toml $CONFIGPATH/.config/xo-proxy/config.toml"
