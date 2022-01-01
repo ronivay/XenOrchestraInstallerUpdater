@@ -12,7 +12,7 @@ How about docker? No worries, check [Docker hub](https://hub.docker.com/r/roniva
 
 ### What is Xen Orchestra?
 
-Xen Orchestra is a web interface used to manage XenServer/XCP-ng hosts and pools. It runs separately and one can manage multiple different virtualization environments from one single management interface. 
+Xen Orchestra is a web interface used to manage XenServer/XCP-ng hosts and pools. It runs separately and one can manage multiple different virtualization environments from one single management interface.
 
 Xen Orchestra is developed by company called [Vates](https://vates.fr/). They offer Xen Orchestra as a turnkey appliance with different pricing models for different needs and even a free version with limited capabilities. This is the preferred and only supported method of using Xen Orchestra product as the appliance goes through QA and each of the plans come with support. I highly recommend using the official appliance if you plan on using Xen Orchestra in production environment, to support a great product and it's development now, and in the future.
 
@@ -23,7 +23,7 @@ If you're a home user/enthusiast with simple environment you want to manage but 
 
 Since Xen Orchestra is open source and majority of the paid features included in the official appliance are part of the sources, one can build it themself. This [procedure](https://xen-orchestra.com/docs/from_the_sources.html) is even documented. Note that even though this method is documented, it's not supported way of using Xen Orchestra and is intended to be used only for testing purposes and not in production.
 
-This script offers an easy way to install all dependencies, fetch source code, compile it and do all the little details for you which you'd have to do manually otherwise. Other than that, it follows the steps described in the official documentation. All source code for Xen Orchestra is by default pulled from the official [repository](https://github.com/vatesfr/xen-orchestra). 
+This script offers an easy way to install all dependencies, fetch source code, compile it and do all the little details for you which you'd have to do manually otherwise. Other than that, it follows the steps described in the official documentation. All source code for Xen Orchestra is by default pulled from the official [repository](https://github.com/vatesfr/xen-orchestra).
 
 **This script is not supported or endorsed by Xen Orchestra. Any issue you may have, please report it first to this repository.**
 
@@ -80,11 +80,20 @@ update existing installation to the newest version available
 
 should be self explanatory. if you wish to rollback to another installation after doing update or whatever
 
+* `Install proxy`
+
+install all dependencies, necessary configuration and xen orchestra backup proxy
+
+* `Update proxy`
+
+update existing proxy installation to newest version available
+
+
 Each of these options can be run non interactively like so:
 
 ```
-sudo ./xo-install.sh --install
-sudo ./xo-install.sh --update [--force]
+sudo ./xo-install.sh --install [--proxy]
+sudo ./xo-install.sh --update [--proxy] [--force]
 sudo ./xo-install.sh --rollback
 ```
 
@@ -134,6 +143,16 @@ deb:
 - sudo (if set in xo-install.cfg)
 ```
 
+#### Backup proxy
+
+Proxy installation method is experimental, use at your own risk. Proxy installation from sources is not documented by Xen Orchestra team. Method used here is the outcome of trial and error.
+
+Majority of xo-install.cfg variables have no effect to proxy installation. Proxy process will always run as root user and in port 443.
+
+Since there is no way in Xen Orchestra from sources to register a proxy via UI, the installation will output a piece of json after the proxy is installed. You need to copy this json string and save to a file. Then use the config import option in Xen Orchestra settings to import this piece of json to add proxy.
+
+Note that for obvious reasons some of the proxy features seen in Xen Orchestra UI aren't working, like upgrade button, upgrade check, redeploy, update appliance settings.
+
 #### Plugins
 
 Plugins are installed according to what is specified in `PLUGINS` variable inside `xo-install.cfg` configuration file. By default all available plugins that are part of xen orchestra repository are installed. This list can be narrowed down if needed and 3rd party plugins included.
@@ -174,4 +193,4 @@ VM image is also built totally by me and distributed from webservers i maintain.
 
 ### Contributing
 
-Pull requests and issues (either real issues or just suggestions) are more than welcome. Note that i do not wish to make any modifications to Xen Orchestra source code as part of this script. 
+Pull requests and issues (either real issues or just suggestions) are more than welcome. Note that i do not wish to make any modifications to Xen Orchestra source code as part of this script.
