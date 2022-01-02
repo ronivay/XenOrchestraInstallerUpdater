@@ -894,9 +894,9 @@ function UpdateXO {
     local XO_WEB_ACTIVE="$(runcmd_stdout "readlink -e $INSTALLDIR/xo-web")"
     local XO_PROXY_ACTIVE="$(runcmd_stdout "readlink -e $INSTALLDIR/xo-proxy")"
 
-    for DELETEABLE in $INSTALLATIONS; do
-        if [[ "$XO_SERVER_ACTIVE" != "${DELETABLE}"* ]] && [[ "$XO_WEB_ACTIVE" != "${DELETEABLE}"* ]] && [[ "$XO_PROXY_ACTIVE" != "${DELETEABLE}"* ]]; then
-            runcmd "rm -rf $DELETEABLE"
+    for DELETABLE in $INSTALLATIONS; do
+        if [[ "$XO_SERVER_ACTIVE" != "${DELETABLE}"* ]] && [[ "$XO_WEB_ACTIVE" != "${DELETABLE}"* ]] && [[ "$XO_PROXY_ACTIVE" != "${DELETABLE}"* ]]; then
+            runcmd "rm -rf $DELETABLE"
         fi
     done
     printok "Removing old inactive installations. Leaving $PRESERVE latest"
