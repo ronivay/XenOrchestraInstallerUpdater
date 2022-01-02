@@ -145,11 +145,15 @@ deb:
 
 #### Backup proxy
 
-Proxy installation method is experimental, use at your own risk. Proxy installation from sources is not documented by Xen Orchestra team. Method used here is the outcome of trial and error.
+**Proxy installation method is experimental, use at your own risk. Proxy installation from sources is not documented by Xen Orchestra team. Method used here is the outcome of trial and error.**
+
+Backup proxy can be used to offload backup tasks from the main Xen Orchestra instance to a proxy which has a direct connection to remote where backups are stored.
+
+Requirements for proxy VM are otherwise the same as mentioned above, in addition the VM needs to live inside XCP-ng/XenServer pool managed by Xen Orchestra instance. VM needs to have access to pool master host and Xen Orchestra needs to be able to access this VM via TCP/443.
 
 Majority of xo-install.cfg variables have no effect to proxy installation. Proxy process will always run as root user and in port 443.
 
-Since there is no way in Xen Orchestra from sources to register a proxy via UI, the installation will output a piece of json after the proxy is installed. You need to copy this json string and save to a file. Then use the config import option in Xen Orchestra settings to import this piece of json to add proxy.
+Since there is no way in Xen Orchestra from sources to register a proxy via UI, the installation will output a piece of json after the proxy is installed. You need to copy this json string and save to a file. Then use the config import option in Xen Orchestra settings to import this piece of json to add proxy. Xen Orchestra figures out the correct connection address from the VM UUID which is part of this json. Connection details cannot be changed manually.
 
 Note that for obvious reasons some of the proxy features seen in Xen Orchestra UI aren't working, like upgrade button, upgrade check, redeploy, update appliance settings.
 
