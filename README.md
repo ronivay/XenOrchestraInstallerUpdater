@@ -153,7 +153,9 @@ Requirements for proxy VM are otherwise the same as mentioned above, in addition
 
 Majority of xo-install.cfg variables have no effect to proxy installation. Proxy process will always run as root user and in port 443.
 
-Since there is no way in Xen Orchestra from sources to register a proxy via UI, the installation will output a piece of json after the proxy is installed. You need to copy this json string and save to a file. Then use the config import option in Xen Orchestra settings to import this piece of json to add proxy. Xen Orchestra figures out the correct connection address from the VM UUID which is part of this json. Connection details cannot be changed manually.
+Since there is no way in Xen Orchestra from sources to register a proxy via UI, the installation will output a piece of json after the proxy is installed. You need to copy this json string and save to a file. Then use the config import option in Xen Orchestra settings to import this piece of json to add proxy. This works as a partial config import and won't overwrite any existing config. Although it's good to take a config export backup just in case.
+
+Xen Orchestra figures out the correct connection address from the VM UUID which is part of this json. This is why the VM needs to be part of pool managed by Xen Orchestra. Connection details cannot be changed manually.
 
 Note that for obvious reasons some of the proxy features seen in Xen Orchestra UI aren't working, like upgrade button, upgrade check, redeploy, update appliance settings.
 
