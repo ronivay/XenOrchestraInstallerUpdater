@@ -1349,8 +1349,10 @@ function StartUpScreen {
     echo
     echo -e "Errorlog is stored to ${COLOR_WHITE}$LOGFILE${COLOR_N} for debug purposes"
     echo
+    echo "Depending on which installation is chosen:"
+    echo
     echo -e "Xen Orchestra configuration will be stored to ${COLOR_WHITE}$CONFIGPATH/.config/xo-server/config.toml${COLOR_N}, if you don't want it to be replaced with every update, set ${COLOR_WHITE}CONFIGUPDATE${COLOR_N} to false in ${COLOR_WHITE}xo-install.cfg${COLOR_N}"
-    echo -e "Xen Orchestra Proxy configuration will be stored to ${COLOR_WHITE}$CONFIGPATH/.config/xo-proxy/config.toml${COLOR_N}."
+    echo -e "Xen Orchestra Proxy configuration will be stored to ${COLOR_WHITE}$CONFIGPATH/.config/xo-proxy/config.toml${COLOR_N}. Config won't be overwritten during update, ever"
     echo "-----------------------------------------"
 
     echo
