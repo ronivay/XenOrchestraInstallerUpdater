@@ -505,26 +505,13 @@ function InstallSudo {
 
 }
 
-# run actual xen orchestra installation. procedure is the same for new installation and update. we always build it from scratch.
-function InstallXO {
+function PrepInstall {
 
-    set -uo pipefail
-
-    trap ErrorHandling ERR INT
-
-    # Create user if doesn't exist (if defined)
-
-    if [[ "$XOUSER" != "root" ]]; then
-        if [[ -z $(runcmd_stdout "getent passwd $XOUSER") ]]; then
-            echo
-            printprog "Creating missing $XOUSER user"
-            runcmd "useradd -s /sbin/nologin $XOUSER -m"
-            printok "Creating missing $XOUSER user"
-            CONFIGPATH=$(getent passwd "$XOUSER" | cut -d: -f6)
-        fi
-        if [[ "$USESUDO" == "true" ]]; then
-            InstallSudo
-        fi
+    if [[ "$XO_SVC" == "xo-server" ]]; then
+        local XO_SVC_DESC="Xen Orchestra"
+    fi
+    if [[ "$XO_SVC" == "xo-proxy" ]]; then
+        local XO_SVC_DESC="Xen Orchestra Proxy"
     fi
 
     # Create installation directory if doesn't exist already
@@ -543,7 +530,7 @@ function InstallXO {
 
     echo
     # keep the actual source code in one directory and either clone or git pull depending on if directory exists already
-    printinfo "Fetching Xen Orchestra source code"
+    printinfo "Fetching $XO_SVC_DESC source code"
     if [[ ! -d "$XO_SRC_DIR" ]]; then
         runcmd "mkdir -p \"$XO_SRC_DIR\""
         runcmd "git clone \"${REPOSITORY}\" \"$XO_SRC_DIR\""
@@ -587,9 +574,9 @@ function InstallXO {
 
     # Get the commit ID of the currently-installed xen-orchestra (if one
     # exists).
-    if [[ -L "$INSTALLDIR/xo-server" ]] && [[ -n $(runcmd_stdout "readlink -e $INSTALLDIR/xo-server") ]]; then
-        local OLD_REPO_HASH=$(runcmd_stdout "cd $INSTALLDIR/xo-server && git rev-parse HEAD")
-        local OLD_REPO_HASH_SHORT=$(runcmd_stdout "cd $INSTALLDIR/xo-server && git rev-parse --short HEAD")
+    if [[ -L "$INSTALLDIR/$XO_SVC" ]] && [[ -n $(runcmd_stdout "readlink -e $INSTALLDIR/$XO_SVC") ]]; then
+        local OLD_REPO_HASH=$(runcmd_stdout "cd $INSTALLDIR/$XO_SVC && git rev-parse HEAD")
+        local OLD_REPO_HASH_SHORT=$(runcmd_stdout "cd $INSTALLDIR/$XO_SVC && git rev-parse --short HEAD")
         runcmd "cd $SCRIPT_DIR"
     else
         # If there's no existing installation, then we definitely want
@@ -604,26 +591,68 @@ function InstallXO {
         echo
         # if any non interactive arguments used in script startup, we don't want to show any prompts
         if [[ "$INTERACTIVE" == "true" ]]; then
-            printinfo "No changes to xen-orchestra since previous install. Run update anyway?"
+            printinfo "No changes to $XO_SVC_DESC since previous install. Run update anyway?"
             read -r -p "[y/N]: " answer
             answer="${answer:-n}"
             case "$answer" in
-            y)
-                :
-                ;;
-            n)
-                printinfo "Cleaning up install directory: $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
-                runcmd "rm -rf $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
-                exit 0
-                ;;
+                y)
+                    :
+                    ;;
+                n)
+                    printinfo "Cleaning up install directory: $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
+                    runcmd "rm -rf $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
+                    exit 0
+                    ;;
             esac
         else
-            printinfo "No changes to xen-orchestra since previous install. Skipping xo-server and xo-web build. Use the --force to update anyway."
+            printinfo "No changes to $XO_SVC_DESC since previous install. Skipping build. Use the --force to update anyway."
             printinfo "Cleaning up install directory: $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
             runcmd "rm -rf $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
             exit 0
         fi
     fi
+
+    # If this isn't a fresh install, then list the upgrade the user is making.
+    if [[ -n "$OLD_REPO_HASH" ]]; then
+        echo
+        if [[ "$FORCE" != "true" ]]; then
+            printinfo "Updating $XO_SVC_DESC from '$OLD_REPO_HASH_SHORT' to '$NEW_REPO_HASH_SHORT'"
+            echo "Updating $XO_SVC_DESC from '$OLD_REPO_HASH_SHORT' to '$NEW_REPO_HASH_SHORT'" >>"$LOGFILE"
+        else
+            printinfo "Updating $XO_SVC_DESC (forced) from '$OLD_REPO_HASH_SHORT' to '$NEW_REPO_HASH_SHORT'"
+            echo "Updating $XO_SVC_DESC (forced) from '$OLD_REPO_HASH_SHORT' to '$NEW_REPO_HASH_SHORT'" >>"$LOGFILE"
+        fi
+    else
+        printinfo "Installing $XO_SVC_DESC from branch: $BRANCH - commit: $NEW_REPO_HASH_SHORT"
+        echo "Installing $XO_SVC_DESC from branch: $BRANCH - commit: $NEW_REPO_HASH_SHORT" >>"$LOGFILE"
+        TASK="Installation"
+    fi
+
+}
+
+# run actual xen orchestra installation. procedure is the same for new installation and update. we always build it from scratch.
+function InstallXO {
+
+    set -uo pipefail
+
+    trap ErrorHandling ERR INT
+
+    # Create user if doesn't exist (if defined)
+
+    if [[ "$XOUSER" != "root" ]]; then
+        if [[ -z $(runcmd_stdout "getent passwd $XOUSER") ]]; then
+            echo
+            printprog "Creating missing $XOUSER user"
+            runcmd "useradd -s /sbin/nologin $XOUSER -m"
+            printok "Creating missing $XOUSER user"
+            CONFIGPATH=$(getent passwd "$XOUSER" | cut -d: -f6)
+        fi
+        if [[ "$USESUDO" == "true" ]]; then
+            InstallSudo
+        fi
+    fi
+
+    PrepInstall
 
     # Now that we know we're going to be building a new xen-orchestra, make
     # sure there's no already-running xo-server process.
@@ -635,22 +664,6 @@ function InstallXO {
             exit 1
         }
         printok "Shutting down xo-server"
-    fi
-
-    # If this isn't a fresh install, then list the upgrade the user is making.
-    if [[ -n "$OLD_REPO_HASH" ]]; then
-        echo
-        if [[ "$FORCE" != "true" ]]; then
-            printinfo "Updating xen-orchestra from '$OLD_REPO_HASH_SHORT' to '$NEW_REPO_HASH_SHORT'"
-            echo "Updating xen-orchestra from '$OLD_REPO_HASH_SHORT' to '$NEW_REPO_HASH_SHORT'" >>"$LOGFILE"
-        else
-            printinfo "Updating xen-orchestra (forced) from '$OLD_REPO_HASH_SHORT' to '$NEW_REPO_HASH_SHORT'"
-            echo "Updating xen-orchestra (forced) from '$OLD_REPO_HASH_SHORT' to '$NEW_REPO_HASH_SHORT'" >>"$LOGFILE"
-        fi
-    else
-        printinfo "Installing xen-orchestra from branch: $BRANCH - commit: $NEW_REPO_HASH_SHORT"
-        echo "Installing xen-orchestra from branch: $BRANCH - commit: $NEW_REPO_HASH_SHORT" >>"$LOGFILE"
-        TASK="Installation"
     fi
 
     # Fetch 3rd party plugins source code
@@ -788,45 +801,69 @@ function InstallXO {
     set +eo pipefail
     trap - ERR INT
 
-    # loop xo-server service logs for 60 seconds and look for line that indicates service was started. we only care about lines generated after script was started (LOGTIME)
+    VerifyServiceStart
+}
+
+function VerifyServiceStart {
+
+    set -u
+
+    if [[ "$XO_SVC" == "xo-proxy" ]]; then
+        local PORT="443"
+    fi
+
+    PROXY_CONFIG_UPDATED=${PROXY_CONFIG_UPDATED:-"false"}
+
+    # loop service logs for 60 seconds and look for line that indicates service was started. we only care about lines generated after script was started (LOGTIME)
     local count=0
     local limit=6
     # shellcheck disable=SC1117
-    local servicestatus="$(runcmd_stdout "journalctl --since '$LOGTIME' -u xo-server | grep 'Web server listening on https\{0,1\}:\/\/.*:$PORT'")"
+    local servicestatus="$(runcmd_stdout "journalctl --since '$LOGTIME' -u $XO_SVC | grep 'Web server listening on https\{0,1\}:\/\/.*:$PORT'")"
     while [[ -z "$servicestatus" ]] && [[ "$count" -lt "$limit" ]]; do
         echo " waiting for port to be open"
         sleep 10
         # shellcheck disable=SC1117
-        local servicestatus="$(runcmd_stdout "journalctl --since '$LOGTIME' -u xo-server | grep 'Web server listening on https\{0,1\}:\/\/.*:$PORT'")"
+        local servicestatus="$(runcmd_stdout "journalctl --since '$LOGTIME' -u $XO_SVC | grep 'Web server listening on https\{0,1\}:\/\/.*:$PORT'")"
         ((count++))
     done
 
     # if it looks like service started successfully based on logs..
     if [[ -n "$servicestatus" ]]; then
         echo
-        echo -e "	${COLOR_GREEN}WebUI started in port $PORT. Make sure you have firewall rules in place to allow access.${COLOR_N}"
-        # print username and password only when install was ran and skip while updating
-        if [[ "$TASK" == "Installation" ]]; then
-            echo -e "	${COLOR_GREEN}Default username: admin@admin.net password: admin${COLOR_N}"
+        if [[ "$XO_SVC" == "xo-server" ]]; then
+            echo -e "       ${COLOR_GREEN}WebUI started in port $PORT. Make sure you have firewall rules in place to allow access.${COLOR_N}"
+            # print username and password only when install was ran and skip while updating
+            if [[ "$TASK" == "Installation" ]]; then
+                echo -e "       ${COLOR_GREEN}Default username: admin@admin.net password: admin${COLOR_N}"
+            fi
+        fi
+        if [[ "$XO_SVC" == "xo-proxy" ]]; then
+            echo -e "       ${COLOR_GREEN}Proxy started in port $PORT. Make sure you have firewall rules in place to allow access from xen orchestra.${COLOR_N}"
+            # print json config only when install was ran and skip while Updating
+            if [[ "$TASK" == "Installation" ]] && [[ "$PROXY_CONFIG_UPDATED" == "true" ]]; then
+                echo -e "       ${COLOR_GREEN}Save following line as json file and use config import in Xen Orchestra to add proxy${COLOR_N}"
+                echo
+                echo "{\"proxies\":[{\"authenticationToken\":\"${PROXY_TOKEN}\",\"name\":\"${PROXY_NAME}\",\"vmUuid\":\"${PROXY_VM_UUID}\",\"id\":\"${PROXY_RANDOM_UUID}\"}]}"
+            fi
         fi
         echo
-        printinfo "$TASK successful. Enabling xo-server service to start on reboot"
+        printinfo "$TASK successful. Enabling $XO_SVC service to start on reboot"
         echo "" >>"$LOGFILE"
         echo "$TASK succesful" >>"$LOGFILE"
-        runcmd "/bin/systemctl enable xo-server"
+        runcmd "/bin/systemctl enable $XO_SVC"
         echo
     # if service startup failed...
     else
         echo
-        printfail "$TASK completed, but looks like there was a problem when starting xo-server/reading journalctl. Please see logs for more details"
+        printfail "$TASK completed, but looks like there was a problem when starting $XO_SVC. Please see logs for more details"
         # shellcheck disable=SC2129
         echo "" >>"$LOGFILE"
         echo "$TASK failed" >>"$LOGFILE"
-        echo "xo-server service log:" >>"$LOGFILE"
+        echo "$XO_SVC service log:" >>"$LOGFILE"
         echo "" >>"$LOGFILE"
-        runcmd "journalctl --since '$LOGTIME' -u xo-server >> $LOGFILE"
+        runcmd "journalctl --since '$LOGTIME' -u $XO_SVC >> $LOGFILE"
         echo
-        echo "Control xo-server service with systemctl for stop/start/restart etc."
+        echo "Control $SERVICE service with systemctl for stop/start/restart etc."
         exit 1
     fi
 
@@ -835,7 +872,12 @@ function InstallXO {
 # run xen orchestra installation but also cleanup old installations based on value in xo-install.cfg
 function UpdateXO {
 
-    InstallXO
+    if [[ "$XO_SVC" == "xo-server" ]]; then
+        InstallXO
+    fi
+    if [[ "$XO_SVC" == "xo-proxy" ]]; then
+        InstallXOProxy
+    fi
 
     set -uo pipefail
 
@@ -846,20 +888,101 @@ function UpdateXO {
 
     # remove old builds. leave as many as defined in PRESERVE variable
     echo
-    printprog "Removing old installations. Leaving $PRESERVE latest"
-    runcmd "find $INSTALLDIR/xo-builds/ -maxdepth 1 -type d -name \"xen-orchestra*\" -printf \"%T@ %p\\n\" | sort -n | cut -d' ' -f2- | head -n -$PRESERVE | xargs -r rm -r"
-    printok "Removing old installations. Leaving $PRESERVE latest"
+    printprog "Removing old inactive installations. Leaving $PRESERVE latest"
+    local INSTALLATIONS="$(runcmd_stdout "find $INSTALLDIR/xo-builds/ -maxdepth 1 -type d -name \"xen-orchestra*\" -printf \"%T@ %p\\n\" | sort -n | cut -d' ' -f2- | head -n -$PRESERVE")"
+    local XO_SERVER_ACTIVE="$(runcmd_stdout "readlink -e $INSTALLDIR/xo-server")"
+    local XO_WEB_ACTIVE="$(runcmd_stdout "readlink -e $INSTALLDIR/xo-web")"
+    local XO_PROXY_ACTIVE="$(runcmd_stdout "readlink -e $INSTALLDIR/xo-proxy")"
 
+    for DELETABLE in $INSTALLATIONS; do
+        if [[ "$XO_SERVER_ACTIVE" != "${DELETABLE}"* ]] && [[ "$XO_WEB_ACTIVE" != "${DELETABLE}"* ]] && [[ "$XO_PROXY_ACTIVE" != "${DELETABLE}"* ]]; then
+            runcmd "rm -rf $DELETABLE"
+        fi
+    done
+    printok "Removing old inactive installations. Leaving $PRESERVE latest"
+
+}
+
+function InstallXOProxy {
+
+    set -uo pipefail
+
+    PrepInstall
+
+    # check that xo-proxy is not running
+    if [[ $(runcmd_stdout "pgrep -f xo-proxy") ]]; then
+        echo
+        printprog "Shutting down xo-proxy"
+        runcmd "/bin/systemctl stop xo-proxy" || {
+            printfail "failed to stop service, exiting..."
+            exit 1
+        }
+        printok "Shutting down xo-proxy"
+    fi
+
+    echo
+    printinfo "xo-proxy build takes quite a while. Grab a cup of coffee and lay back"
+    echo
+    printprog "Running installation"
+    runcmd "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn && yarn build"
+    runcmd "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME/@xen-orchestra/proxy && yarn cross-env NODE_ENV=development yarn run _build"
+    printok "Running installation"
+
+    echo
+    printinfo "Generate systemd service configuration file"
+    cat <<EOF >/etc/systemd/system/xo-proxy.service
+[Unit]
+Description=xo-proxy
+After=network-online.target
+
+[Service]
+ExecStart=$INSTALLDIR/xo-proxy/dist/index.mjs
+Restart=always
+SyslogIdentifier=xo-proxy
+
+[Install]
+WantedBy=multi-user.target
+EOF
+    printinfo "Reloading systemd configuration"
+    runcmd "/bin/systemctl daemon-reload"
+
+    # if xen orchestra proxy configuration file doesn't exist or configuration update is not disabled in xo-install.cfg, we create it
+    if [[ ! -f "$CONFIGPATH/.config/xo-proxy/config.toml" ]]; then
+        PROXY_VM_UUID="$(dmidecode -t system | grep UUID | awk '{print $NF}')"
+        PROXY_RANDOM_UUID="$(cat /proc/sys/kernel/random/uuid)"
+        PROXY_TOKEN="$(tr -dc A-Z-a-z0-9_- </dev/urandom | head -c 43)"
+        PROXY_NAME="xo-ce-proxy-$TIME"
+        PROXY_CONFIG_UPDATED="true"
+        printinfo "No xo-proxy configuration present, copying default config to $CONFIGPATH/.config/xo-proxy/config.toml"
+        runcmd "mkdir -p $CONFIGPATH/.config/xo-proxy"
+        runcmd "cp $INSTALLDIR/xo-builds/xen-orchestra-$TIME/@xen-orchestra/proxy/config.toml $CONFIGPATH/.config/xo-proxy/config.toml"
+
+        printinfo "Adding authentication token to xo-proxy config"
+        runcmd "sed -i \"s/^authenticationToken = .*/authenticationToken = '$PROXY_TOKEN'/\" $CONFIGPATH/.config/xo-proxy/config.toml"
+    fi
+
+    printinfo "Symlinking fresh xo-proxy install/update to $INSTALLDIR/xo-proxy"
+    runcmd "ln -sfn $INSTALLDIR/xo-builds/xen-orchestra-$TIME/@xen-orchestra/proxy $INSTALLDIR/xo-proxy"
+
+    echo
+    printinfo "Starting xo-proxy..."
+    runcmd "/bin/systemctl start xo-proxy"
+
+    # no need to exit/trap on errors anymore
+    set +eo pipefail
+    trap - ERR INT
+
+    VerifyServiceStart
 }
 
 # if any arguments were given to script, handle them here
 function HandleArgs {
 
-    OPTS=$(getopt -o: --long force,rollback,update,install -- "$@")
+    OPTS=$(getopt -o: --long force,rollback,update,install,proxy -- "$@")
 
     #shellcheck disable=SC2181
     if [[ $? != 0 ]]; then
-        echo "Usage: $SCRIPT_DIR/$(basename "$0") [--install | --update | --rollback ] [--force]"
+        echo "Usage: $SCRIPT_DIR/$(basename "$0") [--install | --update | --rollback ] [--proxy] [--force]"
         exit 1
     fi
 
@@ -868,35 +991,40 @@ function HandleArgs {
     local UPDATEARG=0
     local INSTALLARG=0
     local ROLLBACKARG=0
+    local PROXYARG=0
 
     while true; do
         case "$1" in
-        --force)
-            shift
-            FORCE="true"
-            ;;
-        --update)
-            shift
-            local UPDATEARG=1
-            TASK="Update"
-            ;;
-        --install)
-            shift
-            local INSTALLARG=1
-            TASK="Installation"
-            ;;
-        --rollback)
-            shift
-            local ROLLBACKARG=1
-            ;;
-        --)
-            shift
-            break
-            ;;
-        *)
-            shift
-            break
-            ;;
+            --force)
+                shift
+                FORCE="true"
+                ;;
+            --update)
+                shift
+                local UPDATEARG=1
+                TASK="Update"
+                ;;
+            --install)
+                shift
+                local INSTALLARG=1
+                TASK="Installation"
+                ;;
+            --rollback)
+                shift
+                local ROLLBACKARG=1
+                ;;
+            --proxy)
+                shift
+                local PROXYARG=1
+                ;;
+            --)
+                shift
+                break
+                ;;
+            *)
+                shift
+                break
+                ;;
         esac
     done
 
@@ -908,20 +1036,31 @@ function HandleArgs {
 
     if [[ "$UPDATEARG" -gt 0 ]]; then
         UpdateNodeYarn
-        UpdateXO
+        if [[ "$PROXYARG" -gt 0 ]]; then
+            XO_SVC="xo-proxy"
+            UpdateXO
+        else
+            XO_SVC="xo-server"
+            UpdateXO
+        fi
         exit
     fi
 
     if [[ "$INSTALLARG" -gt 0 ]]; then
         if [ "$PKG_FORMAT" == "rpm" ]; then
             InstallDependenciesRPM
-            InstallXO
-            exit
         else
             InstallDependenciesDeb
-            InstallXO
-            exit
         fi
+
+        if [[ "$PROXYARG" -gt 0 ]]; then
+            XO_SVC="xo-proxy"
+            InstallXOProxy
+        else
+            XO_SVC="xo-server"
+            InstallXO
+        fi
+        exit
     fi
 
     if [[ "$ROLLBACKARG" -gt 0 ]]; then
@@ -943,31 +1082,70 @@ function RollBackInstallation {
         exit 0
     fi
 
+    if [[ -L "$INSTALLDIR/xo-proxy" ]] && [[ -n $(runcmd_stdout "readlink -e $INSTALLDIR/xo-proxy") ]]; then
+        if [[ -L "$INSTALLDIR/xo-server" ]] && [[ -n $(runcmd_stdout "readlink -e $INSTALLDIR/xo-server") ]]; then
+            echo "Looks like proxy AND xen orchestra are installed. Which one you want to rollback?"
+            echo "1. Xen Orchestra"
+            echo "2. Xen Orchestra Proxy"
+            echo "3. Exit"
+            read -r -p ": " answer
+            case $answer in
+                1)
+                    XO_SVC="xo-server"
+                    ;;
+                2)
+                    XO_SVC="xo-proxy"
+                    ;;
+                3)
+                    exit
+                    ;;
+                *)
+                    exit
+                    ;;
+            esac
+        else
+            XO_SVC="xo-proxy"
+        fi
+    else
+        XO_SVC="xo-server"
+    fi
+
     echo "Which installation to roll back?"
     echo
     local PS3="Pick a number. CTRL+C to exit: "
     local INSTALLATION
     select INSTALLATION in "${INSTALLATIONS[@]}"; do
         case $INSTALLATION in
-        *xen-orchestra*)
-            echo
-            printinfo "Setting $INSTALLDIR/xo-server symlink to $INSTALLATION/packages/xo-server"
-            runcmd "ln -sfn $INSTALLATION/packages/xo-server $INSTALLDIR/xo-server"
-            printinfo "Setting $INSTALLDIR/xo-web symlink to $INSTALLATION/packages/xo-web"
-            runcmd "ln -sfn $INSTALLATION/packages/xo-web $INSTALLDIR/xo-web"
-            echo
-            printinfo "Replacing xo.server.service systemd configuration file"
-            runcmd "/bin/cp -f $INSTALLATION/packages/xo-server/xo-server.service /etc/systemd/system/xo-server.service"
-            runcmd "/bin/systemctl daemon-reload"
-            echo
-            printinfo "Restarting xo-server..."
-            runcmd "/bin/systemctl restart xo-server"
-            echo
-            break
-            ;;
-        *)
-            printfail "Try again"
-            ;;
+            *xen-orchestra*)
+                echo
+                if [[ "$XO_SVC" == "xo-server" ]]; then
+                    printinfo "Setting $INSTALLDIR/xo-server symlink to $INSTALLATION/packages/xo-server"
+                    runcmd "ln -sfn $INSTALLATION/packages/xo-server $INSTALLDIR/xo-server"
+                    printinfo "Setting $INSTALLDIR/xo-web symlink to $INSTALLATION/packages/xo-web"
+                    runcmd "ln -sfn $INSTALLATION/packages/xo-web $INSTALLDIR/xo-web"
+                    echo
+                    printinfo "Replacing xo.server.service systemd configuration file"
+                    runcmd "/bin/cp -f $INSTALLATION/packages/xo-server/xo-server.service /etc/systemd/system/xo-server.service"
+                    runcmd "/bin/systemctl daemon-reload"
+                    echo
+                    printinfo "Restarting xo-server..."
+                    runcmd "/bin/systemctl restart xo-server"
+                    echo
+                    break
+                fi
+                if [[ "$XO_SVC" == "xo-proxy" ]]; then
+                    printinfo "Setting $INSTALLDIR/xo-proxy symlink to $INSTALLATION/@xen-orchestra/proxy"
+                    runcmd "ln -sfn $INSTALLATION/@xen-orchestra/proxy $INSTALLDIR/xo-proxy"
+                    echo
+                    printinfo "Restating xo-proxy..."
+                    runcmd "/bin/systemctl restart xo-proxy"
+                    echo
+                    break
+                fi
+                ;;
+            *)
+                printfail "Try again"
+                ;;
         esac
     done
 
@@ -1111,15 +1289,15 @@ function CheckMemory {
         fi
         read -r -p "continue anyway? y/N: " answer
         case $answer in
-        y)
-            :
-            ;;
-        n)
-            exit 0
-            ;;
-        *)
-            exit 0
-            ;;
+            y)
+                :
+                ;;
+            n)
+                exit 0
+                ;;
+            *)
+                exit 0
+                ;;
         esac
     fi
 
@@ -1137,15 +1315,15 @@ function CheckDiskFree {
         fi
         read -r -p "continue anyway? y/N: " answer
         case $answer in
-        y)
-            :
-            ;;
-        n)
-            exit 0
-            ;;
-        *)
-            exit 0
-            ;;
+            y)
+                :
+                ;;
+            n)
+                exit 0
+                ;;
+            *)
+                exit 0
+                ;;
         esac
     fi
 }
@@ -1171,71 +1349,122 @@ function StartUpScreen {
     echo
     echo -e "Errorlog is stored to ${COLOR_WHITE}$LOGFILE${COLOR_N} for debug purposes"
     echo
+    echo "Depending on which installation is chosen:"
+    echo
     echo -e "Xen Orchestra configuration will be stored to ${COLOR_WHITE}$CONFIGPATH/.config/xo-server/config.toml${COLOR_N}, if you don't want it to be replaced with every update, set ${COLOR_WHITE}CONFIGUPDATE${COLOR_N} to false in ${COLOR_WHITE}xo-install.cfg${COLOR_N}"
+    echo -e "Xen Orchestra Proxy configuration will be stored to ${COLOR_WHITE}$CONFIGPATH/.config/xo-proxy/config.toml${COLOR_N}. Config won't be overwritten during update, ever"
     echo "-----------------------------------------"
 
     echo
     echo -e "${COLOR_WHITE}1. Install${COLOR_N}"
     echo -e "${COLOR_WHITE}2. Update${COLOR_N}"
     echo -e "${COLOR_WHITE}3. Rollback${COLOR_N}"
-    echo -e "${COLOR_WHITE}4. Exit${COLOR_N}"
+    echo -e "${COLOR_WHITE}4. Install proxy${COLOR_N}"
+    echo -e "${COLOR_WHITE}5. Update proxy${COLOR_N}"
+    echo -e "${COLOR_WHITE}6. Exit${COLOR_N}"
     echo
     read -r -p ": " option
 
     case $option in
-    1)
-        if [[ $(runcmd_stdout "pgrep -f xo-server") ]]; then
-            echo "Looks like xo-server process is already running, consider running update instead. Continue anyway?"
-            read -r -p "[y/N]: " answer
-            case $answer in
-            y)
-                echo "Stopping xo-server..."
-                runcmd "/bin/systemctl stop xo-server" ||
-                    {
-                        printfail "failed to stop service, exiting..."
-                        exit 1
-                    }
-                ;;
-            n)
-                exit 0
-                ;;
-            *)
-                exit 0
-                ;;
-            esac
-        fi
+        1)
+            if [[ $(runcmd_stdout "pgrep -f xo-server") ]]; then
+                echo "Looks like xo-server process is already running, consider running update instead. Continue anyway?"
+                read -r -p "[y/N]: " answer
+                case $answer in
+                    y)
+                        echo "Stopping xo-server..."
+                        runcmd "/bin/systemctl stop xo-server" ||
+                            {
+                                printfail "failed to stop service, exiting..."
+                                exit 1
+                            }
+                        ;;
+                    n)
+                        exit 0
+                        ;;
+                    *)
+                        exit 0
+                        ;;
+                esac
+            fi
 
-        if [ "$PKG_FORMAT" == "rpm" ]; then
             TASK="Installation"
-            InstallDependenciesRPM
-            InstallXO
+            XO_SVC="xo-server"
+
+            if [ "$PKG_FORMAT" == "rpm" ]; then
+                InstallDependenciesRPM
+                InstallXO
+                exit 0
+            fi
+            if [ "$PKG_FORMAT" == "deb" ]; then
+                InstallDependenciesDeb
+                InstallXO
+                exit 0
+            fi
+            ;;
+        2)
+            TASK="Update"
+            XO_SVC="xo-server"
+            UpdateNodeYarn
+            UpdateXO
             exit 0
-        fi
-        if [ "$PKG_FORMAT" == "deb" ]; then
+            ;;
+        3)
+            RollBackInstallation
+            exit 0
+            ;;
+        4)
+            if [[ $(runcmd_stdout "pgrep -f xo-proxy") ]]; then
+                echo "Looks like xo-proxy process is already running, consider running update instead. Continue anyway?"
+                read -r -p "[y/N]: " answer
+                case $answer in
+                    y)
+                        echo "Stopping xo-proxy..."
+                        runcmd "/bin/systemctl stop xo-proxy" ||
+                            {
+                                printfail "failed to stop service, exiting..."
+                                exit 1
+                            }
+                        ;;
+                    n)
+                        exit 0
+                        ;;
+                    *)
+                        exit 0
+                        ;;
+                esac
+            fi
+
             TASK="Installation"
-            InstallDependenciesDeb
-            InstallXO
+            XO_SVC="xo-proxy"
+
+            if [[ "$PKG_FORMAT" == "rpm" ]]; then
+                InstallDependenciesRPM
+                InstallXOProxy
+                exit 0
+            fi
+            if [[ "$PKG_FORMAT" == "deb" ]]; then
+                InstallDependenciesDeb
+                InstallXOProxy
+                exit 0
+            fi
+            ;;
+
+        5)
+            TASK="Update"
+            XO_SVC="xo-proxy"
+            UpdateNodeYarn
+            UpdateXO
             exit 0
-        fi
-        ;;
-    2)
-        TASK="Update"
-        UpdateNodeYarn
-        UpdateXO
-        exit 0
-        ;;
-    3)
-        RollBackInstallation
-        exit 0
-        ;;
-    4)
-        exit 0
-        ;;
-    *)
-        echo "Please choose one of the options"
-        echo
-        exit 0
-        ;;
+            ;;
+        6)
+            exit 0
+            ;;
+        *)
+            echo "Please choose one of the options"
+            echo
+            exit 0
+            ;;
     esac
 
 }

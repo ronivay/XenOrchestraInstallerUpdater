@@ -45,11 +45,11 @@ function NetworkChoose {
 
         # print a menu where to choose network from
         case $network in
-        *)
-            # save network uuid for later
-            vifuuid="$networkuuid"
-            break
-            ;;
+            *)
+                # save network uuid for later
+                vifuuid="$networkuuid"
+                break
+                ;;
         esac
     done
 
@@ -81,16 +81,16 @@ function StorageChoose {
 
         # print a menu where to choose storage from
         case $storage in
-        default)
-            # this value is handled during import if set to default
-            sruuid=default
-            break
-            ;;
-        *)
-            # save storage uuid for later
-            sruuid=$storageuuid
-            break
-            ;;
+            default)
+                # this value is handled during import if set to default
+                sruuid=default
+                break
+                ;;
+            *)
+                # save storage uuid for later
+                sruuid=$storageuuid
+                break
+                ;;
         esac
     done
 
