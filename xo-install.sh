@@ -888,9 +888,18 @@ function UpdateXO {
 
     # remove old builds. leave as many as defined in PRESERVE variable
     echo
-    printprog "Removing old installations. Leaving $PRESERVE latest"
-    runcmd "find $INSTALLDIR/xo-builds/ -maxdepth 1 -type d -name \"xen-orchestra*\" -printf \"%T@ %p\\n\" | sort -n | cut -d' ' -f2- | head -n -$PRESERVE | xargs -r rm -r"
-    printok "Removing old installations. Leaving $PRESERVE latest"
+    printprog "Removing old inactive installations. Leaving $PRESERVE latest"
+    local INSTALLATIONS="$(runcmd_stdout "find $INSTALLDIR/xo-builds/ -maxdepth 1 -type d -name \"xen-orchestra*\" -printf \"%T@ %p\\n\" | sort -n | cut -d' ' -f2- | head -n -$PRESERVE")"
+    local XO_SERVER_ACTIVE="$(runcmd_stdout "readlink -e $INSTALLDIR/xo-server")"
+    local XO_WEB_ACTIVE="$(runcmd_stdout "readlink -e $INSTALLDIR/xo-web")"
+    local XO_PROXY_ACTIVE="$(runcmd_stdout "readlink -e $INSTALLDIR/xo-proxy")"
+
+    for DELETEABLE in $INSTALLATIONS; do
+        if [[ "$XO_SERVER_ACTIVE" != "${DELETABLE}"* ]] && [[ "$XO_WEB_ACTIVE" != "${DELETEABLE}"* ]] && [[ "$XO_PROXY_ACTIVE" != "${DELETEABLE}"* ]]; then
+            runcmd "rm -rf $DELETEABLE"
+        fi
+    done
+    printok "Removing old inactive installations. Leaving $PRESERVE latest"
 
 }
 
