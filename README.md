@@ -149,7 +149,7 @@ deb:
 
 Backup proxy can be used to offload backup tasks from the main Xen Orchestra instance to a proxy which has a direct connection to remote where backups are stored.
 
-Requirements for proxy VM are otherwise the same as mentioned above, in addition the VM needs to live inside XCP-ng/XenServer pool managed by Xen Orchestra instance. VM needs to have access to pool master host and Xen Orchestra needs to be able to access this VM via TCP/443.
+Requirements for proxy VM are otherwise the same as mentioned above, in addition the VM needs to live inside XCP-ng/XenServer pool managed by Xen Orchestra instance and have xen tools installed. VM needs to have access to pool master host and Xen Orchestra needs to be able to access this VM via TCP/443.
 
 Majority of xo-install.cfg variables have no effect to proxy installation. Proxy process will always run as root user and in port 443.
 
