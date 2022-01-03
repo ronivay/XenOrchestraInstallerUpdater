@@ -662,6 +662,20 @@ function PrepInstall {
 
 }
 
+function ApplyPatches {
+
+	set -euo pipefail
+
+	trap ErrorHandling ERR INT
+
+	for patch in $(dirname $0)/patches/*.patch; do
+		runcmd "cat $(dirname $0)/patches/$(basename $patch) | (cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && git apply -)"
+	done
+	echo
+	printok "Applying patches"
+
+}
+
 # run actual xen orchestra installation. procedure is the same for new installation and update. we always build it from scratch.
 function InstallXO {
 
@@ -700,6 +714,9 @@ function InstallXO {
 
     # Fetch 3rd party plugins source code
     InstallAdditionalXOPlugins
+
+    # Apply extra patches
+    ApplyPatches
 
     echo
     printinfo "xo-server and xo-web build takes quite a while. Grab a cup of coffee and lay back"
