@@ -118,6 +118,7 @@ rpm:
 - libvhdi-tools
 - cifs-utils
 - lvm2
+- ntfs-3g
 - sudo (if set in xo-install.cfg)
 
 deb:
@@ -140,6 +141,7 @@ deb:
 - cifs-utils
 - gnupg (debian 10/11)
 - software-properties-common (ubuntu)
+- ntfs-3g
 - sudo (if set in xo-install.cfg)
 ```
 

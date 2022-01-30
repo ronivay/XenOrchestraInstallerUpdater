@@ -205,9 +205,9 @@ function InstallDependenciesRPM {
 
     # install packages
     echo
-    printprog "Installing build dependencies, redis server, python, git, nfs-utils, cifs-utils"
-    runcmd "yum -y install gcc gcc-c++ make openssl-devel redis libpng-devel python3 git nfs-utils cifs-utils lvm2"
-    printok "Installing build dependencies, redis server, python, git, nfs-utils, cifs-utils"
+    printprog "Installing build dependencies, redis server, python, git, nfs-utils, cifs-utils, lvm2, ntfs-3g"
+    runcmd "yum -y install gcc gcc-c++ make openssl-devel redis libpng-devel python3 git nfs-utils cifs-utils lvm2 ntfs-3g"
+    printok "Installing build dependencies, redis server, python, git, nfs-utils, cifs-utils, lvm2, ntfs-3g"
 
     # only run automated node install if executable not found
     if [[ -z $(runcmd_stdout "command -v node") ]]; then
@@ -280,9 +280,9 @@ function InstallDependenciesDeb {
 
     # install packages
     echo
-    printprog "Installing build dependencies, redis server, python, git, libvhdi-utils, lvm2, nfs-common, cifs-utils, curl"
-    runcmd "apt-get install -y build-essential redis-server libpng-dev git libvhdi-utils $PYTHON lvm2 nfs-common cifs-utils curl"
-    printok "Installing build dependencies, redis server, python, git, libvhdi-utils, lvm2, nfs-common, cifs-utils, curl"
+    printprog "Installing build dependencies, redis server, python, git, libvhdi-utils, lvm2, nfs-common, cifs-utils, curl, ntfs-3g"
+    runcmd "apt-get install -y build-essential redis-server libpng-dev git libvhdi-utils $PYTHON lvm2 nfs-common cifs-utils curl ntfs-3g"
+    printok "Installing build dependencies, redis server, python, git, libvhdi-utils, lvm2, nfs-common, cifs-utils, curl, ntfs-3g"
 
     # Install apt-transport-https and ca-certificates because of yarn https repo url
     echo
