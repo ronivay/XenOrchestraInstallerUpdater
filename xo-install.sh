@@ -841,8 +841,8 @@ function VerifyServiceStart {
         fi
         if [[ "$XO_SVC" == "xo-proxy" ]]; then
             echo -e "       ${COLOR_GREEN}Proxy started in port $PORT. Make sure you have firewall rules in place to allow access from xen orchestra.${COLOR_N}"
-            # print json config only when install was ran and skip while Updating
-            if [[ "$TASK" == "Installation" ]] && [[ "$PROXY_CONFIG_UPDATED" == "true" ]]; then
+            # print json config only if config file was generated
+            if [[ "$PROXY_CONFIG_UPDATED" == "true" ]]; then
                 echo -e "       ${COLOR_GREEN}Save following line as json file and use config import in Xen Orchestra to add proxy${COLOR_N}"
                 echo
                 echo "{\"proxies\":[{\"authenticationToken\":\"${PROXY_TOKEN}\",\"name\":\"${PROXY_NAME}\",\"vmUuid\":\"${PROXY_VM_UUID}\",\"id\":\"${PROXY_RANDOM_UUID}\"}]}"
