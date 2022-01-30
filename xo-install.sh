@@ -30,6 +30,7 @@ AUTOUPDATE=${AUTOUPDATE:-"true"}
 PRESERVE=${PRESERVE:-"3"}
 XOUSER=${XOUSER:-"root"}
 CONFIGPATH=$(getent passwd "$XOUSER" | cut -d: -f6)
+CONFIGPATH_PROXY=$(getent passwd root | cut -d: -f6)
 PLUGINS="${PLUGINS:-"none"}"
 ADDITIONAL_PLUGINS="${ADDITIONAL_PLUGINS:-"none"}"
 REPOSITORY="${REPOSITORY:-"https://github.com/vatesfr/xen-orchestra"}"
@@ -947,20 +948,23 @@ EOF
     runcmd "/bin/systemctl daemon-reload"
 
     # if xen orchestra proxy configuration file doesn't exist or configuration update is not disabled in xo-install.cfg, we create it
-    if [[ ! -f "$CONFIGPATH/.config/xo-proxy/config.toml" ]]; then
+
+    if [[ ! -f "$CONFIGPATH_PROXY/.config/xo-proxy/config.toml" ]]; then
         PROXY_VM_UUID="$(dmidecode -t system | grep UUID | awk '{print $NF}')"
         PROXY_RANDOM_UUID="$(cat /proc/sys/kernel/random/uuid)"
         PROXY_TOKEN="$(tr -dc A-Z-a-z0-9_- </dev/urandom | head -c 43)"
         PROXY_NAME="xo-ce-proxy-$TIME"
         PROXY_CONFIG_UPDATED="true"
-        printinfo "No xo-proxy configuration present, copying default config to $CONFIGPATH/.config/xo-proxy/config.toml"
-        runcmd "mkdir -p $CONFIGPATH/.config/xo-proxy"
-        runcmd "cp $INSTALLDIR/xo-builds/xen-orchestra-$TIME/@xen-orchestra/proxy/config.toml $CONFIGPATH/.config/xo-proxy/config.toml"
+        echo
+        printinfo "No xo-proxy configuration present, copying default config to $CONFIGPATH_PROXY/.config/xo-proxy/config.toml"
+        runcmd "mkdir -p $CONFIGPATH_PROXY/.config/xo-proxy"
+        runcmd "cp $INSTALLDIR/xo-builds/xen-orchestra-$TIME/@xen-orchestra/proxy/config.toml $CONFIGPATH_PROXY/.config/xo-proxy/config.toml"
 
         printinfo "Adding authentication token to xo-proxy config"
-        runcmd "sed -i \"s/^authenticationToken = .*/authenticationToken = '$PROXY_TOKEN'/\" $CONFIGPATH/.config/xo-proxy/config.toml"
+        runcmd "sed -i \"s/^authenticationToken = .*/authenticationToken = '$PROXY_TOKEN'/\" $CONFIGPATH_PROXY/.config/xo-proxy/config.toml"
     fi
 
+    echo
     printinfo "Symlinking fresh xo-proxy install/update to $INSTALLDIR/xo-proxy"
     runcmd "ln -sfn $INSTALLDIR/xo-builds/xen-orchestra-$TIME/@xen-orchestra/proxy $INSTALLDIR/xo-proxy"
 
@@ -1352,7 +1356,7 @@ function StartUpScreen {
     echo "Depending on which installation is chosen:"
     echo
     echo -e "Xen Orchestra configuration will be stored to ${COLOR_WHITE}$CONFIGPATH/.config/xo-server/config.toml${COLOR_N}, if you don't want it to be replaced with every update, set ${COLOR_WHITE}CONFIGUPDATE${COLOR_N} to false in ${COLOR_WHITE}xo-install.cfg${COLOR_N}"
-    echo -e "Xen Orchestra Proxy configuration will be stored to ${COLOR_WHITE}$CONFIGPATH/.config/xo-proxy/config.toml${COLOR_N}. Config won't be overwritten during update, ever"
+    echo -e "Xen Orchestra Proxy configuration will be stored to ${COLOR_WHITE}$CONFIGPATH_PROXY/.config/xo-proxy/config.toml${COLOR_N}. Config won't be overwritten during update, ever"
     echo "-----------------------------------------"
 
     echo
