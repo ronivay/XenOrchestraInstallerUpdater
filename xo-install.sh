@@ -114,7 +114,7 @@ function SelfUpgrade {
                         printok "Self upgrade done"
                         exec "$SCRIPT_DIR/xo-install.sh" "$@"
                     } ||
-                    printfail "Failed to self upgrade. Check logs for more details. Continuing with current version"
+                    printfail "Failed to self upgrade. Check $LOGFILE for more details. Continuing with current version"
             fi
         fi
     fi
@@ -855,7 +855,7 @@ function VerifyServiceStart {
     # if service startup failed...
     else
         echo
-        printfail "$TASK completed, but looks like there was a problem when starting $XO_SVC. Please see logs for more details"
+        printfail "$TASK completed, but looks like there was a problem when starting $XO_SVC. Check $LOGFILE for more details"
         # shellcheck disable=SC2129
         echo "" >>"$LOGFILE"
         echo "$TASK failed" >>"$LOGFILE"
