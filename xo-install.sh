@@ -181,6 +181,7 @@ function ErrorHandling {
         echo
         printfail "Removing $INSTALLDIR/xo-builds/xen-orchestra-$TIME because of failed installation."
         runcmd "rm -rf $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
+        echo
     fi
 
     exit 1
@@ -623,6 +624,7 @@ function PrepInstall {
             echo "Updating $XO_SVC_DESC (forced) from '$OLD_REPO_HASH_SHORT' to '$NEW_REPO_HASH_SHORT'" >>"$LOGFILE"
         fi
     else
+        echo
         printinfo "Installing $XO_SVC_DESC from branch: $BRANCH - commit: $NEW_REPO_HASH_SHORT"
         echo "Installing $XO_SVC_DESC from branch: $BRANCH - commit: $NEW_REPO_HASH_SHORT" >>"$LOGFILE"
         TASK="Installation"
@@ -712,9 +714,24 @@ function InstallXO {
         fi
     fi
 
+    # fix to prevent older installations to not update because systemd service is not symlinked anymore
+    if [[ $(runcmd_stdout "find /etc/systemd/system -maxdepth 1 -type l -name 'xo-server.service'") ]]; then
+        runcmd "rm -f /etc/systemd/system/xo-server.service"
+    fi
+
+    printinfo "Replacing systemd service configuration file"
+
+    # always replace systemd service configuration if it changes in future updates
+    runcmd "/bin/cp -f $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service /etc/systemd/system/xo-server.service"
+    sleep 2
+    printinfo "Reloading systemd configuration"
+    runcmd "/bin/systemctl daemon-reload"
+    sleep 2
+
     # if xen orchestra configuration file doesn't exist or configuration update is not disabled in xo-install.cfg, we create it
     if [[ ! -f "$CONFIGPATH/.config/xo-server/config.toml" ]] || [[ "$CONFIGUPDATE" == "true" ]]; then
 
+        echo
         printinfo "Fixing relative path to xo-web installation in xo-server configuration file"
 
         # shellcheck disable=SC1117
@@ -776,22 +793,6 @@ function InstallXO {
         runcmd "chown -R $XOUSER:$XOUSER $CONFIGPATH/.config/xo-server"
 
     fi
-
-    # fix to prevent older installations to not update because systemd service is not symlinked anymore
-    if [[ $(runcmd_stdout "find /etc/systemd/system -maxdepth 1 -type l -name 'xo-server.service'") ]]; then
-        runcmd "rm -f /etc/systemd/system/xo-server.service"
-    fi
-
-    echo
-    printinfo "Replacing systemd service configuration file"
-
-    # always replace systemd service configuration if it changes in future updates
-    runcmd "/bin/cp -f $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service /etc/systemd/system/xo-server.service"
-    sleep 2
-    printinfo "Reloading systemd configuration"
-    echo
-    runcmd "/bin/systemctl daemon-reload"
-    sleep 2
 
     echo
     printinfo "Starting xo-server..."
@@ -887,8 +888,7 @@ function UpdateXO {
     fi
 
     # remove old builds. leave as many as defined in PRESERVE variable
-    echo
-    printprog "Removing old inactive installations. Leaving $PRESERVE latest"
+    printprog "Removing old inactive installations after update. Leaving $PRESERVE latest"
     local INSTALLATIONS="$(runcmd_stdout "find $INSTALLDIR/xo-builds/ -maxdepth 1 -type d -name \"xen-orchestra*\" -printf \"%T@ %p\\n\" | sort -n | cut -d' ' -f2- | head -n -$PRESERVE")"
     local XO_SERVER_ACTIVE="$(runcmd_stdout "readlink -e $INSTALLDIR/xo-server")"
     local XO_WEB_ACTIVE="$(runcmd_stdout "readlink -e $INSTALLDIR/xo-web")"
@@ -899,8 +899,8 @@ function UpdateXO {
             runcmd "rm -rf $DELETABLE"
         fi
     done
-    printok "Removing old inactive installations. Leaving $PRESERVE latest"
-
+    printok "Removing old inactive installations after update. Leaving $PRESERVE latest"
+    echo
 }
 
 function InstallXOProxy {
