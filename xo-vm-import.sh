@@ -18,7 +18,7 @@ function OSCheck {
     fi
 
     echo
-    echo "Welcome. This script will import a preinstalled Debian 11 VM image which has Xen Orchestra installed using https://github.com/ronivay/XenOrchestraInstallerUpdater"
+    echo "Welcome. This script will import a preconfigured Debian 11 VM image which has Xen Orchestra installed using https://github.com/ronivay/XenOrchestraInstallerUpdater"
     echo "You need at least 2vCPU/4GB/10GB disk free resources to import VM"
     echo
     echo "Please report any issues to this github project"
