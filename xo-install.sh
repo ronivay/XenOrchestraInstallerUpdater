@@ -91,13 +91,11 @@ function CheckUser {
 
 # Custom script changes
 function CustomChanges {
-	echo
-	printprog "Disabling open-source warning and banner"
-    # shellcheck disable=SC1117
-	runcmd "/usr/bin/sed -i \"s/dismissedSourceBanner: Boolean(cookies.get('dismissedSourceBanner'))/dismissedSourceBanner: true/\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-web/src/xo-app/index.js"
-    # shellcheck disable=SC1117
-	runcmd "/usr/bin/sed -i \"s/this.displayOpenSourceDisclaimer()/console.log('Disclaimer disabled')/\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-web/src/xo-app/index.js"
-	printok "Disabling open-source warning and banner"
+    echo
+    printprog "Disabling open-source warning and banner"
+    runcmd "/usr/bin/sed -i \"s/dismissedSourceBanner: Boolean(cookies.get('dismissedSourceBanner'))/dismissedSourceBanner: true/\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-web/src/xo-app/index.js"
+    runcmd "/usr/bin/sed -i \"s/this.displayOpenSourceDisclaimer()/console.log('Disclaimer disabled')/\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-web/src/xo-app/index.js"
+    printok "Disabling open-source warning and banner"
 }
 
 # script self upgrade
@@ -682,9 +680,9 @@ function InstallXO {
 
     # Fetch 3rd party plugins source code
     InstallAdditionalXOPlugins
-	
-	# Custom Changes
-	CustomChanges
+
+    # Custom Changes
+    CustomChanges
 
     echo
     printinfo "xo-server and xo-web build takes quite a while. Grab a cup of coffee and lay back"
