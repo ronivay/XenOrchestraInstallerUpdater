@@ -4,7 +4,7 @@
 
 [![](https://img.shields.io/endpoint?url=https://xo-image.yawn.fi/downloads/status.json)](https://xo-image.yawn.fi/downloads/image.txt)
 
-[![](https://github.com/ronivay/XenOrchestraInstallerUpdater/actions/workflows/main.yml/badge.svg?branch=master)](https://github.com/ronivay/XenOrchestraInstallerUpdater/actions?query=workflow%3Axo-install) [![](https://github.com/ronivay/XenOrchestraInstallerUpdater/actions/workflows/lint.yml/badge.svg?branch=master)](https://github.com/ronivay/XenOrchestraInstallerUpdater/actions?query=workflow%3Alint)
+[![](https://github.com/OnyxFireInc/XenOrchestraInstallerUpdater/actions/workflows/main.yml/badge.svg?branch=master)](https://github.com/OnyxFireInc/XenOrchestraInstallerUpdater/actions?query=workflow%3Axo-install) [![](https://github.com/OnyxFireInc/XenOrchestraInstallerUpdater/actions/workflows/lint.yml/badge.svg?branch=master)](https://github.com/OnyxFireInc/XenOrchestraInstallerUpdater/actions?query=workflow%3Alint)
 
 Script to install/update [Xen Orchestra](https://xen-orchestra.com/#!/) and all of it's dependencies on multiple different Linux distributions. Separate script to be used on XenServer/XCP-ng host that installs a readymade VM image that has Xen Orchestra installed  utilizing the same installer script.
 
