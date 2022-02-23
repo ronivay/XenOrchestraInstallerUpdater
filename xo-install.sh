@@ -96,19 +96,6 @@ function CustomChanges {
 	runcmd "/usr/bin/sed -i \"s/dismissedSourceBanner: Boolean(cookies.get('dismissedSourceBanner'))/dismissedSourceBanner: true/\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-web/src/xo-app/index.js"
 	runcmd "/usr/bin/sed -i \"s/this.displayOpenSourceDisclaimer()/console.log('Disclaimer disabled')/\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-web/src/xo-app/index.js"
 	printok "Disabling open-source warning and banner"
-	
-	if [[ "$XOUSER" != "root" ]]; then
-		printprog "Updating mounts dir in config file"
-		runcmd "/usr/bin/sed -i \"s%#mountsDir = '/run/xo-server/mounts'%mountsDir = '$INSTALLDIR/remotes/mounts'%\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
-		printok "Updating mounts dir in config file"
-		
-		if [[ ! -d "$INSTALLDIR/remotes/mounts" ]] ; then
-			printinfo "Creating new mounts directory and setting permissions"
-			runcmd "/usr/bin/mkdir -p $INSTALLDIR/remotes/mounts"
-			runcmd "/usr/bin/chown $XOUSER.$XOUSER $INSTALLDIR/remotes"
-			runcmd "/usr/bin/chown $XOUSER.$XOUSER $INSTALLDIR/remotes/mounts"
-		fi
-	fi
 }
 
 # script self upgrade
