@@ -18,7 +18,7 @@ function OSCheck {
     fi
 
     echo
-    echo "Welcome. This script will import a preinstalled Debian 10 VM image which has Xen Orchestra installed using https://github.com/ronivay/XenOrchestraInstallerUpdater"
+    echo "Welcome. This script will import a preconfigured Debian 11 VM image which has Xen Orchestra installed using https://github.com/ronivay/XenOrchestraInstallerUpdater"
     echo "You need at least 2vCPU/4GB/10GB disk free resources to import VM"
     echo
     echo "Please report any issues to this github project"
@@ -45,11 +45,11 @@ function NetworkChoose {
 
         # print a menu where to choose network from
         case $network in
-        *)
-            # save network uuid for later
-            vifuuid="$networkuuid"
-            break
-            ;;
+            *)
+                # save network uuid for later
+                vifuuid="$networkuuid"
+                break
+                ;;
         esac
     done
 
@@ -81,16 +81,16 @@ function StorageChoose {
 
         # print a menu where to choose storage from
         case $storage in
-        default)
-            # this value is handled during import if set to default
-            sruuid=default
-            break
-            ;;
-        *)
-            # save storage uuid for later
-            sruuid=$storageuuid
-            break
-            ;;
+            default)
+                # this value is handled during import if set to default
+                sruuid=default
+                break
+                ;;
+            *)
+                # save storage uuid for later
+                sruuid=$storageuuid
+                break
+                ;;
         esac
     done
 
