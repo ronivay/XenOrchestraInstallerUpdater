@@ -93,7 +93,9 @@ function CheckUser {
 function CustomChanges {
 	echo
 	printprog "Disabling open-source warning and banner"
+    # shellcheck disable=SC1117
 	runcmd "/usr/bin/sed -i \"s/dismissedSourceBanner: Boolean(cookies.get('dismissedSourceBanner'))/dismissedSourceBanner: true/\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-web/src/xo-app/index.js"
+    # shellcheck disable=SC1117
 	runcmd "/usr/bin/sed -i \"s/this.displayOpenSourceDisclaimer()/console.log('Disclaimer disabled')/\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-web/src/xo-app/index.js"
 	printok "Disabling open-source warning and banner"
 }
