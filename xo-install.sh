@@ -889,7 +889,7 @@ function VerifyServiceStart {
         echo "" >>"$LOGFILE"
         runcmd "journalctl --since '$LOGTIME' -u $XO_SVC >> $LOGFILE"
         echo
-        echo "Control $SERVICE service with systemctl for stop/start/restart etc."
+        echo "Control $XO_SVC service with systemctl for stop/start/restart etc."
         exit 1
     fi
 
