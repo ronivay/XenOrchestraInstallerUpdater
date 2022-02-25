@@ -197,11 +197,19 @@ function InstallDependenciesRPM {
 
     # Install necessary dependencies for XO build
 
+    # Set epel package name
+    EPEL_PACKAGE=epel-release
+
+    # Oracle Linux has a different epel package name
+    if [[ "$OSNAME" == "Oracle" ]] && [[ "$OSVERSION" == "8" ]]; then
+        EPEL_PACKAGE=oracle-epel-release-el8
+    fi
+
     # only install epel-release if doesn't exist
-    if [[ -z $(runcmd_stdout "rpm -qa epel-release") ]]; then
+    if [[ -z $(runcmd_stdout "rpm -qa ${EPEL_PACKAGE}") ]]; then
         echo
         printprog "Installing epel-repo"
-        runcmd "yum -y install epel-release"
+        runcmd "yum -y install ${EPEL_PACKAGE}"
         printok "Installing epel-repo"
     fi
 
@@ -1186,8 +1194,8 @@ function CheckOS {
         return 0
     fi
 
-    if [[ ! "$OSNAME" =~ ^(Debian|Ubuntu|CentOS|Rocky|AlmaLinux)$ ]]; then
-        printfail "Only Ubuntu/Debian/CentOS/Rocky/AlmaLinux supported"
+    if [[ ! "$OSNAME" =~ ^(Debian|Ubuntu|CentOS|Rocky|AlmaLinux|Oracle)$ ]]; then
+        printfail "Only Ubuntu/Debian/CentOS/Rocky/AlmaLinux/Oracle Linux supported"
         exit 1
     fi
 
@@ -1217,6 +1225,10 @@ function CheckOS {
         exit 1
     fi
 
+    if [[ "$OSNAME" == "Oracle" ]] && [[ "$OSVERSION" != "8" ]]; then
+        printfail "Only Oracle Linux 8 supported"
+        exit 1
+    fi
 }
 
 # we don't want anyone to attempt running this on xcp-ng/xenserver host, bail out if xe command is present
