@@ -140,7 +140,7 @@ function ScriptInfo {
 function runcmd {
 
     echo "+ $1" >>"$LOGFILE"
-    bash -c -o pipefail "$1" >>"$LOGFILE" 2>&1
+    bash -c -o pipefail "$1" >>"$LOGFILE" 2>&1 || return 1
 }
 
 # log actual command and it's stderr to logfile in one go
@@ -148,7 +148,7 @@ function runcmd_stdout {
 
     echo "+ $1" >>"$LOGFILE"
     # shellcheck disable=SC2094
-    bash -c -o pipefail "$1" 2>>"$LOGFILE" | tee -a "$LOGFILE"
+    bash -c -o pipefail "$1" 2>>"$LOGFILE" | tee -a "$LOGFILE" || return 1
 }
 
 # make output we print pretty
@@ -173,8 +173,7 @@ function printinfo {
 # this is called by trap inside different functions
 function ErrorHandling {
 
-    set -eu
-
+    echo
     echo
     printfail "Something went wrong, exiting. Check $LOGFILE for more details and use rollback feature if needed"
 
@@ -191,7 +190,7 @@ function ErrorHandling {
 # install package dependencies to rpm distros, based on: https://xen-orchestra.com/docs/from_the_sources.html
 function InstallDependenciesRPM {
 
-    set -uo pipefail
+    set -euo pipefail
 
     trap ErrorHandling ERR INT
 
@@ -254,7 +253,7 @@ function InstallDependenciesRPM {
 # install package dependencies to deb distros, based on: https://xen-orchestra.com/docs/from_the_sources.html
 function InstallDependenciesDeb {
 
-    set -uo pipefail
+    set -euo pipefail
 
     trap ErrorHandling ERR INT
 
@@ -344,6 +343,10 @@ function InstallDependenciesDeb {
 # keep node.js and yarn up to date
 function UpdateNodeYarn {
 
+    set -euo pipefail
+
+    trap ErrorHandling ERR INT
+
     # user has an option to disable this behaviour in xo-install.cfg
     if [[ "$AUTOUPDATE" != "true" ]]; then
         return 0
@@ -399,7 +402,7 @@ function UpdateNodeYarn {
 # get source code for 3rd party plugins if any configured in xo-install.cfg
 function InstallAdditionalXOPlugins {
 
-    set -uo pipefail
+    set -euo pipefail
 
     trap ErrorHandling ERR INT
 
@@ -442,7 +445,7 @@ function InstallAdditionalXOPlugins {
 # symlink plugins in place based on what is set in xo-install.cfg
 function InstallXOPlugins {
 
-    set -uo pipefail
+    set -euo pipefail
 
     trap ErrorHandling ERR INT
 
@@ -475,7 +478,7 @@ function InstallXOPlugins {
 # install sudo package and generate config if defined in configuration
 function InstallSudo {
 
-    set -uo pipefail
+    set -euo pipefail
 
     trap ErrorHandling ERR INT
 
@@ -508,6 +511,10 @@ function InstallSudo {
 }
 
 function PrepInstall {
+
+    set -euo pipefail
+
+    trap ErrorHandling ERR INT
 
     if [[ "$XO_SVC" == "xo-server" ]]; then
         local XO_SVC_DESC="Xen Orchestra"
@@ -636,7 +643,7 @@ function PrepInstall {
 # run actual xen orchestra installation. procedure is the same for new installation and update. we always build it from scratch.
 function InstallXO {
 
-    set -uo pipefail
+    set -euo pipefail
 
     trap ErrorHandling ERR INT
 
@@ -906,7 +913,7 @@ function UpdateXO {
 
 function InstallXOProxy {
 
-    set -uo pipefail
+    set -euo pipefail
 
     PrepInstall
 
