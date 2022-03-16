@@ -926,7 +926,6 @@ function InstallXOProxy {
     echo
     printprog "Running installation"
     runcmd "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn && yarn build"
-    runcmd "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME/@xen-orchestra/proxy && yarn cross-env NODE_ENV=development yarn run _build"
     printok "Running installation"
 
     echo
@@ -937,7 +936,7 @@ Description=xo-proxy
 After=network-online.target
 
 [Service]
-ExecStart=$INSTALLDIR/xo-proxy/dist/index.mjs
+ExecStart=$INSTALLDIR/xo-proxy/index.mjs
 Restart=always
 SyslogIdentifier=xo-proxy
 
