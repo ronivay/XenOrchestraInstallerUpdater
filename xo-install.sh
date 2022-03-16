@@ -958,7 +958,7 @@ EOF
     if [[ ! -f "$CONFIGPATH_PROXY/.config/xo-proxy/config.toml" ]]; then
         PROXY_VM_UUID="$(dmidecode -t system | grep UUID | awk '{print $NF}')"
         PROXY_RANDOM_UUID="$(cat /proc/sys/kernel/random/uuid)"
-        PROXY_TOKEN="$(tr -dc A-Z-a-z0-9_- </dev/urandom | head -c 43)"
+        PROXY_TOKEN="$(head -n50 /dev/urandom | tr -dc A-Z-a-z0-9_- | head -c 43)"
         PROXY_NAME="xo-ce-proxy-$TIME"
         PROXY_CONFIG_UPDATED="true"
         echo
