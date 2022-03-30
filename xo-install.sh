@@ -245,9 +245,13 @@ function InstallDependenciesRPM {
     if [[ -z $(runcmd_stdout "command -v vhdimount") ]]; then
         echo
         printprog "Installing libvhdi-tools from forensics repository"
-        runcmd "rpm -ivh https://forensics.cert.org/cert-forensics-tools-release-el8.rpm"
-        runcmd "sed -i 's/enabled=1/enabled=0/g' /etc/yum.repos.d/cert-forensics-tools.repo"
-        runcmd "yum --enablerepo=forensics install -y libvhdi-tools"
+        if [[ "$INSTALL_REPOS" == "true" ]]; then
+            runcmd "rpm -ivh https://forensics.cert.org/cert-forensics-tools-release-el8.rpm"
+            runcmd "sed -i 's/enabled=1/enabled=0/g' /etc/yum.repos.d/cert-forensics-tools.repo"
+            runcmd "yum --enablerepo=forensics install -y libvhdi-tools"
+        else
+            runcmd "yum install -y libvhdi-tools"
+        fi
         printok "Installing libvhdi-tools from forensics repository"
     fi
 
@@ -272,7 +276,7 @@ function InstallDependenciesDeb {
 
     # Install necessary dependencies for XO build
 
-    if [[ "$OSNAME" == "Ubuntu" ]]; then
+    if [[ "$OSNAME" == "Ubuntu" ]] && [[ "$INSTALL_REPOS" == "true" ]]; then
         echo
         printprog "OS Ubuntu so making sure universe repository is enabled"
         runcmd "apt-get install -y software-properties-common"
