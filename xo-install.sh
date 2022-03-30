@@ -41,6 +41,7 @@ PATH_TO_HTTPS_KEY="${PATH_TO_HTTPS_KEY:-""}"
 AUTOCERT="${AUTOCERT:-"false"}"
 USESUDO="${USESUDO:-"false"}"
 GENSUDO="${GENSUDO:-"false"}"
+INSTALL_REPOS="${INSTALL_REPOS:-"true"}"
 
 # set variables not changeable in configfile
 TIME=$(date +%Y%m%d%H%M)
@@ -196,8 +197,8 @@ function InstallDependenciesRPM {
 
     # Install necessary dependencies for XO build
 
-    # only install epel-release if doesn't exist
-    if [[ -z $(runcmd_stdout "rpm -qa epel-release") ]]; then
+    # only install epel-release if doesn't exist and user allows it to be installed
+    if [[ -z $(runcmd_stdout "rpm -qa epel-release") ]] && [[ "$INSTALL_REPOS" == "true" ]]; then
         echo
         printprog "Installing epel-repo"
         runcmd "yum -y install epel-release"
@@ -214,7 +215,13 @@ function InstallDependenciesRPM {
     if [[ -z $(runcmd_stdout "command -v node") ]]; then
         echo
         printprog "Installing node.js"
-        runcmd "curl -s -L https://rpm.nodesource.com/setup_${NODEVERSION}.x | bash -"
+
+        # only install nodejs repo if user allows it to be installed
+        if [[ "$INSTALL_REPOS" == "true" ]]; then
+            runcmd "curl -s -L https://rpm.nodesource.com/setup_${NODEVERSION}.x | bash -"
+        fi
+
+        runcmd "yum install -y nodejs"
         printok "Installing node.js"
     else
         UpdateNodeYarn
@@ -224,7 +231,13 @@ function InstallDependenciesRPM {
     if [[ -z $(runcmd_stdout "command -v yarn") ]]; then
         echo
         printprog "Installing yarn"
-        runcmd "curl -s -o /etc/yum.repos.d/yarn.repo https://dl.yarnpkg.com/rpm/yarn.repo && yum -y install yarn"
+
+        # only install yarn repo if user allows it to be installed
+        if [[ "$INSTALL_REPOS" == "true" ]]; then
+            runcmd "curl -s -o /etc/yum.repos.d/yarn.repo https://dl.yarnpkg.com/rpm/yarn.repo"
+        fi
+
+        runcmd "yum -y install yarn"
         printok "Installing yarn"
     fi
 
@@ -310,7 +323,12 @@ function InstallDependenciesDeb {
     if [[ -z $(runcmd_stdout "command -v node") ]] || [[ -z $(runcmd_stdout "command -v npm") ]]; then
         echo
         printprog "Installing node.js"
-        runcmd "curl -sL https://deb.nodesource.com/setup_${NODEVERSION}.x | bash -"
+
+        # only install nodejs repo if user allows it to be installed
+        if [[ "$INSTALL_REPOS" == "true" ]]; then
+            runcmd "curl -sL https://deb.nodesource.com/setup_${NODEVERSION}.x | bash -"
+        fi
+
         runcmd "apt-get install -y nodejs"
         printok "Installing node.js"
     else
@@ -321,8 +339,13 @@ function InstallDependenciesDeb {
     if [[ -z $(runcmd_stdout "command -v yarn") ]]; then
         echo
         printprog "Installing yarn"
-        runcmd "curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add -"
-        runcmd "echo \"deb https://dl.yarnpkg.com/debian/ stable main\" | tee /etc/apt/sources.list.d/yarn.list"
+
+        # only install yarn repo if user allows it to be installed
+        if [[ "$INSTALL_REPOS" == "true" ]]; then
+            runcmd "curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add -"
+            runcmd "echo \"deb https://dl.yarnpkg.com/debian/ stable main\" | tee /etc/apt/sources.list.d/yarn.list"
+        fi
+
         runcmd "apt-get update"
         runcmd "apt-get install -y yarn"
         printok "Installing yarn"
@@ -360,7 +383,12 @@ function UpdateNodeYarn {
         if [[ -n "$NODEV" ]] && [[ "$NODEV" -lt "${NODEVERSION}" ]]; then
             echo
             printprog "node.js version is $NODEV, upgrading to ${NODEVERSION}.x"
-            runcmd "curl -sL https://rpm.nodesource.com/setup_${NODEVERSION}.x | bash -"
+
+            # only install nodejs repo if user allows it to be installed
+            if [[ "$INSTALL_REPOS" == "true" ]]; then
+                runcmd "curl -sL https://rpm.nodesource.com/setup_${NODEVERSION}.x | bash -"
+            fi
+
             runcmd "yum clean all"
             runcmd "yum install -y nodejs"
             printok "node.js version is $NODEV, upgrading to ${NODEVERSION}.x"
@@ -381,7 +409,12 @@ function UpdateNodeYarn {
         if [[ -n "$NODEV" ]] && [[ "$NODEV" -lt "${NODEVERSION}" ]]; then
             echo
             printprog "node.js version is $NODEV, upgrading to ${NODEVERSION}.x"
-            runcmd "curl -sL https://deb.nodesource.com/setup_${NODEVERSION}.x | bash -"
+
+            # only install nodejs repo if user allows it to be installed
+            if [[ "$INSTALL_REPOS" == "true" ]]; then
+                runcmd "curl -sL https://deb.nodesource.com/setup_${NODEVERSION}.x | bash -"
+            fi
+
             runcmd "apt-get install -y nodejs"
             printok "node.js version is $NODEV, upgrading to ${NODEVERSION}.x"
         else
