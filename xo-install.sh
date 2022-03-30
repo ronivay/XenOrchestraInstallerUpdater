@@ -936,7 +936,35 @@ function InstallXOProxy {
     printok "Running installation"
 
     echo
+    printinfo "Disabling license check in proxy to enable running it in XO from sources"
+
+    cat <<-EOF | runcmd "patch --fuzz=0 --no-backup-if-mismatch $INSTALLDIR/xo-builds/xen-orchestra-$TIME/@xen-orchestra/proxy/app/mixins/appliance.mjs"
+--- appliance.mjs~	2022-03-30 15:28:52.360814994 +0300
++++ appliance.mjs	2022-03-30 15:27:57.823598169 +0300
+@@ -153,10 +153,13 @@
+
+   // A proxy can be bound to a unique license
+   getSelfLicense() {
+-    return Disposable.use(getUpdater(), async updater => {
+-      const licenses = await updater.call('getSelfLicenses')
+-      const now = Date.now()
+-      return licenses.find(({ expires }) => expires === undefined || expires > now)
+-    })
++  // modified by XenOrchestraInstallerUpdater
++  //
++  //  return Disposable.use(getUpdater(), async updater => {
++  //    const licenses = await updater.call('getSelfLicenses')
++  //    const now = Date.now()
++  //    return licenses.find(({ expires }) => expires === undefined || expires > now)
++  //  })
++    return true
+   }
+ }
+EOF
+
+    echo
     printinfo "Generate systemd service configuration file"
+
     cat <<EOF >/etc/systemd/system/xo-proxy.service
 [Unit]
 Description=xo-proxy
@@ -950,6 +978,7 @@ SyslogIdentifier=xo-proxy
 [Install]
 WantedBy=multi-user.target
 EOF
+
     printinfo "Reloading systemd configuration"
     runcmd "/bin/systemctl daemon-reload"
 
