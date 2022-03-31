@@ -149,7 +149,7 @@ function ScriptInfo {
 function runcmd {
 
     echo "+ $1" >>"$LOGFILE"
-    bash -c -o pipefail "$1" >>"$LOGFILE" 2>&1
+    bash -c -o pipefail "$1" >>"$LOGFILE" 2>&1 || return 1
 }
 
 # log actual command and it's stderr to logfile in one go
@@ -157,7 +157,7 @@ function runcmd_stdout {
 
     echo "+ $1" >>"$LOGFILE"
     # shellcheck disable=SC2094
-    bash -c -o pipefail "$1" 2>>"$LOGFILE" | tee -a "$LOGFILE"
+    bash -c -o pipefail "$1" 2>>"$LOGFILE" | tee -a "$LOGFILE" || return 1
 }
 
 # make output we print pretty
@@ -182,8 +182,7 @@ function printinfo {
 # this is called by trap inside different functions
 function ErrorHandling {
 
-    set -eu
-
+    echo
     echo
     printfail "Something went wrong, exiting. Check $LOGFILE for more details and use rollback feature if needed"
 
@@ -200,7 +199,7 @@ function ErrorHandling {
 # install package dependencies to rpm distros, based on: https://xen-orchestra.com/docs/from_the_sources.html
 function InstallDependenciesRPM {
 
-    set -uo pipefail
+    set -euo pipefail
 
     trap ErrorHandling ERR INT
 
@@ -263,7 +262,7 @@ function InstallDependenciesRPM {
 # install package dependencies to deb distros, based on: https://xen-orchestra.com/docs/from_the_sources.html
 function InstallDependenciesDeb {
 
-    set -uo pipefail
+    set -euo pipefail
 
     trap ErrorHandling ERR INT
 
@@ -353,6 +352,10 @@ function InstallDependenciesDeb {
 # keep node.js and yarn up to date
 function UpdateNodeYarn {
 
+    set -euo pipefail
+
+    trap ErrorHandling ERR INT
+
     # user has an option to disable this behaviour in xo-install.cfg
     if [[ "$AUTOUPDATE" != "true" ]]; then
         return 0
@@ -408,7 +411,7 @@ function UpdateNodeYarn {
 # get source code for 3rd party plugins if any configured in xo-install.cfg
 function InstallAdditionalXOPlugins {
 
-    set -uo pipefail
+    set -euo pipefail
 
     trap ErrorHandling ERR INT
 
@@ -451,7 +454,7 @@ function InstallAdditionalXOPlugins {
 # symlink plugins in place based on what is set in xo-install.cfg
 function InstallXOPlugins {
 
-    set -uo pipefail
+    set -euo pipefail
 
     trap ErrorHandling ERR INT
 
@@ -466,7 +469,7 @@ function InstallXOPlugins {
 
     if [[ "$PLUGINS" == "all" ]]; then
         # shellcheck disable=SC1117
-        runcmd "find \"$INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/\" -maxdepth 1 -mindepth 1 -not -name \"xo-server\" -not -name \"xo-web\" -not -name \"xo-server-cloud\" -exec ln -sn {} \"$INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/node_modules/\" \;"
+        runcmd "find \"$INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/\" -maxdepth 1 -mindepth 1 -not -name \"xo-server\" -not -name \"xo-web\" -not -name \"xo-server-cloud\" -not -name \"xo-server-test*\" -exec ln -sn {} \"$INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/node_modules/\" \;"
     else
         local PLUGIN
         IFS=',' read -ra PLUGIN <<<"$PLUGINS"
@@ -484,7 +487,7 @@ function InstallXOPlugins {
 # install sudo package and generate config if defined in configuration
 function InstallSudo {
 
-    set -uo pipefail
+    set -euo pipefail
 
     trap ErrorHandling ERR INT
 
@@ -517,6 +520,10 @@ function InstallSudo {
 }
 
 function PrepInstall {
+
+    set -euo pipefail
+
+    trap ErrorHandling ERR INT
 
     if [[ "$XO_SVC" == "xo-server" ]]; then
         local XO_SVC_DESC="Xen Orchestra"
@@ -645,7 +652,7 @@ function PrepInstall {
 # run actual xen orchestra installation. procedure is the same for new installation and update. we always build it from scratch.
 function InstallXO {
 
-    set -uo pipefail
+    set -euo pipefail
 
     trap ErrorHandling ERR INT
 
@@ -917,7 +924,7 @@ function UpdateXO {
 
 function InstallXOProxy {
 
-    set -uo pipefail
+    set -euo pipefail
 
     PrepInstall
 
@@ -937,24 +944,52 @@ function InstallXOProxy {
     echo
     printprog "Running installation"
     runcmd "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn && yarn build"
-    runcmd "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME/@xen-orchestra/proxy && yarn cross-env NODE_ENV=development yarn run _build"
     printok "Running installation"
 
     echo
+    printinfo "Disabling license check in proxy to enable running it in XO from sources"
+
+    cat <<-EOF | runcmd "patch --fuzz=0 --no-backup-if-mismatch $INSTALLDIR/xo-builds/xen-orchestra-$TIME/@xen-orchestra/proxy/app/mixins/appliance.mjs"
+--- appliance.mjs~	2022-03-30 15:28:52.360814994 +0300
++++ appliance.mjs	2022-03-30 15:27:57.823598169 +0300
+@@ -153,10 +153,13 @@
+
+   // A proxy can be bound to a unique license
+   getSelfLicense() {
+-    return Disposable.use(getUpdater(), async updater => {
+-      const licenses = await updater.call('getSelfLicenses')
+-      const now = Date.now()
+-      return licenses.find(({ expires }) => expires === undefined || expires > now)
+-    })
++  // modified by XenOrchestraInstallerUpdater
++  //
++  //  return Disposable.use(getUpdater(), async updater => {
++  //    const licenses = await updater.call('getSelfLicenses')
++  //    const now = Date.now()
++  //    return licenses.find(({ expires }) => expires === undefined || expires > now)
++  //  })
++    return true
+   }
+ }
+EOF
+
+    echo
     printinfo "Generate systemd service configuration file"
+
     cat <<EOF >/etc/systemd/system/xo-proxy.service
 [Unit]
 Description=xo-proxy
 After=network-online.target
 
 [Service]
-ExecStart=$INSTALLDIR/xo-proxy/dist/index.mjs
+ExecStart=$INSTALLDIR/xo-proxy/index.mjs
 Restart=always
 SyslogIdentifier=xo-proxy
 
 [Install]
 WantedBy=multi-user.target
 EOF
+
     printinfo "Reloading systemd configuration"
     runcmd "/bin/systemctl daemon-reload"
 
@@ -963,7 +998,7 @@ EOF
     if [[ ! -f "$CONFIGPATH_PROXY/.config/xo-proxy/config.toml" ]]; then
         PROXY_VM_UUID="$(dmidecode -t system | grep UUID | awk '{print $NF}')"
         PROXY_RANDOM_UUID="$(cat /proc/sys/kernel/random/uuid)"
-        PROXY_TOKEN="$(tr -dc A-Z-a-z0-9_- </dev/urandom | head -c 43)"
+        PROXY_TOKEN="$(head -n50 /dev/urandom | tr -dc A-Z-a-z0-9_- | head -c 43)"
         PROXY_NAME="xo-ce-proxy-$TIME"
         PROXY_CONFIG_UPDATED="true"
         echo
