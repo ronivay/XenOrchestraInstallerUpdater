@@ -244,7 +244,7 @@ function InstallDependenciesRPM {
     # only install libvhdi-tools if vhdimount is not present
     if [[ -z $(runcmd_stdout "command -v vhdimount") ]]; then
         echo
-        printprog "Installing libvhdi-tools from forensics repository"
+        printprog "Installing libvhdi-tools"
         if [[ "$INSTALL_REPOS" == "true" ]]; then
             runcmd "rpm -ivh https://forensics.cert.org/cert-forensics-tools-release-el8.rpm"
             runcmd "sed -i 's/enabled=1/enabled=0/g' /etc/yum.repos.d/cert-forensics-tools.repo"
@@ -252,7 +252,7 @@ function InstallDependenciesRPM {
         else
             runcmd "yum install -y libvhdi-tools"
         fi
-        printok "Installing libvhdi-tools from forensics repository"
+        printok "Installing libvhdi-tools"
     fi
 
     echo
@@ -384,14 +384,13 @@ function UpdateNodeYarn {
     local NODEV=$(runcmd_stdout "node -v 2>/dev/null| grep -Eo '[0-9.]+' | cut -d'.' -f1")
 
     if [ "$PKG_FORMAT" == "rpm" ]; then
-        if [[ -n "$NODEV" ]] && [[ "$NODEV" -lt "${NODEVERSION}" ]]; then
+        # update node version if needed.
+        # skip update if repository install is disabled as we can't quarantee this actually updates anything
+        if [[ -n "$NODEV" ]] && [[ "$NODEV" -lt "${NODEVERSION}" ]] && [[ "$INSTALL_REPOS" == "true" ]]; then
             echo
             printprog "node.js version is $NODEV, upgrading to ${NODEVERSION}.x"
 
-            # only install nodejs repo if user allows it to be installed
-            if [[ "$INSTALL_REPOS" == "true" ]]; then
-                runcmd "curl -sL https://rpm.nodesource.com/setup_${NODEVERSION}.x | bash -"
-            fi
+            runcmd "curl -sL https://rpm.nodesource.com/setup_${NODEVERSION}.x | bash -"
 
             runcmd "yum clean all"
             runcmd "yum install -y nodejs"
@@ -410,14 +409,11 @@ function UpdateNodeYarn {
     fi
 
     if [ "$PKG_FORMAT" == "deb" ]; then
-        if [[ -n "$NODEV" ]] && [[ "$NODEV" -lt "${NODEVERSION}" ]]; then
+        if [[ -n "$NODEV" ]] && [[ "$NODEV" -lt "${NODEVERSION}" ]] && [[ "$INSTALL_REPOS" == "true" ]]; then
             echo
             printprog "node.js version is $NODEV, upgrading to ${NODEVERSION}.x"
 
-            # only install nodejs repo if user allows it to be installed
-            if [[ "$INSTALL_REPOS" == "true" ]]; then
-                runcmd "curl -sL https://deb.nodesource.com/setup_${NODEVERSION}.x | bash -"
-            fi
+            runcmd "curl -sL https://deb.nodesource.com/setup_${NODEVERSION}.x | bash -"
 
             runcmd "apt-get install -y nodejs"
             printok "node.js version is $NODEV, upgrading to ${NODEVERSION}.x"

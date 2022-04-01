@@ -145,6 +145,22 @@ deb:
 - sudo (if set in xo-install.cfg)
 ```
 
+Following repositories will be installed if needed and repository install is enabled in xo-install.cfg
+
+```
+rpm:
+- forensics repository
+- epel repository
+- nodesource repository
+- yarn repository
+
+deb:
+- universe repository (ubuntu)
+- nodesource repository
+- yarn repository
+```
+
+
 #### Backup proxy
 
 **Proxy installation method is experimental, use at your own risk. Proxy installation from sources is not documented by Xen Orchestra team. Method used here is the outcome of trial and error.**
