@@ -31,6 +31,7 @@ PRESERVE=${PRESERVE:-"3"}
 XOUSER=${XOUSER:-"root"}
 CONFIGPATH=$(getent passwd "$XOUSER" | cut -d: -f6)
 CONFIGPATH_PROXY=$(getent passwd root | cut -d: -f6)
+CONFIGUPDATE=${CONFIGUPDATE:-"true"}
 PLUGINS="${PLUGINS:-"none"}"
 ADDITIONAL_PLUGINS="${ADDITIONAL_PLUGINS:-"none"}"
 REPOSITORY="${REPOSITORY:-"https://github.com/vatesfr/xen-orchestra"}"
