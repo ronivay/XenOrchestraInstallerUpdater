@@ -590,8 +590,7 @@ function PrepInstall {
 
     # get the latest available tagged release if branch is set to release. this is to make configuration more simple to user
     if [[ "$BRANCH" == "release" ]]; then
-        runcmd "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
-        local TAG=$(runcmd_stdout "git describe --tags '$(git rev-list --tags --max-count=1)'")
+        local TAG=$(runcmd_stdout "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && git tag --sort=-committerdate | head -1")
 
         echo
         printinfo "Checking out latest tagged release '$TAG'"
