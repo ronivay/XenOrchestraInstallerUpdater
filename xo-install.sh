@@ -588,18 +588,8 @@ function PrepInstall {
     runcmd "rm -rf \"$INSTALLDIR/xo-builds/xen-orchestra-$TIME\""
     runcmd "cp -r \"$XO_SRC_DIR\" \"$INSTALLDIR/xo-builds/xen-orchestra-$TIME\""
 
-    # get the latest available tagged release if branch is set to release. this is to make configuration more simple to user
-    if [[ "$BRANCH" == "release" ]]; then
-        runcmd "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
-        local TAG=$(runcmd_stdout "git describe --tags '$(git rev-list --tags --max-count=1)'")
-
-        echo
-        printinfo "Checking out latest tagged release '$TAG'"
-
-        runcmd "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && git checkout $TAG"
-        runcmd "cd $SCRIPT_DIR"
-    # we don't need to do much magic if specific branch set so just checkout
-    elif [[ "$BRANCH" != "master" ]]; then
+    # checkout configured branch if not set as master
+    if [[ "$BRANCH" != "master" ]]; then
         echo
         printinfo "Checking out source code from branch/commit '$BRANCH'"
 
