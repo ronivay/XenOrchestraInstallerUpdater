@@ -39,6 +39,7 @@ OS_CHECK="${OS_CHECK:-"true"}"
 ARCH_CHECK="${ARCH_CHECK:-"true"}"
 PATH_TO_HTTPS_CERT="${PATH_TO_HTTPS_CERT:-""}"
 PATH_TO_HTTPS_KEY="${PATH_TO_HTTPS_KEY:-""}"
+PATH_TO_HOST_CA="${PATH_TO_HOST_CA:-""}"
 AUTOCERT="${AUTOCERT:-"false"}"
 USESUDO="${USESUDO:-"false"}"
 GENSUDO="${GENSUDO:-"false"}"
@@ -720,6 +721,10 @@ function InstallXO {
     printinfo "Adding WorkingDirectory parameter to systemd service configuration file"
     # shellcheck disable=SC1117
     runcmd "sed -i \"/ExecStart=.*/a WorkingDirectory=$INSTALLDIR/xo-server\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service"
+    if [[ -n "$PATH_TO_HOST_CA" ]]; then
+        printinfo "Adding custom CA environment variable to systemd service configuration file"
+        runcmd "sed -i \"/Environment=.*/a Environment=NODE_EXTRA_CA_CERTS=$PATH_TO_HOST_CA\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service"
+    fi
 
     # if service not running as root, we need to deal with the fact that port binding might not be allowed
     if [[ "$XOUSER" != "root" ]]; then
