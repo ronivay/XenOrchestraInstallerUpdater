@@ -31,22 +31,25 @@ PRESERVE=${PRESERVE:-"3"}
 XOUSER=${XOUSER:-"root"}
 CONFIGPATH=$(getent passwd "$XOUSER" | cut -d: -f6)
 CONFIGPATH_PROXY=$(getent passwd root | cut -d: -f6)
-PLUGINS="${PLUGINS:-"none"}"
+CONFIGUPDATE=${CONFIGUPDATE:-"true"}
+PLUGINS="${PLUGINS:-"all"}"
 ADDITIONAL_PLUGINS="${ADDITIONAL_PLUGINS:-"none"}"
 REPOSITORY="${REPOSITORY:-"https://github.com/vatesfr/xen-orchestra"}"
 OS_CHECK="${OS_CHECK:-"true"}"
 ARCH_CHECK="${ARCH_CHECK:-"true"}"
 PATH_TO_HTTPS_CERT="${PATH_TO_HTTPS_CERT:-""}"
 PATH_TO_HTTPS_KEY="${PATH_TO_HTTPS_KEY:-""}"
+PATH_TO_HOST_CA="${PATH_TO_HOST_CA:-""}"
 AUTOCERT="${AUTOCERT:-"false"}"
 USESUDO="${USESUDO:-"false"}"
 GENSUDO="${GENSUDO:-"false"}"
+INSTALL_REPOS="${INSTALL_REPOS:-"true"}"
 
 # set variables not changeable in configfile
 TIME=$(date +%Y%m%d%H%M)
 LOGTIME=$(date "+%Y-%m-%d %H:%M:%S")
 LOGFILE="${LOGPATH}/xo-install.log-$TIME"
-NODEVERSION="14"
+NODEVERSION="16"
 FORCE="false"
 INTERACTIVE="false"
 SUDOERSFILE="/etc/sudoers.d/xo-server-$XOUSER"
@@ -205,8 +208,8 @@ function InstallDependenciesRPM {
 
     # Install necessary dependencies for XO build
 
-    # only install epel-release if doesn't exist
-    if [[ -z $(runcmd_stdout "rpm -qa epel-release") ]]; then
+    # only install epel-release if doesn't exist and user allows it to be installed
+    if [[ -z $(runcmd_stdout "rpm -qa epel-release") ]] && [[ "$INSTALL_REPOS" == "true" ]]; then
         echo
         printprog "Installing epel-repo"
         runcmd "yum -y install epel-release"
@@ -215,15 +218,21 @@ function InstallDependenciesRPM {
 
     # install packages
     echo
-    printprog "Installing build dependencies, redis server, python, git, nfs-utils, cifs-utils, lvm2, ntfs-3g"
-    runcmd "yum -y install gcc gcc-c++ make openssl-devel redis libpng-devel python3 git nfs-utils cifs-utils lvm2 ntfs-3g"
-    printok "Installing build dependencies, redis server, python, git, nfs-utils, cifs-utils, lvm2, ntfs-3g"
+    printprog "Installing build dependencies, redis server, python, git, nfs-utils, cifs-utils, lvm2, ntfs-3g, libxml2"
+    runcmd "yum -y install gcc gcc-c++ make openssl-devel redis libpng-devel python3 git nfs-utils cifs-utils lvm2 ntfs-3g libxml2"
+    printok "Installing build dependencies, redis server, python, git, nfs-utils, cifs-utils, lvm2, ntfs-3g, libxml2"
 
     # only run automated node install if executable not found
     if [[ -z $(runcmd_stdout "command -v node") ]]; then
         echo
         printprog "Installing node.js"
-        runcmd "curl -s -L https://rpm.nodesource.com/setup_${NODEVERSION}.x | bash -"
+
+        # only install nodejs repo if user allows it to be installed
+        if [[ "$INSTALL_REPOS" == "true" ]]; then
+            runcmd "curl -s -L https://rpm.nodesource.com/setup_${NODEVERSION}.x | bash -"
+        fi
+
+        runcmd "yum install -y nodejs"
         printok "Installing node.js"
     else
         UpdateNodeYarn
@@ -233,18 +242,28 @@ function InstallDependenciesRPM {
     if [[ -z $(runcmd_stdout "command -v yarn") ]]; then
         echo
         printprog "Installing yarn"
-        runcmd "curl -s -o /etc/yum.repos.d/yarn.repo https://dl.yarnpkg.com/rpm/yarn.repo && yum -y install yarn"
+
+        # only install yarn repo if user allows it to be installed
+        if [[ "$INSTALL_REPOS" == "true" ]]; then
+            runcmd "curl -s -o /etc/yum.repos.d/yarn.repo https://dl.yarnpkg.com/rpm/yarn.repo"
+        fi
+
+        runcmd "yum -y install yarn"
         printok "Installing yarn"
     fi
 
     # only install libvhdi-tools if vhdimount is not present
     if [[ -z $(runcmd_stdout "command -v vhdimount") ]]; then
         echo
-        printprog "Installing libvhdi-tools from forensics repository"
-        runcmd "rpm -ivh https://forensics.cert.org/cert-forensics-tools-release-el8.rpm"
-        runcmd "sed -i 's/enabled=1/enabled=0/g' /etc/yum.repos.d/cert-forensics-tools.repo"
-        runcmd "yum --enablerepo=forensics install -y libvhdi-tools"
-        printok "Installing libvhdi-tools from forensics repository"
+        printprog "Installing libvhdi-tools"
+        if [[ "$INSTALL_REPOS" == "true" ]]; then
+            runcmd "rpm -ivh https://forensics.cert.org/cert-forensics-tools-release-el8.rpm"
+            runcmd "sed -i 's/enabled=1/enabled=0/g' /etc/yum.repos.d/cert-forensics-tools.repo"
+            runcmd "yum --enablerepo=forensics install -y libvhdi-tools"
+        else
+            runcmd "yum install -y libvhdi-tools"
+        fi
+        printok "Installing libvhdi-tools"
     fi
 
     echo
@@ -268,7 +287,7 @@ function InstallDependenciesDeb {
 
     # Install necessary dependencies for XO build
 
-    if [[ "$OSNAME" == "Ubuntu" ]]; then
+    if [[ "$OSNAME" == "Ubuntu" ]] && [[ "$INSTALL_REPOS" == "true" ]]; then
         echo
         printprog "OS Ubuntu so making sure universe repository is enabled"
         runcmd "apt-get install -y software-properties-common"
@@ -290,9 +309,9 @@ function InstallDependenciesDeb {
 
     # install packages
     echo
-    printprog "Installing build dependencies, redis server, python, git, libvhdi-utils, lvm2, nfs-common, cifs-utils, curl, ntfs-3g"
-    runcmd "apt-get install -y build-essential redis-server libpng-dev git libvhdi-utils $PYTHON lvm2 nfs-common cifs-utils curl ntfs-3g"
-    printok "Installing build dependencies, redis server, python, git, libvhdi-utils, lvm2, nfs-common, cifs-utils, curl, ntfs-3g"
+    printprog "Installing build dependencies, redis server, python, git, libvhdi-utils, lvm2, nfs-common, cifs-utils, curl, ntfs-3g, libxml2-utils"
+    runcmd "apt-get install -y build-essential redis-server libpng-dev git libvhdi-utils $PYTHON lvm2 nfs-common cifs-utils curl ntfs-3g libxml2-utils"
+    printok "Installing build dependencies, redis server, python, git, libvhdi-utils, lvm2, nfs-common, cifs-utils, curl, ntfs-3g, libxml2-utils"
 
     # Install apt-transport-https and ca-certificates because of yarn https repo url
     echo
@@ -319,7 +338,12 @@ function InstallDependenciesDeb {
     if [[ -z $(runcmd_stdout "command -v node") ]] || [[ -z $(runcmd_stdout "command -v npm") ]]; then
         echo
         printprog "Installing node.js"
-        runcmd "curl -sL https://deb.nodesource.com/setup_${NODEVERSION}.x | bash -"
+
+        # only install nodejs repo if user allows it to be installed
+        if [[ "$INSTALL_REPOS" == "true" ]]; then
+            runcmd "curl -sL https://deb.nodesource.com/setup_${NODEVERSION}.x | bash -"
+        fi
+
         runcmd "apt-get install -y nodejs"
         printok "Installing node.js"
     else
@@ -330,8 +354,13 @@ function InstallDependenciesDeb {
     if [[ -z $(runcmd_stdout "command -v yarn") ]]; then
         echo
         printprog "Installing yarn"
-        runcmd "curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add -"
-        runcmd "echo \"deb https://dl.yarnpkg.com/debian/ stable main\" | tee /etc/apt/sources.list.d/yarn.list"
+
+        # only install yarn repo if user allows it to be installed
+        if [[ "$INSTALL_REPOS" == "true" ]]; then
+            runcmd "curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add -"
+            runcmd "echo \"deb https://dl.yarnpkg.com/debian/ stable main\" | tee /etc/apt/sources.list.d/yarn.list"
+        fi
+
         runcmd "apt-get update"
         runcmd "apt-get install -y yarn"
         printok "Installing yarn"
@@ -366,10 +395,14 @@ function UpdateNodeYarn {
     local NODEV=$(runcmd_stdout "node -v 2>/dev/null| grep -Eo '[0-9.]+' | cut -d'.' -f1")
 
     if [ "$PKG_FORMAT" == "rpm" ]; then
-        if [[ -n "$NODEV" ]] && [[ "$NODEV" -lt "${NODEVERSION}" ]]; then
+        # update node version if needed.
+        # skip update if repository install is disabled as we can't quarantee this actually updates anything
+        if [[ -n "$NODEV" ]] && [[ "$NODEV" -lt "${NODEVERSION}" ]] && [[ "$INSTALL_REPOS" == "true" ]]; then
             echo
             printprog "node.js version is $NODEV, upgrading to ${NODEVERSION}.x"
+
             runcmd "curl -sL https://rpm.nodesource.com/setup_${NODEVERSION}.x | bash -"
+
             runcmd "yum clean all"
             runcmd "yum install -y nodejs"
             printok "node.js version is $NODEV, upgrading to ${NODEVERSION}.x"
@@ -387,10 +420,12 @@ function UpdateNodeYarn {
     fi
 
     if [ "$PKG_FORMAT" == "deb" ]; then
-        if [[ -n "$NODEV" ]] && [[ "$NODEV" -lt "${NODEVERSION}" ]]; then
+        if [[ -n "$NODEV" ]] && [[ "$NODEV" -lt "${NODEVERSION}" ]] && [[ "$INSTALL_REPOS" == "true" ]]; then
             echo
             printprog "node.js version is $NODEV, upgrading to ${NODEVERSION}.x"
+
             runcmd "curl -sL https://deb.nodesource.com/setup_${NODEVERSION}.x | bash -"
+
             runcmd "apt-get install -y nodejs"
             printok "node.js version is $NODEV, upgrading to ${NODEVERSION}.x"
         else
@@ -563,18 +598,8 @@ function PrepInstall {
     runcmd "rm -rf \"$INSTALLDIR/xo-builds/xen-orchestra-$TIME\""
     runcmd "cp -r \"$XO_SRC_DIR\" \"$INSTALLDIR/xo-builds/xen-orchestra-$TIME\""
 
-    # get the latest available tagged release if branch is set to release. this is to make configuration more simple to user
-    if [[ "$BRANCH" == "release" ]]; then
-        runcmd "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
-        local TAG=$(runcmd_stdout "git describe --tags '$(git rev-list --tags --max-count=1)'")
-
-        echo
-        printinfo "Checking out latest tagged release '$TAG'"
-
-        runcmd "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && git checkout $TAG"
-        runcmd "cd $SCRIPT_DIR"
-    # we don't need to do much magic if specific branch set so just checkout
-    elif [[ "$BRANCH" != "master" ]]; then
+    # checkout configured branch if not set as master
+    if [[ "$BRANCH" != "master" ]]; then
         echo
         printinfo "Checking out source code from branch/commit '$BRANCH'"
 
@@ -708,6 +733,10 @@ function InstallXO {
     printinfo "Adding WorkingDirectory parameter to systemd service configuration file"
     # shellcheck disable=SC1117
     runcmd "sed -i \"/ExecStart=.*/a WorkingDirectory=$INSTALLDIR/xo-server\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service"
+    if [[ -n "$PATH_TO_HOST_CA" ]]; then
+        printinfo "Adding custom CA environment variable to systemd service configuration file"
+        runcmd "sed -i \"/Environment=.*/a Environment=NODE_EXTRA_CA_CERTS=$PATH_TO_HOST_CA\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service"
+    fi
 
     # if service not running as root, we need to deal with the fact that port binding might not be allowed
     if [[ "$XOUSER" != "root" ]]; then

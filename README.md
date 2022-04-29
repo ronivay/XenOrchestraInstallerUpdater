@@ -119,6 +119,7 @@ rpm:
 - cifs-utils
 - lvm2
 - ntfs-3g
+- libxml2
 - sudo (if set in xo-install.cfg)
 
 deb:
@@ -142,8 +143,25 @@ deb:
 - gnupg (debian 10/11)
 - software-properties-common (ubuntu)
 - ntfs-3g
+- libxml2-utils
 - sudo (if set in xo-install.cfg)
 ```
+
+Following repositories will be installed if needed and repository install is enabled in xo-install.cfg
+
+```
+rpm:
+- forensics repository
+- epel repository
+- nodesource repository
+- yarn repository
+
+deb:
+- universe repository (ubuntu)
+- nodesource repository
+- yarn repository
+```
+
 
 #### Backup proxy
 
