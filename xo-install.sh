@@ -1265,9 +1265,8 @@ function CheckOS {
         exit 1
     fi
 
-    # for future if/when something above 8 is released
-    if [[ "$OSNAME" == "AlmaLinux" ]] && [[ "$OSVERSION" != "8" ]]; then
-        printfail "Only AlmaLinux 8 supported"
+    if [[ "$OSNAME" == "AlmaLinux" ]] && [[ ! "$OSVERSION" =~ ^(8|9)$ ]]; then
+        printfail "Only AlmaLinux 8/9 supported"
         exit 1
     fi
 
