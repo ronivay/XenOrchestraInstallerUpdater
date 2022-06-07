@@ -292,7 +292,7 @@ function InstallDependenciesDeb {
     printok "Running apt-get update"
 
     #determine which python package is needed. Ubuntu 20/Debian 11 require python2-minimal, others have python-minimal
-    if [[ "$OSNAME" =~ ^(Ubuntu|Debian)$ ]] && [[ "$OSVERSION" =~ ^(20|11)$ ]]; then
+    if [[ "$OSNAME" =~ ^(Ubuntu|Debian)$ ]] && [[ "$OSVERSION" =~ ^(20|22|11)$ ]]; then
         local PYTHON="python2-minimal"
     else
         local PYTHON="python-minimal"
@@ -1276,8 +1276,8 @@ function CheckOS {
         exit 1
     fi
 
-    if [[ "$OSNAME" == "Ubuntu" ]] && [[ ! "$OSVERSION" =~ ^(16|18|20)$ ]]; then
-        printfail "Only Ubuntu 16/18/20 supported"
+    if [[ "$OSNAME" == "Ubuntu" ]] && [[ ! "$OSVERSION" =~ ^(16|18|20|22)$ ]]; then
+        printfail "Only Ubuntu 16/18/20/22 supported"
         exit 1
     fi
 
