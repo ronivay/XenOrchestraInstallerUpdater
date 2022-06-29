@@ -573,14 +573,16 @@ function PrepInstall {
     fi
 
     echo
-    # keep the actual source code in one directory and either clone or git pull depending on if directory exists already
+    # keep the actual source code in one directory and either clone or git fetch depending on if directory exists already
     printinfo "Fetching $XO_SVC_DESC source code"
     if [[ ! -d "$XO_SRC_DIR" ]]; then
         runcmd "mkdir -p \"$XO_SRC_DIR\""
         runcmd "git clone \"${REPOSITORY}\" \"$XO_SRC_DIR\""
     else
-        runcmd "cd \"$XO_SRC_DIR\" && git pull --ff-only"
-        runcmd "cd $SCRIPT_DIR"
+        runcmd "cd \"$XO_SRC_DIR\" && git remote set-url origin \"${REPOSITORY}\" && \
+            git fetch --prune && \
+            git reset --hard origin/master && \
+            git clean -xdff"
     fi
 
     # Deploy the latest xen-orchestra source to the new install directory.
