@@ -301,7 +301,7 @@ function InstallDependenciesDeb {
     printok "Running apt-get update"
 
     #determine which python package is needed. Ubuntu 20/Debian 11 require python2-minimal, others have python-minimal
-    if [[ "$OSNAME" =~ ^(Ubuntu|Debian)$ ]] && [[ "$OSVERSION" =~ ^(20|11)$ ]]; then
+    if [[ "$OSNAME" =~ ^(Ubuntu|Debian)$ ]] && [[ "$OSVERSION" =~ ^(20|22|11)$ ]]; then
         local PYTHON="python2-minimal"
     else
         local PYTHON="python-minimal"
@@ -582,14 +582,16 @@ function PrepInstall {
     fi
 
     echo
-    # keep the actual source code in one directory and either clone or git pull depending on if directory exists already
+    # keep the actual source code in one directory and either clone or git fetch depending on if directory exists already
     printinfo "Fetching $XO_SVC_DESC source code"
     if [[ ! -d "$XO_SRC_DIR" ]]; then
         runcmd "mkdir -p \"$XO_SRC_DIR\""
         runcmd "git clone \"${REPOSITORY}\" \"$XO_SRC_DIR\""
     else
-        runcmd "cd \"$XO_SRC_DIR\" && git pull --ff-only"
-        runcmd "cd $SCRIPT_DIR"
+        runcmd "cd \"$XO_SRC_DIR\" && git remote set-url origin \"${REPOSITORY}\" && \
+            git fetch --prune && \
+            git reset --hard origin/master && \
+            git clean -xdff"
     fi
 
     # Deploy the latest xen-orchestra source to the new install directory.
@@ -1276,9 +1278,8 @@ function CheckOS {
         exit 1
     fi
 
-    # for future if/when something above 8 is released
-    if [[ "$OSNAME" == "AlmaLinux" ]] && [[ "$OSVERSION" != "8" ]]; then
-        printfail "Only AlmaLinux 8 supported"
+    if [[ "$OSNAME" == "AlmaLinux" ]] && [[ ! "$OSVERSION" =~ ^(8|9)$ ]]; then
+        printfail "Only AlmaLinux 8/9 supported"
         exit 1
     fi
 
@@ -1287,8 +1288,8 @@ function CheckOS {
         exit 1
     fi
 
-    if [[ "$OSNAME" == "Ubuntu" ]] && [[ ! "$OSVERSION" =~ ^(16|18|20)$ ]]; then
-        printfail "Only Ubuntu 16/18/20 supported"
+    if [[ "$OSNAME" == "Ubuntu" ]] && [[ ! "$OSVERSION" =~ ^(16|18|20|22)$ ]]; then
+        printfail "Only Ubuntu 16/18/20/22 supported"
         exit 1
     fi
 

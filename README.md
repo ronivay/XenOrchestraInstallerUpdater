@@ -37,12 +37,14 @@ First thing you need is a VM (or even a physical machine if you wish) where to i
 Supported Linux distributions and versions:
 
 - CentOS 8 Stream
+- AlmaLinux 9
 - AlmaLinux 8
 - Rocky Linux 8
 - Debian 11
 - Debian 10
 - Debian 9
 - Debian 8
+- Ubuntu 22.04
 - Ubuntu 20.04
 - Ubuntu 18.04
 - Ubuntu 16.04
@@ -135,7 +137,7 @@ deb:
 - libpng-dev
 - git
 - python-minimal
-- python2-minimal (Ubuntu 20/Debian 11 only, replaces python-minimal)
+- python2-minimal (Ubuntu 20/22 or Debian 11 only, replaces python-minimal)
 - libvhdi-utils
 - lvm2
 - nfs-common
