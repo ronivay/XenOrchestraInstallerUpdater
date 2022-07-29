@@ -41,6 +41,7 @@ PATH_TO_HTTPS_CERT="${PATH_TO_HTTPS_CERT:-""}"
 PATH_TO_HTTPS_KEY="${PATH_TO_HTTPS_KEY:-""}"
 PATH_TO_HOST_CA="${PATH_TO_HOST_CA:-""}"
 AUTOCERT="${AUTOCERT:-"false"}"
+LETSENCRYPT="${LETSENCRYPT:-"false"}"
 USESUDO="${USESUDO:-"false"}"
 GENSUDO="${GENSUDO:-"false"}"
 INSTALL_REPOS="${INSTALL_REPOS:-"true"}"
@@ -67,14 +68,6 @@ OK="[${COLOR_GREEN}ok${COLOR_N}]"
 FAIL="[${COLOR_RED}fail${COLOR_N}]"
 INFO="[${COLOR_BLUE}info${COLOR_N}]"
 PROGRESS="[${COLOR_BLUE}..${COLOR_N}]"
-
-# Protocol to use for webserver. If both of the X.509 certificate paths are defined,
-# then assume that we want to enable HTTPS for the server.
-if [[ -n "$PATH_TO_HTTPS_CERT" ]] && [[ -n "$PATH_TO_HTTPS_KEY" ]]; then
-    HTTPS=true
-else
-    HTTPS=false
-fi
 
 # create logpath if doesn't exist
 if [[ ! -d "$LOGPATH" ]]; then
@@ -793,6 +786,16 @@ function InstallXO {
             if [[ "$AUTOCERT" == "true" ]]; then
                 # shellcheck disable=SC1117
                 runcmd "sed -i \"s%# autoCert = false%autoCert = true%\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
+            fi
+            if [[ "$LETSENCRYPT" == "true" ]]; then
+                runcmd "sed -i \"s%# \[\[http.listen\]\]%\[\[http.listen\]\]%\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
+                runcmd "sed -i \"s%# port = 443%port = 443%\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
+                runcmd "sed -i \"s%^# redirectToHttps = true%redirectToHttps = true%\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
+                runcmd "sed -i \"/^autoCert =.*/a acmeCa = 'letsencrypt/production'\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
+                runcmd "sed -i \"/^autoCert = .*/a acmeDomain = '$LETSENCRYPT_DOMAIN'\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
+                if [[ -n "$LETSENCRYPT_EMAIL" ]]; then
+                    runcmd "sed -i \"/^autoCert =.*/a acmeEmail = '$LETSENCRYPT_EMAIL'\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
+                fi
             fi
             sleep 2
         fi
@@ -1537,6 +1540,27 @@ function StartUpScreen {
     esac
 
 }
+
+# Protocol to use for webserver. If both of the X.509 certificate paths are defined,
+# then assume that we want to enable HTTPS for the server.
+if [[ -n "$PATH_TO_HTTPS_CERT" ]] && [[ -n "$PATH_TO_HTTPS_KEY" ]]; then
+    HTTPS=true
+else
+    HTTPS=false
+fi
+
+# Override port to 80, set https true and autocert to true if letsencrypt
+if [[ "$LETSENCRYPT" == "true" ]]; then
+    if [[ -z "$LETSENCRYPT_DOMAIN" ]]; then
+        printfail "LETSENCRYPT_DOMAIN needs to be set when using Let's Encrypt"
+        exit 1
+    fi
+    PORT="80"
+    HTTPS="true"
+    AUTOCERT="true"
+    PATH_TO_HTTPS_CERT="${PATH_TO_HTTPS_CERT:-"./certificate.pem"}"
+    PATH_TO_HTTPS_KEY="${PATH_TO_HTTPS_KEY:-"./key.pem"}"
+fi
 
 # if no arguments given, we assume interactive mode.
 # set here because some of the following checks either prompt user input or not.
