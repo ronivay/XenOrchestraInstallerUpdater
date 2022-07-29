@@ -41,7 +41,8 @@ PATH_TO_HTTPS_CERT="${PATH_TO_HTTPS_CERT:-""}"
 PATH_TO_HTTPS_KEY="${PATH_TO_HTTPS_KEY:-""}"
 PATH_TO_HOST_CA="${PATH_TO_HOST_CA:-""}"
 AUTOCERT="${AUTOCERT:-"false"}"
-LETSENCRYPT="${LETSENCRYPT:-"false"}"
+ACME="${ACME:-"false"}"
+ACME_CA="${ACME_CA:-"letsencrypt/production"}"
 USESUDO="${USESUDO:-"false"}"
 GENSUDO="${GENSUDO:-"false"}"
 INSTALL_REPOS="${INSTALL_REPOS:-"true"}"
@@ -787,14 +788,14 @@ function InstallXO {
                 # shellcheck disable=SC1117
                 runcmd "sed -i \"s%# autoCert = false%autoCert = true%\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
             fi
-            if [[ "$LETSENCRYPT" == "true" ]]; then
+            if [[ "$ACME" == "true" ]]; then
                 runcmd "sed -i \"s%# \[\[http.listen\]\]%\[\[http.listen\]\]%\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
                 runcmd "sed -i \"s%# port = 443%port = 443%\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
                 runcmd "sed -i \"s%^# redirectToHttps = true%redirectToHttps = true%\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
-                runcmd "sed -i \"/^autoCert =.*/a acmeCa = 'letsencrypt/production'\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
-                runcmd "sed -i \"/^autoCert = .*/a acmeDomain = '$LETSENCRYPT_DOMAIN'\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
-                if [[ -n "$LETSENCRYPT_EMAIL" ]]; then
-                    runcmd "sed -i \"/^autoCert =.*/a acmeEmail = '$LETSENCRYPT_EMAIL'\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
+                runcmd "sed -i \"/^autoCert =.*/a acmeCa = '$ACME_CA'\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
+                runcmd "sed -i \"/^autoCert = .*/a acmeDomain = '$ACME_DOMAIN'\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
+                if [[ -n "$ACME_EMAIL" ]]; then
+                    runcmd "sed -i \"/^autoCert =.*/a acmeEmail = '$ACME_EMAIL'\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
                 fi
             fi
             sleep 2
@@ -1550,9 +1551,9 @@ else
 fi
 
 # Override port to 80, set https true and autocert to true if letsencrypt
-if [[ "$LETSENCRYPT" == "true" ]]; then
-    if [[ -z "$LETSENCRYPT_DOMAIN" ]]; then
-        printfail "LETSENCRYPT_DOMAIN needs to be set when using Let's Encrypt"
+if [[ "$ACME" == "true" ]]; then
+    if [[ -z "$ACME_DOMAIN" ]]; then
+        printfail "ACME_DOMAIN needs to be set when using ACME"
         exit 1
     fi
     PORT="80"
