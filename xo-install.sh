@@ -767,10 +767,10 @@ function InstallXO {
 
         echo
         printinfo "Fixing relative path to xo-web installation in xo-server configuration file"
-
         # shellcheck disable=SC1117
         runcmd "sed -i \"s%#'/any/url' = '/path/to/directory'%'/' = '$INSTALLDIR/xo-web/dist/'%\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
-        sleep 2
+        printinfo "Changing redis connection address in xo-server configuration file"
+        runcmd "sed -i \"s%#uri = 'redis://redis.company.lan/42'%uri = 'redis://127.0.0.1:6379/0'%\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
 
         if [[ "$PORT" != "80" ]]; then
             printinfo "Changing port in xo-server configuration file"
