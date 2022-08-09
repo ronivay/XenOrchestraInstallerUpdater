@@ -1267,8 +1267,8 @@ function CheckOS {
         exit 1
     fi
 
-    if [[ "$OSNAME" == "Rocky" ]] && [[ "$OSVERSION" != "8" ]]; then
-        printfail "Only Rocky Linux 8 supported"
+    if [[ "$OSNAME" == "Rocky" ]] && [[ ! "$OSVERSION" =~ ^(8|9)$ ]]; then
+        printfail "Only Rocky Linux 8/9 supported"
         exit 1
     fi
 
