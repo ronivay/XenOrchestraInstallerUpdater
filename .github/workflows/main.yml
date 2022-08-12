@@ -1,9 +1,5 @@
 name: xo-install test
 on:
-  push:
-    paths:
-      - 'xo-install.sh'
-      - 'sample.xo-install.cfg'
   pull_request:
     paths:
       - 'xo-install.sh'
