@@ -39,6 +39,7 @@ Supported Linux distributions and versions:
 - CentOS 8 Stream
 - AlmaLinux 9
 - AlmaLinux 8
+- Rocky Linux 9
 - Rocky Linux 8
 - Debian 11
 - Debian 10
