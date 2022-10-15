@@ -686,18 +686,6 @@ function InstallXO {
 
     PrepInstall
 
-    # Now that we know we're going to be building a new xen-orchestra, make
-    # sure there's no already-running xo-server process.
-    if [[ $(runcmd_stdout "pgrep -f xo-server") ]]; then
-        echo
-        printprog "Shutting down xo-server"
-        runcmd "/bin/systemctl stop xo-server" || {
-            printfail "failed to stop service, exiting..."
-            exit 1
-        }
-        printok "Shutting down xo-server"
-    fi
-
     # Fetch 3rd party plugins source code
     InstallAdditionalXOPlugins
 
@@ -710,6 +698,18 @@ function InstallXO {
 
     # Install plugins (takes care of 3rd party plugins as well)
     InstallXOPlugins
+
+    # shutdown possibly running xo-server
+    if [[ $(runcmd_stdout "pgrep -f xo-server") ]]; then
+        echo
+        printprog "Shutting down running xo-server"
+        runcmd "/bin/systemctl stop xo-server" || {
+            printfail "failed to stop service, exiting..."
+            exit 1
+        }
+        printok "Shutting down running xo-server"
+        sleep 3
+    fi
 
     echo
     printinfo "Fixing binary path in systemd service configuration file"
@@ -953,23 +953,24 @@ function InstallXOProxy {
 
     PrepInstall
 
-    # check that xo-proxy is not running
-    if [[ $(runcmd_stdout "pgrep -f xo-proxy") ]]; then
-        echo
-        printprog "Shutting down xo-proxy"
-        runcmd "/bin/systemctl stop xo-proxy" || {
-            printfail "failed to stop service, exiting..."
-            exit 1
-        }
-        printok "Shutting down xo-proxy"
-    fi
-
     echo
     printinfo "xo-proxy build takes quite a while. Grab a cup of coffee and lay back"
     echo
     printprog "Running installation"
     runcmd "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn && yarn build"
     printok "Running installation"
+
+    # shutdown possibly running xo-server
+    if [[ $(runcmd_stdout "pgrep -f xo-proxy") ]]; then
+        echo
+        printprog "Shutting down running xo-proxy"
+        runcmd "/bin/systemctl stop xo-proxy" || {
+            printfail "failed to stop service, exiting..."
+            exit 1
+        }
+        printok "Shutting down running xo-proxy"
+        sleep 3
+    fi
 
     echo
     printinfo "Disabling license check in proxy to enable running it in XO from sources"
