@@ -1263,7 +1263,7 @@ function CheckOS {
         exit 1
     fi
 
-    if [[ "$OSNAME" == "CentOS" ]] && [[ "$OSVERSION" =~ ^(8|9)$ ]]; then
+    if [[ "$OSNAME" == "CentOS" ]] && [[ ! "$OSVERSION" =~ ^(8|9)$ ]]; then
         printfail "Only CentOS 8/9 supported"
         exit 1
     fi
