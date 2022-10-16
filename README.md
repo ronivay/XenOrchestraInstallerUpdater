@@ -36,6 +36,7 @@ First thing you need is a VM (or even a physical machine if you wish) where to i
 
 Supported Linux distributions and versions:
 
+- CentOS 9 Stream
 - CentOS 8 Stream
 - AlmaLinux 9
 - AlmaLinux 8

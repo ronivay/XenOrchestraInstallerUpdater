@@ -243,7 +243,7 @@ function InstallDependenciesRPM {
         echo
         printprog "Installing libvhdi-tools"
         if [[ "$INSTALL_REPOS" == "true" ]]; then
-            runcmd "rpm -ivh https://forensics.cert.org/cert-forensics-tools-release-el8.rpm"
+            runcmd "rpm -ivh https://forensics.cert.org/cert-forensics-tools-release-el${OSVERSION}.rpm"
             runcmd "sed -i 's/enabled=1/enabled=0/g' /etc/yum.repos.d/cert-forensics-tools.repo"
             runcmd "yum --enablerepo=forensics install -y libvhdi-tools"
         else
@@ -1263,8 +1263,8 @@ function CheckOS {
         exit 1
     fi
 
-    if [[ "$OSNAME" == "CentOS" ]] && [[ "$OSVERSION" != "8" ]]; then
-        printfail "Only CentOS 8 supported"
+    if [[ "$OSNAME" == "CentOS" ]] && [[ "$OSVERSION" =~ ^(8|9)$ ]]; then
+        printfail "Only CentOS 8/9 supported"
         exit 1
     fi
 
