@@ -219,7 +219,7 @@ Built and tested on XCP-ng 7.x
 
 ### Tests and VM image
 
-I run my own little implementation of automation consisting of ansible and virtual machines to test the installation on regular bases with CentOS 8 Stream, Ubuntu 20, Debian 11 and AlmaLinux 8. Test results are visible in badges on top of this readme.
+I run my own little implementation of automation consisting of ansible and virtual machines to test the installation on a regular basis with different operating systems. Test results are visible in badges on top of this readme.
 
 VM image is also built totally by me and distributed from webservers i maintain.
 
