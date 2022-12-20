@@ -661,8 +661,8 @@ function ApplyPatches {
 
 	trap ErrorHandling ERR INT
 
-	for patch in $(dirname $0)/patches/*.patch; do
-		runcmd "cat $(dirname $0)/patches/$(basename $patch) | (cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && git apply -)"
+	for patch in "$(dirname "$0")"/patches/*.patch; do
+		runcmd "cat $(dirname "$0")/patches/$(basename "$patch") | (cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && git apply -)"
 	done
 	echo
 	printok "Applying patches"
