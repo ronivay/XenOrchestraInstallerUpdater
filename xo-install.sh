@@ -657,15 +657,21 @@ function PrepInstall {
 
 function ApplyPatches {
 
-	set -euo pipefail
+    set -euo pipefail
 
-	trap ErrorHandling ERR INT
+    trap ErrorHandling ERR INT
 
-	for patch in "$(dirname "$0")"/patches/*.patch; do
-		runcmd "cat $(dirname "$0")/patches/$(basename "$patch") | (cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && git apply -)"
-	done
-	echo
-	printok "Applying patches"
+    if [[ "${APPLY_PATCHES:-}" != "true" ]]; then
+        echo
+        printinfo "No 3rd party patches to install"
+        return 0
+    fi
+
+    for patch in "$(dirname "$0")"/patches/*.patch; do
+        runcmd "cat $(dirname "$0")/patches/$(basename "$patch") | (cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && git apply -)"
+    done
+    echo
+    printok "Applying patches"
 
 }
 
