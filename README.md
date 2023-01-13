@@ -138,8 +138,7 @@ deb:
 - redis-server
 - libpng-dev
 - git
-- python-minimal
-- python2-minimal (Ubuntu 20/22 or Debian 11 only, replaces python-minimal)
+- python3-minimal
 - libvhdi-utils
 - lvm2
 - nfs-common
