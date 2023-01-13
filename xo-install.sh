@@ -204,9 +204,9 @@ function InstallDependenciesRPM {
 
     # install packages
     echo
-    printprog "Installing build dependencies, redis server, python, git, nfs-utils, cifs-utils, lvm2, ntfs-3g, libxml2"
+    printprog "Installing build dependencies, redis server, python3, git, nfs-utils, cifs-utils, lvm2, ntfs-3g, libxml2"
     runcmd "yum -y install gcc gcc-c++ make openssl-devel redis libpng-devel python3 git nfs-utils cifs-utils lvm2 ntfs-3g libxml2"
-    printok "Installing build dependencies, redis server, python, git, nfs-utils, cifs-utils, lvm2, ntfs-3g, libxml2"
+    printok "Installing build dependencies, redis server, python3, git, nfs-utils, cifs-utils, lvm2, ntfs-3g, libxml2"
 
     # only run automated node install if executable not found
     if [[ -z $(runcmd_stdout "command -v node") ]]; then
@@ -286,18 +286,11 @@ function InstallDependenciesDeb {
     runcmd "apt-get update"
     printok "Running apt-get update"
 
-    #determine which python package is needed. Ubuntu 20/Debian 11 require python2-minimal, others have python-minimal
-    if [[ "$OSNAME" =~ ^(Ubuntu|Debian)$ ]] && [[ "$OSVERSION" =~ ^(20|22|11)$ ]]; then
-        local PYTHON="python2-minimal"
-    else
-        local PYTHON="python-minimal"
-    fi
-
     # install packages
     echo
-    printprog "Installing build dependencies, redis server, python, git, libvhdi-utils, lvm2, nfs-common, cifs-utils, curl, ntfs-3g, libxml2-utils"
-    runcmd "apt-get install -y build-essential redis-server libpng-dev git libvhdi-utils $PYTHON lvm2 nfs-common cifs-utils curl ntfs-3g libxml2-utils"
-    printok "Installing build dependencies, redis server, python, git, libvhdi-utils, lvm2, nfs-common, cifs-utils, curl, ntfs-3g, libxml2-utils"
+    printprog "Installing build dependencies, redis server, python3-minimal, git, libvhdi-utils, lvm2, nfs-common, cifs-utils, curl, ntfs-3g, libxml2-utils"
+    runcmd "apt-get install -y build-essential redis-server libpng-dev git libvhdi-utils python3-minimal lvm2 nfs-common cifs-utils curl ntfs-3g libxml2-utils"
+    printok "Installing build dependencies, redis server, python3-minimal, git, libvhdi-utils, lvm2, nfs-common, cifs-utils, curl, ntfs-3g, libxml2-utils"
 
     # Install apt-transport-https and ca-certificates because of yarn https repo url
     echo
