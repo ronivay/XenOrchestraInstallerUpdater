@@ -44,12 +44,9 @@ Supported Linux distributions and versions:
 - Rocky Linux 8
 - Debian 11
 - Debian 10
-- Debian 9
-- Debian 8
 - Ubuntu 22.04
 - Ubuntu 20.04
 - Ubuntu 18.04
-- Ubuntu 16.04
 
 Only x86_64 architecture is supported. For all those raspberry pi users out there, check [container](https://hub.docker.com/r/ronivay/xen-orchestra) instead.
 

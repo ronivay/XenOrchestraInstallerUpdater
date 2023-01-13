@@ -1278,13 +1278,13 @@ function CheckOS {
         exit 1
     fi
 
-    if [[ "$OSNAME" == "Debian" ]] && [[ ! "$OSVERSION" =~ ^(8|9|10|11)$ ]]; then
-        printfail "Only Debian 8/9/10/11 supported"
+    if [[ "$OSNAME" == "Debian" ]] && [[ ! "$OSVERSION" =~ ^(10|11)$ ]]; then
+        printfail "Only Debian 10/11 supported"
         exit 1
     fi
 
-    if [[ "$OSNAME" == "Ubuntu" ]] && [[ ! "$OSVERSION" =~ ^(16|18|20|22)$ ]]; then
-        printfail "Only Ubuntu 16/18/20/22 supported"
+    if [[ "$OSNAME" == "Ubuntu" ]] && [[ ! "$OSVERSION" =~ ^(18|20|22)$ ]]; then
+        printfail "Only Ubuntu 18/20/22 supported"
         exit 1
     fi
 
