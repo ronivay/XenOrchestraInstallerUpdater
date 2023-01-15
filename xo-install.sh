@@ -816,6 +816,11 @@ function InstallXO {
     sleep 2
     printinfo "Symlinking fresh xo-web install/update to $INSTALLDIR/xo-web"
     runcmd "ln -sfn $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-web $INSTALLDIR/xo-web"
+    sleep 2
+    printinfo "Symlinking fresh xo-cli install/update to $INSTALLDIR/xo-cli"
+    runcmd "ln -sfn $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-cli $INSTALLDIR/xo-cli"
+    printinfo "Symlinking xo-cli script to /usr/local/bin/xo-cli"
+    runcmd "ln -sfn $INSTALLDIR/xo-cli/index.mjs /usr/local/bin/xo-cli"
 
     # if not running as root, xen orchestra startup might not be able to create data directory so we create it here just in case
     if [[ "$XOUSER" != "root" ]]; then
@@ -1192,6 +1197,8 @@ function RollBackInstallation {
                     runcmd "ln -sfn $INSTALLATION/packages/xo-server $INSTALLDIR/xo-server"
                     printinfo "Setting $INSTALLDIR/xo-web symlink to $INSTALLATION/packages/xo-web"
                     runcmd "ln -sfn $INSTALLATION/packages/xo-web $INSTALLDIR/xo-web"
+                    printinfo "Setting $INSTALLDIR/xo-cli symlink to $INSTALLATION/packages/xo-cli"
+                    runcmd "ln -sfn $INSTALLATION/packages/xo-cli $INSTALLDIR/xo-cli"
                     echo
                     printinfo "Replacing xo.server.service systemd configuration file"
                     runcmd "/bin/cp -f $INSTALLATION/packages/xo-server/xo-server.service /etc/systemd/system/xo-server.service"
