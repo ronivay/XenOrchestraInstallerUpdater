@@ -47,6 +47,7 @@ ACME_CA="${ACME_CA:-"letsencrypt/production"}"
 USESUDO="${USESUDO:-"false"}"
 GENSUDO="${GENSUDO:-"false"}"
 INSTALL_REPOS="${INSTALL_REPOS:-"true"}"
+SYSLOG_TARGET="${SYSLOG_TARGET:-""}"
 
 # set variables not changeable in configfile
 TIME=$(date +%Y%m%d%H%M)
@@ -801,6 +802,12 @@ function InstallXO {
             runcmd "sed -i \"s%#mountsDir.*%mountsDir = '$INSTALLDIR/mounts'%\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
             runcmd "mkdir -p $INSTALLDIR/mounts"
             runcmd "chown -R $XOUSER:$XOUSER $INSTALLDIR/mounts"
+        fi
+
+        if [[ -n "$SYSLOG_TARGET" ]]; then
+            printinfo "Enabling remote syslog in xo-server configuration file"
+            runcmd "sed -i \"s%#\[logs.transport.syslog\]%\[logs.transport.syslog\]%\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
+            runcmd "sed -i \"/^\[logs.transport.syslog.*/a target = '$SYSLOG_TARGET'\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
         fi
 
         printinfo "Activating modified configuration file"
