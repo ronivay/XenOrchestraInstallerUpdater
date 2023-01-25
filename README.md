@@ -120,6 +120,7 @@ rpm:
 - cifs-utils
 - lvm2
 - ntfs-3g
+- dmidecode
 - sudo (if set in xo-install.cfg)
 
 deb:
@@ -142,6 +143,7 @@ deb:
 - gnupg (debian 10/11)
 - software-properties-common (ubuntu)
 - ntfs-3g
+- dmidecode
 - sudo (if set in xo-install.cfg)
 ```
 
