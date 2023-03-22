@@ -623,7 +623,7 @@ function PrepInstall {
                 y)
                     :
                     ;;
-                n)
+                *)
                     printinfo "Cleaning up install directory: $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
                     runcmd "rm -rf $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
                     exit 0
