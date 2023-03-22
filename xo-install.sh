@@ -618,7 +618,6 @@ function PrepInstall {
         if [[ "$INTERACTIVE" == "true" ]]; then
             printinfo "No changes to $XO_SVC_DESC since previous install. Run update anyway?"
             read -r -p "[y/N]: " answer
-            answer="${answer:-n}"
             case "$answer" in
                 y)
                     :
@@ -1374,9 +1373,6 @@ function CheckMemory {
             y)
                 :
                 ;;
-            n)
-                exit 0
-                ;;
             *)
                 exit 0
                 ;;
@@ -1399,9 +1395,6 @@ function CheckDiskFree {
         case $answer in
             y)
                 :
-                ;;
-            n)
-                exit 0
                 ;;
             *)
                 exit 0
@@ -1507,9 +1500,6 @@ function StartUpScreen {
                                 printfail "failed to stop service, exiting..."
                                 exit 1
                             }
-                        ;;
-                    n)
-                        exit 0
                         ;;
                     *)
                         exit 0
