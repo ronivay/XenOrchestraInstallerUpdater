@@ -47,6 +47,7 @@ ACME_CA="${ACME_CA:-"letsencrypt/production"}"
 USESUDO="${USESUDO:-"false"}"
 GENSUDO="${GENSUDO:-"false"}"
 INSTALL_REPOS="${INSTALL_REPOS:-"true"}"
+SYSLOG_TARGET="${SYSLOG_TARGET:-""}"
 
 # set variables not changeable in configfile
 TIME=$(date +%Y%m%d%H%M)
@@ -204,9 +205,9 @@ function InstallDependenciesRPM {
 
     # install packages
     echo
-    printprog "Installing build dependencies, redis server, python3, git, nfs-utils, cifs-utils, lvm2, ntfs-3g"
-    runcmd "yum -y install gcc gcc-c++ make openssl-devel redis libpng-devel python3 git nfs-utils cifs-utils lvm2 ntfs-3g"
-    printok "Installing build dependencies, redis server, python3, git, nfs-utils, cifs-utils, lvm2, ntfs-3g"
+    printprog "Installing build dependencies, redis server, python3, git, nfs-utils, cifs-utils, lvm2, ntfs-3g, dmidecode"
+    runcmd "yum -y install gcc gcc-c++ make openssl-devel redis libpng-devel python3 git nfs-utils cifs-utils lvm2 ntfs-3g dmidecode"
+    printok "Installing build dependencies, redis server, python3, git, nfs-utils, cifs-utils, lvm2, ntfs-3g, dmidecode"
 
     # only run automated node install if executable not found
     if [[ -z $(runcmd_stdout "command -v node") ]]; then
@@ -288,9 +289,9 @@ function InstallDependenciesDeb {
 
     # install packages
     echo
-    printprog "Installing build dependencies, redis server, python3-minimal, git, libvhdi-utils, lvm2, nfs-common, cifs-utils, curl, ntfs-3g"
-    runcmd "apt-get install -y build-essential redis-server libpng-dev git libvhdi-utils python3-minimal lvm2 nfs-common cifs-utils curl ntfs-3g"
-    printok "Installing build dependencies, redis server, python3-minimal, git, libvhdi-utils, lvm2, nfs-common, cifs-utils, curl, ntfs-3g"
+    printprog "Installing build dependencies, redis server, python3-minimal, git, libvhdi-utils, lvm2, nfs-common, cifs-utils, curl, ntfs-3g, dmidecode"
+    runcmd "apt-get install -y build-essential redis-server libpng-dev git libvhdi-utils python3-minimal lvm2 nfs-common cifs-utils curl ntfs-3g dmidecode"
+    printok "Installing build dependencies, redis server, python3-minimal, git, libvhdi-utils, lvm2, nfs-common, cifs-utils, curl, ntfs-3g, dmidecode"
 
     # Install apt-transport-https and ca-certificates because of yarn https repo url
     echo
@@ -617,12 +618,11 @@ function PrepInstall {
         if [[ "$INTERACTIVE" == "true" ]]; then
             printinfo "No changes to $XO_SVC_DESC since previous install. Run update anyway?"
             read -r -p "[y/N]: " answer
-            answer="${answer:-n}"
             case "$answer" in
                 y)
                     :
                     ;;
-                n)
+                *)
                     printinfo "Cleaning up install directory: $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
                     runcmd "rm -rf $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
                     exit 0
@@ -824,6 +824,12 @@ function InstallXO {
             runcmd "sed -i \"s%#mountsDir.*%mountsDir = '$INSTALLDIR/mounts'%\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
             runcmd "mkdir -p $INSTALLDIR/mounts"
             runcmd "chown -R $XOUSER:$XOUSER $INSTALLDIR/mounts"
+        fi
+
+        if [[ -n "$SYSLOG_TARGET" ]]; then
+            printinfo "Enabling remote syslog in xo-server configuration file"
+            runcmd "sed -i \"s%#\[logs.transport.syslog\]%\[logs.transport.syslog\]%\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
+            runcmd "sed -i \"/^\[logs.transport.syslog.*/a target = '$SYSLOG_TARGET'\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
         fi
 
         printinfo "Activating modified configuration file"
@@ -1390,9 +1396,6 @@ function CheckMemory {
             y)
                 :
                 ;;
-            n)
-                exit 0
-                ;;
             *)
                 exit 0
                 ;;
@@ -1415,9 +1418,6 @@ function CheckDiskFree {
         case $answer in
             y)
                 :
-                ;;
-            n)
-                exit 0
                 ;;
             *)
                 exit 0
@@ -1523,9 +1523,6 @@ function StartUpScreen {
                                 printfail "failed to stop service, exiting..."
                                 exit 1
                             }
-                        ;;
-                    n)
-                        exit 0
                         ;;
                     *)
                         exit 0
