@@ -88,13 +88,20 @@ function CheckUser {
 
 }
 
-# Custom script changes
+# Custom source changes
 function CustomChanges {
     echo
     printprog "Disabling open-source warning and banner"
     runcmd "/usr/bin/sed -i \"s/dismissedSourceBanner: Boolean(cookies.get('dismissedSourceBanner'))/dismissedSourceBanner: true/\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-web/src/xo-app/index.js"
     runcmd "/usr/bin/sed -i \"s/this.displayOpenSourceDisclaimer()/console.log('Disclaimer disabled')/\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-web/src/xo-app/index.js"
     printok "Disabling open-source warning and banner"
+}
+
+function CleanupYarnCache {
+    echo
+    printprog "Cleaning up yarn cache"
+    runcmd "rm -rf /usr/local/share/.cache/yarn/*"
+    printok "Cleaning up yarn cache"
 }
 
 # script self upgrade
@@ -548,6 +555,9 @@ function PrepInstall {
     set -euo pipefail
 
     trap ErrorHandling ERR INT
+    
+    # Clean up the yarn cache before install
+    CleanupYarnCache
 
     if [[ "$XO_SVC" == "xo-server" ]]; then
         local XO_SVC_DESC="Xen Orchestra"
@@ -691,7 +701,7 @@ function InstallXO {
     # Fetch 3rd party plugins source code
     InstallAdditionalXOPlugins
 
-    # Custom Changes
+    # Custom source changes before build
     CustomChanges
 
     echo
