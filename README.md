@@ -36,18 +36,17 @@ First thing you need is a VM (or even a physical machine if you wish) where to i
 
 Supported Linux distributions and versions:
 
+- CentOS 9 Stream
 - CentOS 8 Stream
 - AlmaLinux 9
 - AlmaLinux 8
+- Rocky Linux 9
 - Rocky Linux 8
 - Debian 11
 - Debian 10
-- Debian 9
-- Debian 8
 - Ubuntu 22.04
 - Ubuntu 20.04
 - Ubuntu 18.04
-- Ubuntu 16.04
 
 Only x86_64 architecture is supported. For all those raspberry pi users out there, check [container](https://hub.docker.com/r/ronivay/xen-orchestra) instead.
 
@@ -121,7 +120,7 @@ rpm:
 - cifs-utils
 - lvm2
 - ntfs-3g
-- libxml2
+- dmidecode
 - sudo (if set in xo-install.cfg)
 
 deb:
@@ -136,8 +135,7 @@ deb:
 - redis-server
 - libpng-dev
 - git
-- python-minimal
-- python2-minimal (Ubuntu 20/22 or Debian 11 only, replaces python-minimal)
+- python3-minimal
 - libvhdi-utils
 - lvm2
 - nfs-common
@@ -145,7 +143,7 @@ deb:
 - gnupg (debian 10/11)
 - software-properties-common (ubuntu)
 - ntfs-3g
-- libxml2-utils
+- dmidecode
 - sudo (if set in xo-install.cfg)
 ```
 
@@ -217,7 +215,7 @@ Built and tested on XCP-ng 7.x
 
 ### Tests and VM image
 
-I run my own little implementation of automation consisting of ansible and virtual machines to test the installation on regular bases with CentOS 8 Stream, Ubuntu 20, Debian 11 and AlmaLinux 8. Test results are visible in badges on top of this readme.
+I run my own little implementation of automation consisting of ansible and virtual machines to test the installation on a regular basis with different operating systems. Test results are visible in badges on top of this readme.
 
 VM image is also built totally by me and distributed from webservers i maintain.
 

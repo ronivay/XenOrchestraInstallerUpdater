@@ -41,15 +41,19 @@ PATH_TO_HTTPS_CERT="${PATH_TO_HTTPS_CERT:-""}"
 PATH_TO_HTTPS_KEY="${PATH_TO_HTTPS_KEY:-""}"
 PATH_TO_HOST_CA="${PATH_TO_HOST_CA:-""}"
 AUTOCERT="${AUTOCERT:-"false"}"
+ACME="${ACME:-"false"}"
+ACME_EMAIL="${ACME_EMAIL:-""}"
+ACME_CA="${ACME_CA:-"letsencrypt/production"}"
 USESUDO="${USESUDO:-"false"}"
 GENSUDO="${GENSUDO:-"false"}"
 INSTALL_REPOS="${INSTALL_REPOS:-"true"}"
+SYSLOG_TARGET="${SYSLOG_TARGET:-""}"
 
 # set variables not changeable in configfile
 TIME=$(date +%Y%m%d%H%M)
 LOGTIME=$(date "+%Y-%m-%d %H:%M:%S")
 LOGFILE="${LOGPATH}/xo-install.log-$TIME"
-NODEVERSION="16"
+NODEVERSION="18"
 FORCE="false"
 INTERACTIVE="false"
 SUDOERSFILE="/etc/sudoers.d/xo-server-$XOUSER"
@@ -67,14 +71,6 @@ OK="[${COLOR_GREEN}ok${COLOR_N}]"
 FAIL="[${COLOR_RED}fail${COLOR_N}]"
 INFO="[${COLOR_BLUE}info${COLOR_N}]"
 PROGRESS="[${COLOR_BLUE}..${COLOR_N}]"
-
-# Protocol to use for webserver. If both of the X.509 certificate paths are defined,
-# then assume that we want to enable HTTPS for the server.
-if [[ -n "$PATH_TO_HTTPS_CERT" ]] && [[ -n "$PATH_TO_HTTPS_KEY" ]]; then
-    HTTPS=true
-else
-    HTTPS=false
-fi
 
 # create logpath if doesn't exist
 if [[ ! -d "$LOGPATH" ]]; then
@@ -218,9 +214,9 @@ function InstallDependenciesRPM {
 
     # install packages
     echo
-    printprog "Installing build dependencies, redis server, python, git, nfs-utils, cifs-utils, lvm2, ntfs-3g, libxml2"
-    runcmd "yum -y install gcc gcc-c++ make openssl-devel redis libpng-devel python3 git nfs-utils cifs-utils lvm2 ntfs-3g libxml2"
-    printok "Installing build dependencies, redis server, python, git, nfs-utils, cifs-utils, lvm2, ntfs-3g, libxml2"
+    printprog "Installing build dependencies, redis server, python3, git, nfs-utils, cifs-utils, lvm2, ntfs-3g, dmidecode"
+    runcmd "yum -y install gcc gcc-c++ make openssl-devel redis libpng-devel python3 git nfs-utils cifs-utils lvm2 ntfs-3g dmidecode"
+    printok "Installing build dependencies, redis server, python3, git, nfs-utils, cifs-utils, lvm2, ntfs-3g, dmidecode"
 
     # only run automated node install if executable not found
     if [[ -z $(runcmd_stdout "command -v node") ]]; then
@@ -257,7 +253,7 @@ function InstallDependenciesRPM {
         echo
         printprog "Installing libvhdi-tools"
         if [[ "$INSTALL_REPOS" == "true" ]]; then
-            runcmd "rpm -ivh https://forensics.cert.org/cert-forensics-tools-release-el8.rpm"
+            runcmd "rpm -ivh https://forensics.cert.org/cert-forensics-tools-release-el${OSVERSION}.rpm"
             runcmd "sed -i 's/enabled=1/enabled=0/g' /etc/yum.repos.d/cert-forensics-tools.repo"
             runcmd "yum --enablerepo=forensics install -y libvhdi-tools"
         else
@@ -300,18 +296,11 @@ function InstallDependenciesDeb {
     runcmd "apt-get update"
     printok "Running apt-get update"
 
-    #determine which python package is needed. Ubuntu 20/Debian 11 require python2-minimal, others have python-minimal
-    if [[ "$OSNAME" =~ ^(Ubuntu|Debian)$ ]] && [[ "$OSVERSION" =~ ^(20|22|11)$ ]]; then
-        local PYTHON="python2-minimal"
-    else
-        local PYTHON="python-minimal"
-    fi
-
     # install packages
     echo
-    printprog "Installing build dependencies, redis server, python, git, libvhdi-utils, lvm2, nfs-common, cifs-utils, curl, ntfs-3g, libxml2-utils"
-    runcmd "apt-get install -y build-essential redis-server libpng-dev git libvhdi-utils $PYTHON lvm2 nfs-common cifs-utils curl ntfs-3g libxml2-utils"
-    printok "Installing build dependencies, redis server, python, git, libvhdi-utils, lvm2, nfs-common, cifs-utils, curl, ntfs-3g, libxml2-utils"
+    printprog "Installing build dependencies, redis server, python3-minimal, git, libvhdi-utils, lvm2, nfs-common, cifs-utils, curl, ntfs-3g, dmidecode"
+    runcmd "apt-get install -y build-essential redis-server libpng-dev git libvhdi-utils python3-minimal lvm2 nfs-common cifs-utils curl ntfs-3g dmidecode"
+    printok "Installing build dependencies, redis server, python3-minimal, git, libvhdi-utils, lvm2, nfs-common, cifs-utils, curl, ntfs-3g, dmidecode"
 
     # Install apt-transport-https and ca-certificates because of yarn https repo url
     echo
@@ -638,12 +627,11 @@ function PrepInstall {
         if [[ "$INTERACTIVE" == "true" ]]; then
             printinfo "No changes to $XO_SVC_DESC since previous install. Run update anyway?"
             read -r -p "[y/N]: " answer
-            answer="${answer:-n}"
             case "$answer" in
                 y)
                     :
                     ;;
-                n)
+                *)
                     printinfo "Cleaning up install directory: $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
                     runcmd "rm -rf $INSTALLDIR/xo-builds/xen-orchestra-$TIME"
                     exit 0
@@ -700,18 +688,6 @@ function InstallXO {
 
     PrepInstall
 
-    # Now that we know we're going to be building a new xen-orchestra, make
-    # sure there's no already-running xo-server process.
-    if [[ $(runcmd_stdout "pgrep -f xo-server") ]]; then
-        echo
-        printprog "Shutting down xo-server"
-        runcmd "/bin/systemctl stop xo-server" || {
-            printfail "failed to stop service, exiting..."
-            exit 1
-        }
-        printok "Shutting down xo-server"
-    fi
-
     # Fetch 3rd party plugins source code
     InstallAdditionalXOPlugins
 
@@ -727,6 +703,18 @@ function InstallXO {
 
     # Install plugins (takes care of 3rd party plugins as well)
     InstallXOPlugins
+
+    # shutdown possibly running xo-server
+    if [[ $(runcmd_stdout "pgrep -f xo-server") ]]; then
+        echo
+        printprog "Shutting down running xo-server"
+        runcmd "/bin/systemctl stop xo-server" || {
+            printfail "failed to stop service, exiting..."
+            exit 1
+        }
+        printok "Shutting down running xo-server"
+        sleep 3
+    fi
 
     echo
     printinfo "Fixing binary path in systemd service configuration file"
@@ -784,10 +772,10 @@ function InstallXO {
 
         echo
         printinfo "Fixing relative path to xo-web installation in xo-server configuration file"
-
         # shellcheck disable=SC1117
         runcmd "sed -i \"s%#'/any/url' = '/path/to/directory'%'/' = '$INSTALLDIR/xo-web/dist/'%\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
-        sleep 2
+        printinfo "Changing redis connection address in xo-server configuration file"
+        runcmd "sed -i \"s%#uri = 'redis://redis.company.lan/42'%uri = 'redis://127.0.0.1:6379/0'%\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
 
         if [[ "$PORT" != "80" ]]; then
             printinfo "Changing port in xo-server configuration file"
@@ -806,6 +794,16 @@ function InstallXO {
                 # shellcheck disable=SC1117
                 runcmd "sed -i \"s%# autoCert = false%autoCert = true%\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
             fi
+            if [[ "$ACME" == "true" ]]; then
+                runcmd "sed -i \"s%# \[\[http.listen\]\]%\[\[http.listen\]\]%\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
+                runcmd "sed -i \"s%# port = 443%port = 443%\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
+                runcmd "sed -i \"s%^# redirectToHttps = true%redirectToHttps = true%\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
+                runcmd "sed -i \"/^autoCert =.*/a acmeCa = '$ACME_CA'\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
+                runcmd "sed -i \"/^autoCert = .*/a acmeDomain = '$ACME_DOMAIN'\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
+                if [[ -n "$ACME_EMAIL" ]]; then
+                    runcmd "sed -i \"/^autoCert =.*/a acmeEmail = '$ACME_EMAIL'\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
+                fi
+            fi
             sleep 2
         fi
         if [[ "$USESUDO" == "true" ]] && [[ "$XOUSER" != "root" ]]; then
@@ -815,6 +813,12 @@ function InstallXO {
             runcmd "sed -i \"s%#mountsDir.*%mountsDir = '$INSTALLDIR/mounts'%\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
             runcmd "mkdir -p $INSTALLDIR/mounts"
             runcmd "chown -R $XOUSER:$XOUSER $INSTALLDIR/mounts"
+        fi
+
+        if [[ -n "$SYSLOG_TARGET" ]]; then
+            printinfo "Enabling remote syslog in xo-server configuration file"
+            runcmd "sed -i \"s%#\[logs.transport.syslog\]%\[logs.transport.syslog\]%\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
+            runcmd "sed -i \"/^\[logs.transport.syslog.*/a target = '$SYSLOG_TARGET'\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
         fi
 
         printinfo "Activating modified configuration file"
@@ -830,6 +834,11 @@ function InstallXO {
     sleep 2
     printinfo "Symlinking fresh xo-web install/update to $INSTALLDIR/xo-web"
     runcmd "ln -sfn $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-web $INSTALLDIR/xo-web"
+    sleep 2
+    printinfo "Symlinking fresh xo-cli install/update to $INSTALLDIR/xo-cli"
+    runcmd "ln -sfn $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-cli $INSTALLDIR/xo-cli"
+    printinfo "Symlinking xo-cli script to /usr/local/bin/xo-cli"
+    runcmd "ln -sfn $INSTALLDIR/xo-cli/index.mjs /usr/local/bin/xo-cli"
 
     # if not running as root, xen orchestra startup might not be able to create data directory so we create it here just in case
     if [[ "$XOUSER" != "root" ]]; then
@@ -959,23 +968,24 @@ function InstallXOProxy {
 
     PrepInstall
 
-    # check that xo-proxy is not running
-    if [[ $(runcmd_stdout "pgrep -f xo-proxy") ]]; then
-        echo
-        printprog "Shutting down xo-proxy"
-        runcmd "/bin/systemctl stop xo-proxy" || {
-            printfail "failed to stop service, exiting..."
-            exit 1
-        }
-        printok "Shutting down xo-proxy"
-    fi
-
     echo
     printinfo "xo-proxy build takes quite a while. Grab a cup of coffee and lay back"
     echo
     printprog "Running installation"
     runcmd "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn && yarn build"
     printok "Running installation"
+
+    # shutdown possibly running xo-server
+    if [[ $(runcmd_stdout "pgrep -f xo-proxy") ]]; then
+        echo
+        printprog "Shutting down running xo-proxy"
+        runcmd "/bin/systemctl stop xo-proxy" || {
+            printfail "failed to stop service, exiting..."
+            exit 1
+        }
+        printok "Shutting down running xo-proxy"
+        sleep 3
+    fi
 
     echo
     printinfo "Disabling license check in proxy to enable running it in XO from sources"
@@ -1204,6 +1214,8 @@ function RollBackInstallation {
                     runcmd "ln -sfn $INSTALLATION/packages/xo-server $INSTALLDIR/xo-server"
                     printinfo "Setting $INSTALLDIR/xo-web symlink to $INSTALLATION/packages/xo-web"
                     runcmd "ln -sfn $INSTALLATION/packages/xo-web $INSTALLDIR/xo-web"
+                    printinfo "Setting $INSTALLDIR/xo-cli symlink to $INSTALLATION/packages/xo-cli"
+                    runcmd "ln -sfn $INSTALLATION/packages/xo-cli $INSTALLDIR/xo-cli"
                     echo
                     printinfo "Replacing xo.server.service systemd configuration file"
                     runcmd "/bin/cp -f $INSTALLATION/packages/xo-server/xo-server.service /etc/systemd/system/xo-server.service"
@@ -1268,13 +1280,13 @@ function CheckOS {
         exit 1
     fi
 
-    if [[ "$OSNAME" == "CentOS" ]] && [[ "$OSVERSION" != "8" ]]; then
-        printfail "Only CentOS 8 supported"
+    if [[ "$OSNAME" == "CentOS" ]] && [[ ! "$OSVERSION" =~ ^(8|9)$ ]]; then
+        printfail "Only CentOS 8/9 supported"
         exit 1
     fi
 
-    if [[ "$OSNAME" == "Rocky" ]] && [[ "$OSVERSION" != "8" ]]; then
-        printfail "Only Rocky Linux 8 supported"
+    if [[ "$OSNAME" == "Rocky" ]] && [[ ! "$OSVERSION" =~ ^(8|9)$ ]]; then
+        printfail "Only Rocky Linux 8/9 supported"
         exit 1
     fi
 
@@ -1283,13 +1295,13 @@ function CheckOS {
         exit 1
     fi
 
-    if [[ "$OSNAME" == "Debian" ]] && [[ ! "$OSVERSION" =~ ^(8|9|10|11)$ ]]; then
-        printfail "Only Debian 8/9/10/11 supported"
+    if [[ "$OSNAME" == "Debian" ]] && [[ ! "$OSVERSION" =~ ^(10|11)$ ]]; then
+        printfail "Only Debian 10/11 supported"
         exit 1
     fi
 
-    if [[ "$OSNAME" == "Ubuntu" ]] && [[ ! "$OSVERSION" =~ ^(16|18|20|22)$ ]]; then
-        printfail "Only Ubuntu 16/18/20/22 supported"
+    if [[ "$OSNAME" == "Ubuntu" ]] && [[ ! "$OSVERSION" =~ ^(18|20|22)$ ]]; then
+        printfail "Only Ubuntu 18/20/22 supported"
         exit 1
     fi
 
@@ -1372,9 +1384,6 @@ function CheckMemory {
             y)
                 :
                 ;;
-            n)
-                exit 0
-                ;;
             *)
                 exit 0
                 ;;
@@ -1397,9 +1406,6 @@ function CheckDiskFree {
         case $answer in
             y)
                 :
-                ;;
-            n)
-                exit 0
                 ;;
             *)
                 exit 0
@@ -1506,9 +1512,6 @@ function StartUpScreen {
                                 exit 1
                             }
                         ;;
-                    n)
-                        exit 0
-                        ;;
                     *)
                         exit 0
                         ;;
@@ -1548,6 +1551,27 @@ function StartUpScreen {
     esac
 
 }
+
+# Protocol to use for webserver. If both of the X.509 certificate paths are defined,
+# then assume that we want to enable HTTPS for the server.
+if [[ -n "$PATH_TO_HTTPS_CERT" ]] && [[ -n "$PATH_TO_HTTPS_KEY" ]]; then
+    HTTPS=true
+else
+    HTTPS=false
+fi
+
+# Override port to 80, set https true and autocert to true if letsencrypt
+if [[ "$ACME" == "true" ]]; then
+    if [[ -z "$ACME_DOMAIN" ]]; then
+        printfail "ACME_DOMAIN needs to be set when using ACME"
+        exit 1
+    fi
+    PORT="80"
+    HTTPS="true"
+    AUTOCERT="true"
+    PATH_TO_HTTPS_CERT="${PATH_TO_HTTPS_CERT:-"./certificate.pem"}"
+    PATH_TO_HTTPS_KEY="${PATH_TO_HTTPS_KEY:-"./key.pem"}"
+fi
 
 # if no arguments given, we assume interactive mode.
 # set here because some of the following checks either prompt user input or not.
