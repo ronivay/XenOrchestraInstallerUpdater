@@ -1289,8 +1289,8 @@ function CheckOS {
         exit 1
     fi
 
-    if [[ "$OSNAME" == "Ubuntu" ]] && [[ ! "$OSVERSION" =~ ^(18|20|22)$ ]]; then
-        printfail "Only Ubuntu 18/20/22 supported"
+    if [[ "$OSNAME" == "Ubuntu" ]] && [[ ! "$OSVERSION" =~ ^(20|22)$ ]]; then
+        printfail "Only Ubuntu 20/22 supported"
         exit 1
     fi
 
