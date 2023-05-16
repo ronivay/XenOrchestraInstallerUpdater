@@ -524,7 +524,7 @@ function InstallSudo {
         echo
         printinfo "Generating sudoers configuration to $SUDOERSFILE"
         TMPSUDOERS="$(mktemp /tmp/xo-sudoers.XXXXXX)"
-        runcmd "echo '$XOUSER ALL=(root) NOPASSWD: /bin/mount, /bin/umount' > '$TMPSUDOERS'"
+        runcmd "echo '$XOUSER ALL=(root) NOPASSWD: /bin/mount, /bin/umount, /bin/findmnt' > '$TMPSUDOERS'"
         if runcmd "visudo -cf $TMPSUDOERS"; then
             runcmd "mv $TMPSUDOERS $SUDOERSFILE"
         else
