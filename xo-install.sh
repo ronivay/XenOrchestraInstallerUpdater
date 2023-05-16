@@ -48,6 +48,7 @@ USESUDO="${USESUDO:-"false"}"
 GENSUDO="${GENSUDO:-"false"}"
 INSTALL_REPOS="${INSTALL_REPOS:-"true"}"
 SYSLOG_TARGET="${SYSLOG_TARGET:-""}"
+YARN_CACHE_CLEANUP="${YARN_CACHE_CLEANUP:-"false"}"
 
 # set variables not changeable in configfile
 TIME=$(date +%Y%m%d%H%M)
@@ -949,6 +950,14 @@ function UpdateXO {
     done
     printok "Removing old inactive installations after update. Leaving $PRESERVE latest"
     echo
+
+    # clear yarn cache if defined in configuration
+    if [[ "$YARN_CACHE_CLEANUP" == "true" ]]; then
+        printprog "Cleaning yarn cache"
+        runcmd "yarn cache clean"
+        printok "Cleaning yarn cache"
+        echo
+    fi
 }
 
 function InstallXOProxy {
