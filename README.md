@@ -42,6 +42,7 @@ Supported Linux distributions and versions:
 - AlmaLinux 8
 - Rocky Linux 9
 - Rocky Linux 8
+- Debian 12
 - Debian 11
 - Debian 10
 - Ubuntu 22.04
