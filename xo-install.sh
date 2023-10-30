@@ -801,7 +801,7 @@ function InstallXO {
             printinfo "Changing default mountsDir in xo-server configuration file"
             runcmd "sed -i \"s%#mountsDir.*%mountsDir = '$INSTALLDIR/mounts'%\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
             runcmd "mkdir -p $INSTALLDIR/mounts"
-            runcmd "chown -R $XOUSER:$XOUSER $INSTALLDIR/mounts"
+            runcmd "chown $XOUSER:$XOUSER $INSTALLDIR/mounts"
         fi
 
         if [[ -n "$SYSLOG_TARGET" ]]; then
