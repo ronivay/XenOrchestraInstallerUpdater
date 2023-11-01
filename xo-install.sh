@@ -49,6 +49,7 @@ GENSUDO="${GENSUDO:-"false"}"
 INSTALL_REPOS="${INSTALL_REPOS:-"true"}"
 SYSLOG_TARGET="${SYSLOG_TARGET:-""}"
 YARN_CACHE_CLEANUP="${YARN_CACHE_CLEANUP:-"false"}"
+YARN_NETWORK_TIMEOUT="${YARN_NETWORK_TIMEOUT:-"300000"}"
 
 # set variables not changeable in configfile
 TIME=$(date +%Y%m%d%H%M)
@@ -707,7 +708,7 @@ function InstallXO {
     printinfo "xo-server and xo-web build takes quite a while. Grab a cup of coffee and lay back"
     echo
     printprog "Running installation"
-    runcmd "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn && yarn build"
+    runcmd "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn --network-timeout ${YARN_NETWORK_TIMEOUT} && yarn --network-timeout ${YARN_NETWORK_TIMEOUT} build"
     printok "Running installation"
 
     # Install plugins (takes care of 3rd party plugins as well)
@@ -990,7 +991,7 @@ function InstallXOProxy {
     printinfo "xo-proxy build takes quite a while. Grab a cup of coffee and lay back"
     echo
     printprog "Running installation"
-    runcmd "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn && yarn build"
+    runcmd "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn --network-timeout ${YARN_NETWORK_TIMEOUT} && yarn --network-timeout ${YARN_NETWORK_TIMEOUT} build"
     printok "Running installation"
 
     # shutdown possibly running xo-server
