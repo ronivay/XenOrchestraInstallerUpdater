@@ -222,3 +222,9 @@ VM image is also built totally by me and distributed from webservers i maintain.
 ### Contributing
 
 Pull requests and issues (either real issues or just suggestions) are more than welcome. Note that i do not wish to make any modifications to Xen Orchestra source code as part of this script.
+
+### Support
+
+If you find this project useful and want to support the development by covering some of the hosting costs that come from maintaining an XCP-ng server in a data center, use paypal donation link below.
+
+[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/donate/?business=LCX7UV7LUGNY6&no_recurring=0&currency_code=EUR)
