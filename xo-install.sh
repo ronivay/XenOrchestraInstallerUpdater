@@ -219,9 +219,6 @@ function InstallDependenciesRPM {
         # only install nodejs repo if user allows it to be installed
         if [[ "$INSTALL_REPOS" == "true" ]]; then
             runcmd "curl -s -L https://rpm.nodesource.com/setup_${NODEVERSION}.x | bash -"
-            # enable these once https://github.com/ronivay/XenOrchestraInstallerUpdater/issues/200 is resolved
-            #runcmd "yum install https://rpm.nodesource.com/pub_${NODEVERSION}.x/nodistro/repo/nodesource-release-nodistro-1.noarch.rpm -y"
-            #runcmd "yum install nodejs -y --setopt=nodesource-nodejs.module_hotfixes=1"
         fi
 
         runcmd "yum install -y nodejs"
@@ -326,10 +323,7 @@ function InstallDependenciesDeb {
 
         # only install nodejs repo if user allows it to be installed
         if [[ "$INSTALL_REPOS" == "true" ]]; then
-            runcmd "mkdir -p /usr/share/keyrings"
-            runcmd "curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --batch --yes --dearmor -o /usr/share/keyrings/nodesource.gpg"
-            runcmd "echo \"deb [signed-by=/usr/share/keyrings/nodesource.gpg] https://deb.nodesource.com/node_${NODEVERSION}.x nodistro main\" > /etc/apt/sources.list.d/nodesource.list"
-            runcmd "apt-get update"
+            runcmd "curl -sL https://deb.nodesource.com/setup_${NODEVERSION}.x | bash -"
         fi
 
         runcmd "apt-get install -y nodejs"
@@ -378,21 +372,6 @@ function UpdateNodeYarn {
         return 0
     fi
 
-    if [[ "$INSTALL_REPOS" == "true" ]]; then
-        printinfo "Installing nodesource repository"
-        # enable these once https://github.com/ronivay/XenOrchestraInstallerUpdater/issues/200 is resolved
-        #if [ "$PKG_FORMAT" == "rpm" ]; then
-        #    runcmd "yum install https://rpm.nodesource.com/pub_${NODEVERSION}.x/nodistro/repo/nodesource-release-nodistro-1.noarch.rpm -y"
-        #    runcmd "yum clean all"
-        #fi
-        if [ "$PKG_FORMAT" == "deb" ]; then
-            runcmd "mkdir -p /usr/share/keyrings"
-            runcmd "curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --batch --yes --dearmor -o /usr/share/keyrings/nodesource.gpg"
-            runcmd "echo \"deb [signed-by=/usr/share/keyrings/nodesource.gpg] https://deb.nodesource.com/node_${NODEVERSION}.x nodistro main\" > /etc/apt/sources.list.d/nodesource.list"
-            runcmd "apt-get update"
-        fi
-    fi
-
     echo
     printinfo "Checking current node.js version"
     local NODEV=$(runcmd_stdout "node -v 2>/dev/null| grep -Eo '[0-9.]+' | cut -d'.' -f1")
@@ -404,10 +383,9 @@ function UpdateNodeYarn {
             echo
             printprog "node.js version is $NODEV, upgrading to ${NODEVERSION}.x"
 
-            # remove following two lines once https://github.com/ronivay/XenOrchestraInstallerUpdater/issues/200 is resolved
             runcmd "curl -sL https://rpm.nodesource.com/setup_${NODEVERSION}.x | bash -"
-            runcmd "yum clean all"
 
+            runcmd "yum clean all"
             runcmd "yum install -y nodejs"
             printok "node.js version is $NODEV, upgrading to ${NODEVERSION}.x"
         else
@@ -427,6 +405,8 @@ function UpdateNodeYarn {
         if [[ -n "$NODEV" ]] && [[ "$NODEV" -lt "${NODEVERSION}" ]] && [[ "$INSTALL_REPOS" == "true" ]]; then
             echo
             printprog "node.js version is $NODEV, upgrading to ${NODEVERSION}.x"
+
+            runcmd "curl -sL https://deb.nodesource.com/setup_${NODEVERSION}.x | bash -"
 
             runcmd "apt-get install -y nodejs"
             printok "node.js version is $NODEV, upgrading to ${NODEVERSION}.x"
