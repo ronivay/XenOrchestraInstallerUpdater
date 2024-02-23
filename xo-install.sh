@@ -379,16 +379,22 @@ function UpdateNodeYarn {
     if [ "$PKG_FORMAT" == "rpm" ]; then
         # update node version if needed.
         # skip update if repository install is disabled as we can't quarantee this actually updates anything
-        if [[ -n "$NODEV" ]] && [[ "$NODEV" -lt "${NODEVERSION}" ]] && [[ "$INSTALL_REPOS" == "true" ]]; then
+        if [[ "${NODEV:-0}" -lt "${NODEVERSION}" ]] && [[ "$INSTALL_REPOS" == "true" ]]; then
             echo
-            printprog "node.js version is $NODEV, upgrading to ${NODEVERSION}.x"
+            printprog "node.js version is ${NODEV:-"not installed"}, upgrading to ${NODEVERSION}.x"
 
             runcmd "curl -sL https://rpm.nodesource.com/setup_${NODEVERSION}.x | bash -"
 
             runcmd "yum clean all"
             runcmd "yum install -y nodejs"
-            printok "node.js version is $NODEV, upgrading to ${NODEVERSION}.x"
+            printok "node.js version is ${NODEV:-"not installed"}, upgrading to ${NODEVERSION}.x"
         else
+            if [[ -z "$NODEV" ]]; then
+                echo
+                printfail "node.js not installed and INSTALL_REPOS set to false, can't continue"
+                exit 1
+            fi
+
             if [[ "$TASK" == "Update" ]]; then
                 echo
                 printprog "node.js version already on $NODEV, checking updates"
@@ -402,15 +408,20 @@ function UpdateNodeYarn {
     fi
 
     if [ "$PKG_FORMAT" == "deb" ]; then
-        if [[ -n "$NODEV" ]] && [[ "$NODEV" -lt "${NODEVERSION}" ]] && [[ "$INSTALL_REPOS" == "true" ]]; then
+        if [[ "${NODEV:-0}" -lt "${NODEVERSION}" ]] && [[ "$INSTALL_REPOS" == "true" ]]; then
             echo
-            printprog "node.js version is $NODEV, upgrading to ${NODEVERSION}.x"
+            printprog "node.js version is ${NODEV:-"not installed"}, upgrading to ${NODEVERSION}.x"
 
             runcmd "curl -sL https://deb.nodesource.com/setup_${NODEVERSION}.x | bash -"
 
             runcmd "apt-get install -y nodejs"
-            printok "node.js version is $NODEV, upgrading to ${NODEVERSION}.x"
+            printok "node.js version is ${NODEV:-"not installed"}, upgrading to ${NODEVERSION}.x"
         else
+            if [[ -z "$NODEV" ]]; then
+                echo
+                printfail "node.js not installed and INSTALL_REPOS set to false, can't continue"
+                exit 1
+            fi
             if [[ "$TASK" == "Update" ]]; then
                 echo
                 printprog "node.js version already on $NODEV, checking updates"
