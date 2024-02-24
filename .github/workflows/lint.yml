@@ -11,7 +11,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: run shellcheck
-      uses: ludeeus/action-shellcheck@1.1.0
+      uses: ludeeus/action-shellcheck@2.0.0
 
     - name: run shfmt
       uses: luizm/action-sh-checker@v0.3.0
