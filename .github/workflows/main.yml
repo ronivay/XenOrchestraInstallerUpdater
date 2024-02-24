@@ -4,6 +4,8 @@ on:
     paths:
       - 'xo-install.sh'
       - 'sample.xo-install.cfg'
+  workflow_dispatch:
+
 jobs:
   Test-Install:
     runs-on: ubuntu-latest

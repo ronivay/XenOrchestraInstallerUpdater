@@ -4,6 +4,7 @@ on:
     paths:
       - 'xo-install.sh'
       - 'xo-vm-import.sh'
+  workflow_dispatch:
 
 jobs:
   shellcheck:
