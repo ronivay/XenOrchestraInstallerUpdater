@@ -45,6 +45,7 @@ Supported Linux distributions and versions:
 - Debian 12
 - Debian 11
 - Debian 10
+- Ubuntu 24.04
 - Ubuntu 22.04
 - Ubuntu 20.04
 
