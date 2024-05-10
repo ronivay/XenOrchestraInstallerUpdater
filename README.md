@@ -123,6 +123,7 @@ rpm:
 - ntfs-3g
 - dmidecode
 - sudo (if set in xo-install.cfg)
+- patch
 
 deb:
 - apt-transport-https
@@ -146,6 +147,7 @@ deb:
 - ntfs-3g
 - dmidecode
 - sudo (if set in xo-install.cfg)
+- patch
 ```
 
 Following repositories will be installed if needed and repository install is enabled in xo-install.cfg
