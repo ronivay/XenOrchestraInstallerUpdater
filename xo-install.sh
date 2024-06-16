@@ -208,8 +208,7 @@ function InstallDependenciesRPM {
     # install packages
     echo
     printprog "Installing build dependencies, redis server, python3, git, nfs-utils, cifs-utils, lvm2, ntfs-3g, dmidecode patch"
-    runcmd "dnf -y install gcc gcc-c++ make openssl-devel redis libpng-devel python3 git nfs-utils cifs-utils lvm2
-    ntfs-3g dmidecode patch"
+    runcmd "dnf -y install gcc gcc-c++ make openssl-devel redis libpng-devel python3 git nfs-utils cifs-utils lvm2 ntfs-3g dmidecode patch"
     printok "Installing build dependencies, redis server, python3, git, nfs-utils, cifs-utils, lvm2, ntfs-3g, dmidecode patch"
 
     # only run automated node install if executable not found
