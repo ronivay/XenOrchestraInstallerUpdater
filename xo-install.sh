@@ -201,14 +201,14 @@ function InstallDependenciesRPM {
     if [[ -z $(runcmd_stdout "rpm -qa epel-release") ]] && [[ "$INSTALL_REPOS" == "true" ]]; then
         echo
         printprog "Installing epel-repo"
-        runcmd "yum -y install epel-release"
+        runcmd "dnf -y install epel-release"
         printok "Installing epel-repo"
     fi
 
     # install packages
     echo
     printprog "Installing build dependencies, redis server, python3, git, nfs-utils, cifs-utils, lvm2, ntfs-3g, dmidecode patch"
-    runcmd "yum -y install gcc gcc-c++ make openssl-devel redis libpng-devel python3 git nfs-utils cifs-utils lvm2 ntfs-3g dmidecode patch"
+    runcmd "dnf -y install gcc gcc-c++ make openssl-devel redis libpng-devel python3 git nfs-utils cifs-utils lvm2 ntfs-3g dmidecode patch"
     printok "Installing build dependencies, redis server, python3, git, nfs-utils, cifs-utils, lvm2, ntfs-3g, dmidecode patch"
 
     # only run automated node install if executable not found
@@ -221,7 +221,7 @@ function InstallDependenciesRPM {
             runcmd "curl -s -L https://rpm.nodesource.com/setup_${NODEVERSION}.x | bash -"
         fi
 
-        runcmd "yum install -y nodejs"
+        runcmd "dnf install -y nodejs"
         printok "Installing node.js"
     else
         UpdateNodeYarn
@@ -237,7 +237,7 @@ function InstallDependenciesRPM {
             runcmd "curl -s -o /etc/yum.repos.d/yarn.repo https://dl.yarnpkg.com/rpm/yarn.repo"
         fi
 
-        runcmd "yum -y install yarn"
+        runcmd "dnf -y install yarn"
         printok "Installing yarn"
     fi
 
@@ -248,9 +248,9 @@ function InstallDependenciesRPM {
         if [[ "$INSTALL_REPOS" == "true" ]]; then
             runcmd "rpm -ivh https://forensics.cert.org/cert-forensics-tools-release-el${OSVERSION}.rpm"
             runcmd "sed -i 's/enabled=1/enabled=0/g' /etc/yum.repos.d/cert-forensics-tools.repo"
-            runcmd "yum --enablerepo=forensics install -y libvhdi-tools"
+            runcmd "dnf --enablerepo=forensics install -y libvhdi-tools"
         else
-            runcmd "yum install -y libvhdi-tools"
+            runcmd "dnf install -y libvhdi-tools"
         fi
         printok "Installing libvhdi-tools"
     fi
@@ -385,8 +385,8 @@ function UpdateNodeYarn {
 
             runcmd "curl -sL https://rpm.nodesource.com/setup_${NODEVERSION}.x | bash -"
 
-            runcmd "yum clean all"
-            runcmd "yum install -y nodejs"
+            runcmd "dnf clean all"
+            runcmd "dnf install -y nodejs"
             printok "node.js version is ${NODEV:-"not installed"}, upgrading to ${NODEVERSION}.x"
         else
             if [[ -z "$NODEV" ]]; then
@@ -398,7 +398,7 @@ function UpdateNodeYarn {
             if [[ "$TASK" == "Update" ]]; then
                 echo
                 printprog "node.js version already on $NODEV, checking updates"
-                runcmd "yum update -y nodejs yarn"
+                runcmd "dnf update -y nodejs yarn"
                 printok "node.js version already on $NODEV, checking updates"
             elif [[ "$TASK" == "Installation" ]]; then
                 echo
@@ -527,7 +527,7 @@ function InstallSudo {
             printok "Installing sudo"
         elif [[ "$PKG_FORMAT" == "rpm" ]]; then
             printprog "Installing sudo"
-            runcmd "yum install -y sudo"
+            runcmd "dnf install -y sudo"
             printok "Installing sudo"
         fi
     fi
@@ -1266,7 +1266,7 @@ function CheckOS {
         exit 1
     fi
 
-    if [[ $(runcmd_stdout "command -v yum") ]]; then
+    if [[ $(runcmd_stdout "command -v dnf") ]]; then
         PKG_FORMAT="rpm"
     fi
 
@@ -1274,9 +1274,9 @@ function CheckOS {
         PKG_FORMAT="deb"
     fi
 
-    # hard dependency which we can't skip so bail out if no yum/apt-get present
+    # hard dependency which we can't skip so bail out if no dnf/apt-get present
     if [[ -z "$PKG_FORMAT" ]]; then
-        printfail "this script requires either yum or apt-get"
+        printfail "this script requires either dnf or apt-get"
         exit 1
     fi
 
