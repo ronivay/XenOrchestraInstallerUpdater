@@ -706,7 +706,7 @@ function InstallXO {
     InstallXOPlugins
 
     # shutdown possibly running xo-server
-    if [[ $(runcmd_stdout "pgrep -f xo-server") ]]; then
+    if [[ $(runcmd_stdout "pgrep -f 'node.*xo-server'") ]]; then
         echo
         printprog "Shutting down running xo-server"
         runcmd "/bin/systemctl stop xo-server" || {
@@ -986,7 +986,7 @@ function InstallXOProxy {
     printok "Running installation"
 
     # shutdown possibly running xo-server
-    if [[ $(runcmd_stdout "pgrep -f xo-proxy") ]]; then
+    if [[ $(runcmd_stdout "pgrep -f 'node.*xo-proxy'") ]]; then
         echo
         printprog "Shutting down running xo-proxy"
         runcmd "/bin/systemctl stop xo-proxy" || {
@@ -1463,7 +1463,7 @@ function StartUpScreen {
 
     case $option in
         1)
-            if [[ $(runcmd_stdout "pgrep -f xo-server") ]]; then
+            if [[ $(runcmd_stdout "pgrep -f 'node.*xo-server'") ]]; then
                 echo "Looks like xo-server process is already running, consider running update instead. Continue anyway?"
                 read -r -p "[y/N]: " answer
                 case $answer in
@@ -1510,7 +1510,7 @@ function StartUpScreen {
             exit 0
             ;;
         4)
-            if [[ $(runcmd_stdout "pgrep -f xo-proxy") ]]; then
+            if [[ $(runcmd_stdout "pgrep -f 'node.*xo-proxy'") ]]; then
                 echo "Looks like xo-proxy process is already running, consider running update instead. Continue anyway?"
                 read -r -p "[y/N]: " answer
                 case $answer in
