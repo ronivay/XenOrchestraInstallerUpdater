@@ -823,6 +823,11 @@ function InstallXO {
         fi
 
         printinfo "Activating modified configuration file"
+        if ! [[ -d $CONFIGPATH/.config ]]; then
+            # create generic .config directory only if it doesn't exist as we set permissions to it
+            # this directory could potentially exist already and we don't want to override anything
+            runcmd "install -o $XOUSER -g $XOUSER -m 770 -d $CONFIGPATH/.config"
+        fi
         runcmd "mkdir -p $CONFIGPATH/.config/xo-server"
         runcmd "mv -f $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml $CONFIGPATH/.config/xo-server/config.toml"
 
