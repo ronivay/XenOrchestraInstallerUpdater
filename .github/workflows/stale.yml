@@ -12,10 +12,11 @@ jobs:
       issues: write
 
     steps:
-    - uses: actions/stale@v3
+    - uses: actions/stale@v9
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         stale-issue-message: 'This issue has been open for 14 days without activity. It will be closed in 5 days if not updated'
         stale-issue-label: 'Stale'
+        exempt-issue-labels: 'feature-request,bug,pinned'
         days-before-issue-stale: 14
         days-before-issue-close: 5

@@ -48,12 +48,14 @@ USESUDO="${USESUDO:-"false"}"
 GENSUDO="${GENSUDO:-"false"}"
 INSTALL_REPOS="${INSTALL_REPOS:-"true"}"
 SYSLOG_TARGET="${SYSLOG_TARGET:-""}"
+YARN_CACHE_CLEANUP="${YARN_CACHE_CLEANUP:-"false"}"
+YARN_NETWORK_TIMEOUT="${YARN_NETWORK_TIMEOUT:-"300000"}"
 
 # set variables not changeable in configfile
 TIME=$(date +%Y%m%d%H%M)
 LOGTIME=$(date "+%Y-%m-%d %H:%M:%S")
 LOGFILE="${LOGPATH}/xo-install.log-$TIME"
-NODEVERSION="18"
+NODEVERSION="20"
 FORCE="false"
 INTERACTIVE="false"
 SUDOERSFILE="/etc/sudoers.d/xo-server-$XOUSER"
@@ -215,15 +217,15 @@ function InstallDependenciesRPM {
     if [[ -z $(runcmd_stdout "rpm -qa epel-release") ]] && [[ "$INSTALL_REPOS" == "true" ]]; then
         echo
         printprog "Installing epel-repo"
-        runcmd "yum -y install epel-release"
+        runcmd "dnf -y install epel-release"
         printok "Installing epel-repo"
     fi
 
     # install packages
     echo
-    printprog "Installing build dependencies, redis server, python3, git, nfs-utils, cifs-utils, lvm2, ntfs-3g, dmidecode"
-    runcmd "yum -y install gcc gcc-c++ make openssl-devel redis libpng-devel python3 git nfs-utils cifs-utils lvm2 ntfs-3g dmidecode"
-    printok "Installing build dependencies, redis server, python3, git, nfs-utils, cifs-utils, lvm2, ntfs-3g, dmidecode"
+    printprog "Installing build dependencies, redis server, python3, git, nfs-utils, cifs-utils, lvm2, ntfs-3g, dmidecode patch"
+    runcmd "dnf -y install gcc gcc-c++ make openssl-devel redis libpng-devel python3 git nfs-utils cifs-utils lvm2 ntfs-3g dmidecode patch"
+    printok "Installing build dependencies, redis server, python3, git, nfs-utils, cifs-utils, lvm2, ntfs-3g, dmidecode patch"
 
     # only run automated node install if executable not found
     if [[ -z $(runcmd_stdout "command -v node") ]]; then
@@ -235,7 +237,7 @@ function InstallDependenciesRPM {
             runcmd "curl -s -L https://rpm.nodesource.com/setup_${NODEVERSION}.x | bash -"
         fi
 
-        runcmd "yum install -y nodejs"
+        runcmd "dnf install -y nodejs"
         printok "Installing node.js"
     else
         UpdateNodeYarn
@@ -251,7 +253,7 @@ function InstallDependenciesRPM {
             runcmd "curl -s -o /etc/yum.repos.d/yarn.repo https://dl.yarnpkg.com/rpm/yarn.repo"
         fi
 
-        runcmd "yum -y install yarn"
+        runcmd "dnf -y install yarn"
         printok "Installing yarn"
     fi
 
@@ -262,9 +264,9 @@ function InstallDependenciesRPM {
         if [[ "$INSTALL_REPOS" == "true" ]]; then
             runcmd "rpm -ivh https://forensics.cert.org/cert-forensics-tools-release-el${OSVERSION}.rpm"
             runcmd "sed -i 's/enabled=1/enabled=0/g' /etc/yum.repos.d/cert-forensics-tools.repo"
-            runcmd "yum --enablerepo=forensics install -y libvhdi-tools"
+            runcmd "dnf --enablerepo=forensics install -y libvhdi-tools"
         else
-            runcmd "yum install -y libvhdi-tools"
+            runcmd "dnf install -y libvhdi-tools"
         fi
         printok "Installing libvhdi-tools"
     fi
@@ -305,9 +307,9 @@ function InstallDependenciesDeb {
 
     # install packages
     echo
-    printprog "Installing build dependencies, redis server, python3-minimal, git, libvhdi-utils, lvm2, nfs-common, cifs-utils, curl, ntfs-3g, dmidecode"
-    runcmd "apt-get install -y build-essential redis-server libpng-dev git libvhdi-utils python3-minimal lvm2 nfs-common cifs-utils curl ntfs-3g dmidecode"
-    printok "Installing build dependencies, redis server, python3-minimal, git, libvhdi-utils, lvm2, nfs-common, cifs-utils, curl, ntfs-3g, dmidecode"
+    printprog "Installing build dependencies, redis server, python3-minimal, git, libvhdi-utils, lvm2, nfs-common, cifs-utils, curl, ntfs-3g, dmidecode patch"
+    runcmd "apt-get install -y build-essential redis-server libpng-dev git libvhdi-utils python3-minimal lvm2 nfs-common cifs-utils curl ntfs-3g dmidecode patch"
+    printok "Installing build dependencies, redis server, python3-minimal, git, libvhdi-utils, lvm2, nfs-common, cifs-utils, curl, ntfs-3g, dmidecode patch"
 
     # Install apt-transport-https and ca-certificates because of yarn https repo url
     echo
@@ -315,11 +317,11 @@ function InstallDependenciesDeb {
     runcmd "apt-get install -y apt-transport-https ca-certificates"
     printok "Installing apt-transport-https and ca-certificates packages to support https repos"
 
-    if [[ "$OSNAME" == "Debian" ]] && [[ "$OSVERSION" =~ ^(10|11)$ ]]; then
+    if [[ "$OSNAME" == "Debian" ]] && [[ "$OSVERSION" =~ ^(10|11|12)$ ]]; then
         echo
-        printprog "Debian 10/11, so installing gnupg also"
+        printprog "Debian 10/11/12, so installing gnupg also"
         runcmd "apt-get install gnupg -y"
-        printok "Debian 10/11, so installing gnupg also"
+        printok "Debian 10/11/12, so installing gnupg also"
     fi
 
     # install setcap for non-root port binding if missing
@@ -393,20 +395,26 @@ function UpdateNodeYarn {
     if [ "$PKG_FORMAT" == "rpm" ]; then
         # update node version if needed.
         # skip update if repository install is disabled as we can't quarantee this actually updates anything
-        if [[ -n "$NODEV" ]] && [[ "$NODEV" -lt "${NODEVERSION}" ]] && [[ "$INSTALL_REPOS" == "true" ]]; then
+        if [[ "${NODEV:-0}" -lt "${NODEVERSION}" ]] && [[ "$INSTALL_REPOS" == "true" ]]; then
             echo
-            printprog "node.js version is $NODEV, upgrading to ${NODEVERSION}.x"
+            printprog "node.js version is ${NODEV:-"not installed"}, upgrading to ${NODEVERSION}.x"
 
             runcmd "curl -sL https://rpm.nodesource.com/setup_${NODEVERSION}.x | bash -"
 
-            runcmd "yum clean all"
-            runcmd "yum install -y nodejs"
-            printok "node.js version is $NODEV, upgrading to ${NODEVERSION}.x"
+            runcmd "dnf clean all"
+            runcmd "dnf install -y nodejs"
+            printok "node.js version is ${NODEV:-"not installed"}, upgrading to ${NODEVERSION}.x"
         else
+            if [[ -z "$NODEV" ]]; then
+                echo
+                printfail "node.js not installed and INSTALL_REPOS set to false, can't continue"
+                exit 1
+            fi
+
             if [[ "$TASK" == "Update" ]]; then
                 echo
                 printprog "node.js version already on $NODEV, checking updates"
-                runcmd "yum update -y nodejs yarn"
+                runcmd "dnf update -y nodejs yarn"
                 printok "node.js version already on $NODEV, checking updates"
             elif [[ "$TASK" == "Installation" ]]; then
                 echo
@@ -416,15 +424,20 @@ function UpdateNodeYarn {
     fi
 
     if [ "$PKG_FORMAT" == "deb" ]; then
-        if [[ -n "$NODEV" ]] && [[ "$NODEV" -lt "${NODEVERSION}" ]] && [[ "$INSTALL_REPOS" == "true" ]]; then
+        if [[ "${NODEV:-0}" -lt "${NODEVERSION}" ]] && [[ "$INSTALL_REPOS" == "true" ]]; then
             echo
-            printprog "node.js version is $NODEV, upgrading to ${NODEVERSION}.x"
+            printprog "node.js version is ${NODEV:-"not installed"}, upgrading to ${NODEVERSION}.x"
 
             runcmd "curl -sL https://deb.nodesource.com/setup_${NODEVERSION}.x | bash -"
 
             runcmd "apt-get install -y nodejs"
-            printok "node.js version is $NODEV, upgrading to ${NODEVERSION}.x"
+            printok "node.js version is ${NODEV:-"not installed"}, upgrading to ${NODEVERSION}.x"
         else
+            if [[ -z "$NODEV" ]]; then
+                echo
+                printfail "node.js not installed and INSTALL_REPOS set to false, can't continue"
+                exit 1
+            fi
             if [[ "$TASK" == "Update" ]]; then
                 echo
                 printprog "node.js version already on $NODEV, checking updates"
@@ -530,7 +543,7 @@ function InstallSudo {
             printok "Installing sudo"
         elif [[ "$PKG_FORMAT" == "rpm" ]]; then
             printprog "Installing sudo"
-            runcmd "yum install -y sudo"
+            runcmd "dnf install -y sudo"
             printok "Installing sudo"
         fi
     fi
@@ -539,7 +552,7 @@ function InstallSudo {
         echo
         printinfo "Generating sudoers configuration to $SUDOERSFILE"
         TMPSUDOERS="$(mktemp /tmp/xo-sudoers.XXXXXX)"
-        runcmd "echo '$XOUSER ALL=(root) NOPASSWD: /bin/mount, /bin/umount' > '$TMPSUDOERS'"
+        runcmd "echo '$XOUSER ALL=(root) NOPASSWD: /bin/mount, /bin/umount, /bin/findmnt' > '$TMPSUDOERS'"
         if runcmd "visudo -cf $TMPSUDOERS"; then
             runcmd "mv $TMPSUDOERS $SUDOERSFILE"
         else
@@ -708,14 +721,14 @@ function InstallXO {
     printinfo "xo-server and xo-web build takes quite a while. Grab a cup of coffee and lay back"
     echo
     printprog "Running installation"
-    runcmd "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn && yarn build"
+    runcmd "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn --network-timeout ${YARN_NETWORK_TIMEOUT} && yarn --network-timeout ${YARN_NETWORK_TIMEOUT} build"
     printok "Running installation"
 
     # Install plugins (takes care of 3rd party plugins as well)
     InstallXOPlugins
 
     # shutdown possibly running xo-server
-    if [[ $(runcmd_stdout "pgrep -f xo-server") ]]; then
+    if [[ $(runcmd_stdout "pgrep -f '^([a-zA-Z0-9_\/-]+?)node.*xo-server'") ]]; then
         echo
         printprog "Shutting down running xo-server"
         runcmd "/bin/systemctl stop xo-server" || {
@@ -822,7 +835,7 @@ function InstallXO {
             printinfo "Changing default mountsDir in xo-server configuration file"
             runcmd "sed -i \"s%#mountsDir.*%mountsDir = '$INSTALLDIR/mounts'%\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
             runcmd "mkdir -p $INSTALLDIR/mounts"
-            runcmd "chown -R $XOUSER:$XOUSER $INSTALLDIR/mounts"
+            runcmd "chown $XOUSER:$XOUSER $INSTALLDIR/mounts"
         fi
 
         if [[ -n "$SYSLOG_TARGET" ]]; then
@@ -832,6 +845,11 @@ function InstallXO {
         fi
 
         printinfo "Activating modified configuration file"
+        if ! [[ -d $CONFIGPATH/.config ]]; then
+            # create generic .config directory only if it doesn't exist as we set permissions to it
+            # this directory could potentially exist already and we don't want to override anything
+            runcmd "install -o $XOUSER -g $XOUSER -m 770 -d $CONFIGPATH/.config"
+        fi
         runcmd "mkdir -p $CONFIGPATH/.config/xo-server"
         runcmd "mv -f $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml $CONFIGPATH/.config/xo-server/config.toml"
 
@@ -970,6 +988,14 @@ function UpdateXO {
     done
     printok "Removing old inactive installations after update. Leaving $PRESERVE latest"
     echo
+
+    # clear yarn cache if defined in configuration
+    if [[ "$YARN_CACHE_CLEANUP" == "true" ]]; then
+        printprog "Cleaning yarn cache"
+        runcmd "yarn cache clean"
+        printok "Cleaning yarn cache"
+        echo
+    fi
 }
 
 function InstallXOProxy {
@@ -982,11 +1008,11 @@ function InstallXOProxy {
     printinfo "xo-proxy build takes quite a while. Grab a cup of coffee and lay back"
     echo
     printprog "Running installation"
-    runcmd "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn && yarn build"
+    runcmd "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn --network-timeout ${YARN_NETWORK_TIMEOUT} && yarn --network-timeout ${YARN_NETWORK_TIMEOUT} build"
     printok "Running installation"
 
     # shutdown possibly running xo-server
-    if [[ $(runcmd_stdout "pgrep -f xo-proxy") ]]; then
+    if [[ $(runcmd_stdout "pgrep -f '^([a-zA-Z0-9_\/-]+?)node.*xo-proxy'") ]]; then
         echo
         printprog "Shutting down running xo-proxy"
         runcmd "/bin/systemctl stop xo-proxy" || {
@@ -1266,7 +1292,7 @@ function CheckOS {
         exit 1
     fi
 
-    if [[ $(runcmd_stdout "command -v yum") ]]; then
+    if [[ $(runcmd_stdout "command -v dnf") ]]; then
         PKG_FORMAT="rpm"
     fi
 
@@ -1274,9 +1300,9 @@ function CheckOS {
         PKG_FORMAT="deb"
     fi
 
-    # hard dependency which we can't skip so bail out if no yum/apt-get present
+    # hard dependency which we can't skip so bail out if no dnf/apt-get present
     if [[ -z "$PKG_FORMAT" ]]; then
-        printfail "this script requires either yum or apt-get"
+        printfail "this script requires either dnf or apt-get"
         exit 1
     fi
 
@@ -1305,13 +1331,13 @@ function CheckOS {
         exit 1
     fi
 
-    if [[ "$OSNAME" == "Debian" ]] && [[ ! "$OSVERSION" =~ ^(10|11)$ ]]; then
-        printfail "Only Debian 10/11 supported"
+    if [[ "$OSNAME" == "Debian" ]] && [[ ! "$OSVERSION" =~ ^(10|11|12)$ ]]; then
+        printfail "Only Debian 10/11/12 supported"
         exit 1
     fi
 
-    if [[ "$OSNAME" == "Ubuntu" ]] && [[ ! "$OSVERSION" =~ ^(18|20|22)$ ]]; then
-        printfail "Only Ubuntu 18/20/22 supported"
+    if [[ "$OSNAME" == "Ubuntu" ]] && [[ ! "$OSVERSION" =~ ^(20|22|24)$ ]]; then
+        printfail "Only Ubuntu 20/22/24 supported"
         exit 1
     fi
 
@@ -1463,7 +1489,7 @@ function StartUpScreen {
 
     case $option in
         1)
-            if [[ $(runcmd_stdout "pgrep -f xo-server") ]]; then
+            if [[ $(runcmd_stdout "pgrep -f '^([a-zA-Z0-9_\/-]+?)node.*xo-server'") ]]; then
                 echo "Looks like xo-server process is already running, consider running update instead. Continue anyway?"
                 read -r -p "[y/N]: " answer
                 case $answer in
@@ -1510,7 +1536,7 @@ function StartUpScreen {
             exit 0
             ;;
         4)
-            if [[ $(runcmd_stdout "pgrep -f xo-proxy") ]]; then
+            if [[ $(runcmd_stdout "pgrep -f '^([a-zA-Z0-9_\/-]+?)node.*xo-proxy'") ]]; then
                 echo "Looks like xo-proxy process is already running, consider running update instead. Continue anyway?"
                 read -r -p "[y/N]: " answer
                 case $answer in
