@@ -25,6 +25,7 @@ SELFUPGRADE=${SELFUPGRADE:-"true"}
 PORT=${PORT:-80}
 INSTALLDIR=${INSTALLDIR:-"/opt/xo"}
 BRANCH=${BRANCH:-"master"}
+INCLUDE_V6=${INCLUDE_V6:-"true"}
 LOGPATH=${LOGPATH:-$(dirname "$(realpath "$0")")/logs}
 AUTOUPDATE=${AUTOUPDATE:-"true"}
 PRESERVE=${PRESERVE:-"3"}
@@ -701,6 +702,7 @@ function InstallXO {
     echo
     printprog "Running installation"
     runcmd "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn --network-timeout ${YARN_NETWORK_TIMEOUT} && yarn --network-timeout ${YARN_NETWORK_TIMEOUT} build"
+    [ "$INCLUDE_V6" == "true" ] && runcmd "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn --network-timeout ${YARN_NETWORK_TIMEOUT} run turbo run build --filter @xen-orchestra/web"
     printok "Running installation"
 
     # Install plugins (takes care of 3rd party plugins as well)
