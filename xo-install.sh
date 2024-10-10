@@ -241,19 +241,20 @@ function InstallDependenciesRPM {
         printok "Installing yarn"
     fi
 
+    # Disabled for now due to forensics.cert.org going away
     # only install libvhdi-tools if vhdimount is not present
-    if [[ -z $(runcmd_stdout "command -v vhdimount") ]]; then
-        echo
-        printprog "Installing libvhdi-tools"
-        if [[ "$INSTALL_REPOS" == "true" ]]; then
-            runcmd "rpm -ivh https://forensics.cert.org/cert-forensics-tools-release-el${OSVERSION}.rpm"
-            runcmd "sed -i 's/enabled=1/enabled=0/g' /etc/yum.repos.d/cert-forensics-tools.repo"
-            runcmd "dnf --enablerepo=forensics install -y libvhdi-tools"
-        else
-            runcmd "dnf install -y libvhdi-tools"
-        fi
-        printok "Installing libvhdi-tools"
-    fi
+    #    if [[ -z $(runcmd_stdout "command -v vhdimount") ]]; then
+    #        echo
+    #        printprog "Installing libvhdi-tools"
+    #        if [[ "$INSTALL_REPOS" == "true" ]]; then
+    #            runcmd "rpm -ivh https://forensics.cert.org/cert-forensics-tools-release-el${OSVERSION}.rpm"
+    #            runcmd "sed -i 's/enabled=1/enabled=0/g' /etc/yum.repos.d/cert-forensics-tools.repo"
+    #            runcmd "dnf --enablerepo=forensics install -y libvhdi-tools"
+    #        else
+    #            runcmd "dnf install -y libvhdi-tools"
+    #        fi
+    #        printok "Installing libvhdi-tools"
+    #    fi
 
     echo
     printprog "Enabling and starting redis service"
