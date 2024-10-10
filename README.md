@@ -49,6 +49,8 @@ Supported Linux distributions and versions:
 - Ubuntu 22.04
 - Ubuntu 20.04
 
+NOTE: RHEL based distros cannot do file level restore from backups in XO due to missing libvhdi-tools. See: https://github.com/ronivay/XenOrchestraInstallerUpdater/issues/256
+
 Only x86_64 architecture is supported. For all those raspberry pi users out there, check [container](https://hub.docker.com/r/ronivay/xen-orchestra) instead.
 
 All OS/Architecture checks can be disabled in `xo-install.cfg` for experimental purposes. Not recommended obviously.
