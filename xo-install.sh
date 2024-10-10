@@ -701,7 +701,7 @@ function InstallXO {
     echo
     printprog "Running installation"
     runcmd "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn --network-timeout ${YARN_NETWORK_TIMEOUT} && yarn --network-timeout ${YARN_NETWORK_TIMEOUT} build"
-    [ $INCLUDE_V6 == "true" ] && runcmd "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn --network-timeout ${YARN_NETWORK_TIMEOUT} run turbo run build --filter @xen-orchestra/web"
+    [ "$INCLUDE_V6" == "true" ] && runcmd "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn --network-timeout ${YARN_NETWORK_TIMEOUT} run turbo run build --filter @xen-orchestra/web"
     printok "Running installation"
 
     # Install plugins (takes care of 3rd party plugins as well)
