@@ -828,7 +828,7 @@ function InstallXO {
 
         if [[ -n "$PUBLIC_URL" ]]; then
             printinfo "Setting publicUrl in xo-server configuration file"
-            runcmd "sed -i \"/^#publicUrl =.*/a publicUrl= '$PUBLIC_URL'\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
+            runcmd "sed -i \"/^#publicUrl =.*/a publicUrl = '$PUBLIC_URL'\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
         fi
 
         printinfo "Activating modified configuration file"
