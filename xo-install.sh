@@ -23,6 +23,7 @@ source "$CONFIG_FILE"
 # Set some default variables if sourcing config file fails for some reason
 SELFUPGRADE=${SELFUPGRADE:-"true"}
 PORT=${PORT:-80}
+LISTEN_ADDRESS=${LISTEN_ADDRESS:-""}
 PROXY_PORT=${PROXY_PORT:-443}
 INSTALLDIR=${INSTALLDIR:-"/opt/xo"}
 BRANCH=${BRANCH:-"master"}
@@ -789,6 +790,11 @@ function InstallXO {
             sleep 2
         fi
 
+        if [[ -n "$LISTEN_ADDRESS" ]]; then
+            printinfo "Changing listen address in xo-server configuration file"
+            runcmd "sed -i \"s%^# hostname = 'localhost'%hostname = '$LISTEN_ADDRESS'%\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
+        fi
+
         if [[ "$HTTPS" == "true" ]]; then
             printinfo "Enabling HTTPS in xo-server configuration file"
             # shellcheck disable=SC1117
@@ -1450,6 +1456,9 @@ function StartUpScreen {
     echo -e "Basedir: ${COLOR_WHITE}$INSTALLDIR ${COLOR_N}"
     echo -e "User: ${COLOR_WHITE}$XOUSER ${COLOR_N}"
     echo -e "Port: ${COLOR_WHITE}$PORT${COLOR_N}"
+    if [[ -n "$LISTEN_ADDRESS" ]]; then
+        echo -e "Listen address: ${COLOR_WHITE}$LISTEN_ADDRESS${COLOR_N}"
+    fi
     echo -e "HTTPS: ${COLOR_WHITE}${HTTPS}${COLOR_N}"
     echo -e "Git Branch for source: ${COLOR_WHITE}$BRANCH${COLOR_N}"
     echo -e "Following plugins will be installed: ${COLOR_WHITE}$PLUGINS${COLOR_N}"
