@@ -23,6 +23,7 @@ source "$CONFIG_FILE"
 # Set some default variables if sourcing config file fails for some reason
 SELFUPGRADE=${SELFUPGRADE:-"true"}
 PORT=${PORT:-80}
+PROXY_PORT=${PROXY_PORT:-443}
 INSTALLDIR=${INSTALLDIR:-"/opt/xo"}
 BRANCH=${BRANCH:-"master"}
 INCLUDE_V6=${INCLUDE_V6:-"true"}
@@ -879,7 +880,7 @@ function VerifyServiceStart {
     set -u
 
     if [[ "$XO_SVC" == "xo-proxy" ]]; then
-        local PORT="443"
+        local PORT="$PROXY_PORT"
     fi
 
     PROXY_CONFIG_UPDATED=${PROXY_CONFIG_UPDATED:-"false"}
@@ -1052,7 +1053,7 @@ EOF
     printinfo "Reloading systemd configuration"
     runcmd "/bin/systemctl daemon-reload"
 
-    # if xen orchestra proxy configuration file doesn't exist or configuration update is not disabled in xo-install.cfg, we create it
+    # if xen orchestra proxy configuration file doesn't exist we create it here
 
     if [[ ! -f "$CONFIGPATH_PROXY/.config/xo-proxy/config.toml" ]]; then
         PROXY_VM_UUID="$(dmidecode -t system | grep UUID | awk '{print $NF}')"
@@ -1067,6 +1068,10 @@ EOF
 
         printinfo "Adding authentication token to xo-proxy config"
         runcmd "sed -i \"s/^authenticationToken = .*/authenticationToken = '$PROXY_TOKEN'/\" $CONFIGPATH_PROXY/.config/xo-proxy/config.toml"
+        if [[ "$PROXY_PORT" != "443" ]]; then
+            printinfo "Updating proxy port config"
+            runcmd "sed -i \"s/port = 443/port = $PROXY_PORT/\" $CONFIGPATH_PROXY/.config/xo-proxy/config.toml"
+        fi
     fi
 
     echo
