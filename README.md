@@ -176,13 +176,11 @@ deb:
 
 Backup proxy can be used to offload backup tasks from the main Xen Orchestra instance to a proxy which has a direct connection to remote where backups are stored.
 
-Requirements for proxy VM are otherwise the same as mentioned above, in addition the VM needs to live inside XCP-ng/XenServer pool managed by Xen Orchestra instance and have xen tools installed. VM needs to have access to pool master host and Xen Orchestra needs to be able to access this VM via TCP/443.
+Requirements for proxy VM are otherwise the same as mentioned above, in addition proxy needs to be able to connect your XCP-ng/XenServer host and Xen Orchestra server needs to be able to access proxy via configured port. By default, it is expected that proxy VM lives inside your XO managed XCP-ng/XenServer pool and XO will figure out the proper connection address with proxy VM's uuid and will use port 443 by default. If you've installed your proxy outside of XCP-ng/XenServer pool and/or you're using some other port, you need to edit the proxy server address from Proxies menu after importing the configuration.
 
-Majority of xo-install.cfg variables have no effect to proxy installation. Proxy process will always run as root user and in port 443.
+Majority of xo-install.cfg variables have no effect to proxy installation.
 
 Since there is no way in Xen Orchestra from sources to register a proxy via UI, the installation will output a piece of json after the proxy is installed. You need to copy this json string and save to a file. Then use the config import option in Xen Orchestra settings to import this piece of json to add proxy. This works as a partial config import and won't overwrite any existing config. Although it's good to take a config export backup just in case.
-
-Xen Orchestra figures out the correct connection address from the VM UUID which is part of this json. This is why the VM needs to be part of pool managed by Xen Orchestra. Connection details cannot be changed manually.
 
 Note that for obvious reasons some of the proxy features seen in Xen Orchestra UI aren't working, like upgrade button, upgrade check, redeploy, update appliance settings.
 
