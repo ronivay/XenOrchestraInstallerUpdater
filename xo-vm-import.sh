@@ -120,7 +120,7 @@ function NetworkSettings {
         read -r -p "Netmask [255.255.255.0]: " netmask
         netmask=${netmask:-255.255.255.0}
         while ! [[ $netmask =~ $ipregex ]]; do
-            echo "Check gateway format"
+            echo "Check netmask format"
             read -r -p "Netmask [255.255.255.0]: " netmask
             netmask=${netmask:-255.255.255.0}
         done
