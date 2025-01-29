@@ -49,6 +49,7 @@ ACME_EMAIL="${ACME_EMAIL:-""}"
 ACME_CA="${ACME_CA:-"letsencrypt/production"}"
 USESUDO="${USESUDO:-"false"}"
 GENSUDO="${GENSUDO:-"false"}"
+INSTALL_EL_LIBVHDI="${INSTALL_EL_LIBVHDI:-"false"}"
 INSTALL_REPOS="${INSTALL_REPOS:-"true"}"
 SYSLOG_TARGET="${SYSLOG_TARGET:-""}"
 YARN_CACHE_CLEANUP="${YARN_CACHE_CLEANUP:-"false"}"
@@ -250,9 +251,9 @@ function InstallDependenciesRPM {
         printprog "Installing libvhdi-tools"
         if [[ "$INSTALL_REPOS" == "true" ]] && [[ "$INSTALL_EL_LIBVHDI" == "true" ]]; then
             runcmd "dnf copr enable -y bnerickson/libvhdi"
-        else
-            runcmd "dnf install -y libvhdi-tools"
         fi
+
+        runcmd "dnf install -y libvhdi-tools"
         printok "Installing libvhdi-tools"
     fi
 

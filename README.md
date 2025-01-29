@@ -49,7 +49,7 @@ Supported Linux distributions and versions:
 - Ubuntu 22.04
 - Ubuntu 20.04
 
-NOTE: By default, libvhdi-tools is not installed on RHEL based distros; so file-level restores from delta backups within XOA will not work.  However, users MAY install libvhdi-tools via a small, third-party maintained by a user of XenOrchestraInstallerUpdater specifically for XenOrchestraInstallerUpdater in order to re-enable file-level restore. To do so, set the INSTALL_EL_LIBVHDI variable to "true" in xo-install.cfg.  See: https://github.com/ronivay/XenOrchestraInstallerUpdater/pull/274
+NOTE: By default, libvhdi-tools is not installed on RHEL based distros; so file-level restores from delta backups within XO will not work.  However, users MAY install libvhdi-tools via a small, third-party maintained by a user of XenOrchestraInstallerUpdater specifically for XenOrchestraInstallerUpdater in order to re-enable file-level restore. To do so, set the INSTALL_EL_LIBVHDI variable to "true" in xo-install.cfg.  See: https://github.com/ronivay/XenOrchestraInstallerUpdater/pull/274
 
 Only x86_64 architecture is supported. For all those raspberry pi users out there, check [container](https://hub.docker.com/r/ronivay/xen-orchestra) instead.
 
