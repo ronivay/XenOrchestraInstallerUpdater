@@ -247,14 +247,13 @@ function InstallDependenciesRPM {
 
     # Only install libvhdi-tools if vhdimount is not present
     if [[ -z $(runcmd_stdout "command -v vhdimount") ]]; then
-        echo
-        printprog "Installing libvhdi-tools"
         if [[ "$INSTALL_REPOS" == "true" ]] && [[ "$INSTALL_EL_LIBVHDI" == "true" ]]; then
+            echo
+            printprog "Installing libvhdi-tools"
             runcmd "dnf copr enable -y bnerickson/libvhdi"
+            runcmd "dnf install -y libvhdi-tools"
+            printok "Installing libvhdi-tools"
         fi
-
-        runcmd "dnf install -y libvhdi-tools"
-        printok "Installing libvhdi-tools"
     fi
 
     echo
