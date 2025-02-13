@@ -340,7 +340,7 @@ function InstallDependenciesDeb {
 
         # only install yarn repo if user allows it to be installed
         if [[ "$INSTALL_REPOS" == "true" ]]; then
-            runcmd "curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add -"
+            runcmd "curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg -o /etc/apt/trusted.gpg.d/yarn.asc"
             runcmd "echo \"deb https://dl.yarnpkg.com/debian/ stable main\" | tee /etc/apt/sources.list.d/yarn.list"
         fi
 
