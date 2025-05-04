@@ -192,6 +192,61 @@ function ErrorHandling {
     exit 1
 }
 
+# install package dependencies to pacman distros, based on: https://xen-orchestra.com/docs/from_the_sources.html
+function InstallDependenciesPacman {
+
+    set -euo pipefail
+
+    trap ErrorHandling ERR INT
+
+    # install packages
+    echo
+    printprog "Installing build dependencies, redis server, python3, git, nfs-utils, cifs-utils, lvm2, ntfs-3g, dmidecode patch"
+    runcmd "pacman -Sy --noconfirm --needed gcc make openssl redis libpng python git nfs-utils cifs-utils lvm2 ntfs-3g dmidecode patch"
+    printok "Installing build dependencies, redis server, python3, git, nfs-utils, cifs-utils, lvm2, ntfs-3g, dmidecode patch"
+
+    # only run automated node install if executable not found
+    if [[ -z $(runcmd_stdout "command -v node") ]]; then
+        echo
+        printprog "Installing node.js"
+
+        # only install nodejs repo if user allows it to be installed
+        # if [[ "$INSTALL_REPOS" == "true" ]]; then
+        #     runcmd "curl -s -L https://rpm.nodesource.com/setup_${NODEVERSION}.x | bash -"
+        # fi
+
+        runcmd "pacman -S --noconfirm nodejs"
+        printok "Installing node.js"
+    else
+        UpdateNodeYarn
+    fi
+
+    # only install yarn repo and package if not found
+    if [[ -z $(runcmd_stdout "command -v yarn") ]]; then
+        echo
+        printprog "Installing yarn"
+
+        #only install yarn repo if user allows it to be installed
+        if [[ "$INSTALL_REPOS" == "true" ]]; then
+            runcmd "curl -s -o /etc/yum.repos.d/yarn.repo https://dl.yarnpkg.com/rpm/yarn.repo"
+        fi
+
+        runcmd "pacman -S --noconfirm yarn"
+        printok "Installing yarn"
+    fi
+
+    echo
+    printprog "Enabling and starting redis service"
+    runcmd "/bin/systemctl enable redis && /bin/systemctl start redis"
+    printok "Enabling and starting redis service"
+
+    echo
+    printprog "Enabling and starting rpcbind service"
+    runcmd "/bin/systemctl enable rpcbind && /bin/systemctl start rpcbind"
+    printok "Enabling and starting rpcbind service"
+
+}
+
 # install package dependencies to rpm distros, based on: https://xen-orchestra.com/docs/from_the_sources.html
 function InstallDependenciesRPM {
 
@@ -1166,8 +1221,10 @@ function HandleArgs {
     if [[ "$INSTALLARG" -gt 0 ]]; then
         if [ "$PKG_FORMAT" == "rpm" ]; then
             InstallDependenciesRPM
-        else
+        elif [ "$PKG_FORMAT" == "rpm" ]; then
             InstallDependenciesDeb
+        else
+            InstallDependenciesPacman
         fi
 
         if [[ "$PROXYARG" -gt 0 ]]; then
@@ -1290,6 +1347,10 @@ function CheckOS {
         PKG_FORMAT="deb"
     fi
 
+    if [[ $(runcmd_stdout "command -v pacman") ]]; then
+        PKG_FORMAT="pacman"
+    fi
+
     # hard dependency which we can't skip so bail out if no dnf/apt-get present
     if [[ -z "$PKG_FORMAT" ]]; then
         printfail "this script requires either dnf or apt-get"
@@ -1301,8 +1362,8 @@ function CheckOS {
         return 0
     fi
 
-    if [[ ! "$OSNAME" =~ ^(Debian|Ubuntu|CentOS|Rocky|AlmaLinux)$ ]]; then
-        printfail "Only Ubuntu/Debian/CentOS/Rocky/AlmaLinux supported"
+    if [[ ! "$OSNAME" =~ ^(Debian|Ubuntu|CentOS|Rocky|AlmaLinux|Arch)$ ]]; then
+        printfail "Only Ubuntu/Debian/CentOS/Rocky/AlmaLinux/Arch supported"
         exit 1
     fi
 
@@ -1516,6 +1577,12 @@ function StartUpScreen {
                 InstallXO
                 exit 0
             fi
+            if [ "$PKG_FORMAT" == "pacman" ]; then
+                InstallDependenciesPacman
+                InstallXO
+                exit 0
+            fi
+
             ;;
         2)
             TASK="Update"
@@ -1557,6 +1624,11 @@ function StartUpScreen {
             fi
             if [[ "$PKG_FORMAT" == "deb" ]]; then
                 InstallDependenciesDeb
+                InstallXOProxy
+                exit 0
+            fi
+            if [[ "$PKG_FORMAT" == "pacman" ]]; then
+                InstallDependenciesPacman
                 InstallXOProxy
                 exit 0
             fi
