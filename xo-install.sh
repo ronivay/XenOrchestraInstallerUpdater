@@ -201,6 +201,13 @@ function InstallDependenciesRPM {
 
     # Install necessary dependencies for XO build
 
+    # CheckOS defines if we fallback to valkey instead of redis
+    if [[ "$REDIS" == 0 ]]; then
+        IN_MEMORY_DB="valkey"
+    else
+        IN_MEMORY_DB="redis"
+    fi
+
     # only install epel-release if doesn't exist and user allows it to be installed
     if [[ -z $(runcmd_stdout "rpm -qa epel-release") ]] && [[ "$INSTALL_REPOS" == "true" ]]; then
         echo
@@ -211,9 +218,9 @@ function InstallDependenciesRPM {
 
     # install packages
     echo
-    printprog "Installing build dependencies, redis server, python3, git, nfs-utils, cifs-utils, lvm2, ntfs-3g, dmidecode patch"
-    runcmd "dnf -y install gcc gcc-c++ make openssl-devel redis libpng-devel python3 git nfs-utils cifs-utils lvm2 ntfs-3g dmidecode patch"
-    printok "Installing build dependencies, redis server, python3, git, nfs-utils, cifs-utils, lvm2, ntfs-3g, dmidecode patch"
+    printprog "Installing build dependencies, $IN_MEMORY_DB server, python3, git, nfs-utils, cifs-utils, lvm2, ntfs-3g, dmidecode patch"
+    runcmd "dnf -y install gcc gcc-c++ make openssl-devel $IN_MEMORY_DB libpng-devel python3 git nfs-utils cifs-utils lvm2 ntfs-3g dmidecode patch"
+    printok "Installing build dependencies, $IN_MEMORY_DB server, python3, git, nfs-utils, cifs-utils, lvm2, ntfs-3g, dmidecode patch"
 
     # only run automated node install if executable not found
     if [[ -z $(runcmd_stdout "command -v node") ]]; then
@@ -257,9 +264,9 @@ function InstallDependenciesRPM {
     fi
 
     echo
-    printprog "Enabling and starting redis service"
-    runcmd "/bin/systemctl enable redis && /bin/systemctl start redis"
-    printok "Enabling and starting redis service"
+    printprog "Enabling and starting $IN_MEMORY_DB service"
+    runcmd "/bin/systemctl enable $IN_MEMORY_DB && /bin/systemctl start $IN_MEMORY_DB"
+    printok "Enabling and starting $IN_MEMORY_DB service"
 
     echo
     printprog "Enabling and starting rpcbind service"
@@ -1284,6 +1291,10 @@ function CheckOS {
 
     if [[ $(runcmd_stdout "command -v dnf") ]]; then
         PKG_FORMAT="rpm"
+        # Since version 10, redis is replaced with valkey
+        if [[ $OSVERSION -ge 10 ]]; then
+            REDIS=0
+        fi
     fi
 
     if [[ $(runcmd_stdout "command -v apt-get") ]]; then
@@ -1306,18 +1317,18 @@ function CheckOS {
         exit 1
     fi
 
-    if [[ "$OSNAME" == "CentOS" ]] && [[ ! "$OSVERSION" =~ ^(8|9)$ ]]; then
-        printfail "Only CentOS 8/9 supported"
+    if [[ "$OSNAME" == "CentOS" ]] && [[ ! "$OSVERSION" =~ ^(8|9|10)$ ]]; then
+        printfail "Only CentOS 8/9/10 supported"
         exit 1
     fi
 
-    if [[ "$OSNAME" == "Rocky" ]] && [[ ! "$OSVERSION" =~ ^(8|9)$ ]]; then
-        printfail "Only Rocky Linux 8/9 supported"
+    if [[ "$OSNAME" == "Rocky" ]] && [[ ! "$OSVERSION" =~ ^(8|9|10)$ ]]; then
+        printfail "Only Rocky Linux 8/9/10 supported"
         exit 1
     fi
 
-    if [[ "$OSNAME" == "AlmaLinux" ]] && [[ ! "$OSVERSION" =~ ^(8|9)$ ]]; then
-        printfail "Only AlmaLinux 8/9 supported"
+    if [[ "$OSNAME" == "AlmaLinux" ]] && [[ ! "$OSVERSION" =~ ^(8|9|10)$ ]]; then
+        printfail "Only AlmaLinux 8/9/10 supported"
         exit 1
     fi
 

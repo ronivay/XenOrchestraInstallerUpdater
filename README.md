@@ -36,10 +36,13 @@ First thing you need is a VM (or even a physical machine if you wish) where to i
 
 Supported Linux distributions and versions:
 
+- CentOS 10 Stream
 - CentOS 9 Stream
 - CentOS 8 Stream
+- AlmaLinux 10
 - AlmaLinux 9
 - AlmaLinux 8
+- Rocky Linux 10
 - Rocky Linux 9
 - Rocky Linux 8
 - Debian 12
@@ -114,7 +117,7 @@ rpm:
 - gcc+
 - make
 - openssl-devel
-- redis
+- redis (valkey if os version >=10)
 - libpng-devel
 - python3
 - git
