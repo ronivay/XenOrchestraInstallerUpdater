@@ -1294,6 +1294,8 @@ function CheckOS {
         # Since version 10, redis is replaced with valkey
         if [[ $OSVERSION -ge 10 ]]; then
             REDIS=0
+        else
+            REDIS=1
         fi
     fi
 
