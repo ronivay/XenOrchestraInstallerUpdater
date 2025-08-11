@@ -104,18 +104,18 @@ function SelfUpgrade {
     fi
 
     if [[ -d "$SCRIPT_DIR/.git" ]] && [[ -n $(runcmd_stdout "command -v git") ]]; then
-        local REMOTE="$(runcmd_stdout "cd $SCRIPT_DIR && git config --get remote.origin.url")"
+        local REMOTE="$(runcmd_stdout "git -C $SCRIPT_DIR config --get remote.origin.url")"
         if [[ "$REMOTE" == *"ronivay/XenOrchestraInstallerUpdater"* ]]; then
-            if [[ -n $(runcmd_stdout "cd $SCRIPT_DIR && git status --porcelain") ]]; then
+            if [[ -n $(runcmd_stdout "git -C $SCRIPT_DIR status --porcelain") ]]; then
                 printfail "Local changes in this script directory. Not attempting to self upgrade"
                 return 0
             fi
-            runcmd "cd $SCRIPT_DIR && git fetch"
-            local OLD_SCRIPT_VERSION="$(runcmd_stdout "cd $SCRIPT_DIR && git rev-parse --short HEAD")"
-            local NEW_SCRIPT_VERSION="$(runcmd_stdout "cd $SCRIPT_DIR && git rev-parse --short FETCH_HEAD")"
-            if [[ $(runcmd_stdout "cd $SCRIPT_DIR && git diff --name-only @{upstream}| grep xo-install.sh") ]]; then
+            runcmd "git -C $SCRIPT_DIR fetch"
+            local OLD_SCRIPT_VERSION="$(runcmd_stdout "git -C $SCRIPT_DIR rev-parse --short HEAD")"
+            local NEW_SCRIPT_VERSION="$(runcmd_stdout "git -C $SCRIPT_DIR rev-parse --short FETCH_HEAD")"
+            if [[ $(runcmd_stdout "git  -C $SCRIPT_DIR diff --name-only @{upstream}| grep xo-install.sh") ]]; then
                 printinfo "Newer version of script available, attempting to self upgrade from '$OLD_SCRIPT_VERSION' to '$NEW_SCRIPT_VERSION'"
-                runcmd "cd $SCRIPT_DIR && git pull --ff-only" &&
+                runcmd "git -C $SCRIPT_DIR pull --ff-only" &&
                     {
                         printok "Self upgrade done"
                         exec "$SCRIPT_DIR/xo-install.sh" "$@"
@@ -132,7 +132,7 @@ function ScriptInfo {
 
     set -o pipefail
 
-    local SCRIPTVERSION=$(cd "$SCRIPT_DIR" 2>/dev/null && git rev-parse --short HEAD 2>/dev/null)
+    local SCRIPTVERSION=$(git -C $SCRIPT_DIR rev-parse --short HEAD 2>/dev/null)
 
     [ -z "$SCRIPTVERSION" ] && SCRIPTVERSION="undefined"
     echo "Running script version $SCRIPTVERSION with config:" >>"$LOGFILE"
@@ -477,8 +477,7 @@ function InstallAdditionalXOPlugins {
             runcmd "mkdir -p \"$PLUGIN_SRC_DIR\""
             runcmd "git clone \"${x}\" \"$PLUGIN_SRC_DIR\""
         else
-            runcmd "cd \"$PLUGIN_SRC_DIR\" && git pull --ff-only"
-            runcmd "cd $SCRIPT_DIR"
+            runcmd "git -C \"$PLUGIN_SRC_DIR\" pull --ff-only"
         fi
 
         runcmd "cp -r $PLUGIN_SRC_DIR $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/"
@@ -589,10 +588,10 @@ function PrepInstall {
         runcmd "mkdir -p \"$XO_SRC_DIR\""
         runcmd "git clone \"${REPOSITORY}\" \"$XO_SRC_DIR\""
     else
-        runcmd "cd \"$XO_SRC_DIR\" && git remote set-url origin \"${REPOSITORY}\" && \
-            git fetch --prune && \
-            git reset --hard origin/master && \
-            git clean -xdff"
+        runcmd "git -C \"$XO_SRC_DIR\" remote set-url origin \"${REPOSITORY}\" && \
+            git -C \"$XO_SRC_DIR\" fetch --prune && \
+            git -C \"$XO_SRC_DIR\" reset --hard origin/master && \
+            git -C \"$XO_SRC_DIR\" clean -xdff"
     fi
 
     # Deploy the latest xen-orchestra source to the new install directory.
@@ -606,24 +605,26 @@ function PrepInstall {
         echo
         printinfo "Checking out source code from branch/commit '$BRANCH'"
 
-        runcmd "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && git checkout $BRANCH"
-        runcmd "cd $SCRIPT_DIR"
+        runcmd "git -C $INSTALLDIR/xo-builds/xen-orchestra-$TIME checkout $BRANCH"
     fi
 
     # Check if the new repo is any different from the currently-installed
     # one. If not, then skip the build and delete the repo we just cloned.
 
     # Get the commit ID of the to-be-installed xen-orchestra.
-    local NEW_REPO_HASH=$(runcmd_stdout "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && git rev-parse HEAD")
-    local NEW_REPO_HASH_SHORT=$(runcmd_stdout "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && git rev-parse --short HEAD")
-    runcmd "cd $SCRIPT_DIR"
+    local NEW_REPO_HASH=$(runcmd_stdout "git -C $INSTALLDIR/xo-builds/xen-orchestra-$TIME rev-parse HEAD")
+    local NEW_REPO_HASH_SHORT=$(runcmd_stdout "git -C $INSTALLDIR/xo-builds/xen-orchestra-$TIME rev-parse --short HEAD")
 
     # Get the commit ID of the currently-installed xen-orchestra (if one
     # exists).
     if [[ -L "$INSTALLDIR/$XO_SVC" ]] && [[ -n $(runcmd_stdout "readlink -e $INSTALLDIR/$XO_SVC") ]]; then
-        local OLD_REPO_HASH=$(runcmd_stdout "cd $INSTALLDIR/$XO_SVC && git rev-parse HEAD")
-        local OLD_REPO_HASH_SHORT=$(runcmd_stdout "cd $INSTALLDIR/$XO_SVC && git rev-parse --short HEAD")
-        runcmd "cd $SCRIPT_DIR"
+        if [[ "$XOUSER" != "root" ]]; then
+            local OLD_REPO_HASH=$(runcmd_stdout "runuser -u $XOUSER -- git -C $INSTALLDIR/$XO_SVC rev-parse HEAD")
+            local OLD_REPO_HASH_SHORT=$(runcmd_stdout "runuser -u $XOUSER -- git -C $INSTALLDIR/$XO_SVC rev-parse --short HEAD")
+        else
+            local OLD_REPO_HASH=$(runcmd_stdout "git -C $INSTALLDIR/$XO_SVC rev-parse HEAD")
+            local OLD_REPO_HASH_SHORT=$(runcmd_stdout "git -C $INSTALLDIR/$XO_SVC rev-parse --short HEAD")
+        fi
     else
         # If there's no existing installation, then we definitely want
         # to proceed with the bulid.
