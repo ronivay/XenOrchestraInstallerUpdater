@@ -147,12 +147,13 @@ deb:
 - lvm2
 - nfs-common
 - cifs-utils
-- gnupg (debian 10/11)
+- gnupg (debian 10/11/12/13)
 - software-properties-common (ubuntu)
 - ntfs-3g
 - dmidecode
 - sudo (if set in xo-install.cfg)
 - patch
+- libfuse2t64 (debian 13)
 ```
 
 Following repositories will be installed if needed and repository install is enabled in xo-install.cfg
