@@ -208,7 +208,8 @@ function InstallDependenciesRPM {
     fi
 
     # only install epel-release if doesn't exist and user allows it to be installed
-    if [[ -z $(runcmd_stdout "rpm -qa epel-release") ]] && [[ "$INSTALL_REPOS" == "true" ]]; then
+    # Skip for Fedora as it doesn't need EPEL
+    if [[ -z $(runcmd_stdout "rpm -qa epel-release") ]] && [[ "$INSTALL_REPOS" == "true" ]] && [[ "$OSNAME" != "Fedora" ]]; then
         echo
         printprog "Installing epel-repo"
         runcmd "dnf -y install epel-release"
@@ -253,12 +254,17 @@ function InstallDependenciesRPM {
 
     # Only install libvhdi-tools if vhdimount is not present
     if [[ -z $(runcmd_stdout "command -v vhdimount") ]]; then
-        if [[ "$INSTALL_REPOS" == "true" ]] && [[ "$INSTALL_EL_LIBVHDI" == "true" ]]; then
+        # Skip COPR for Fedora as it only supports EPEL
+        if [[ "$INSTALL_REPOS" == "true" ]] && [[ "$INSTALL_EL_LIBVHDI" == "true" ]] && [[ "$OSNAME" != "Fedora" ]]; then
             echo
             printprog "Installing libvhdi-tools"
             runcmd "dnf copr enable -y bnerickson/libvhdi"
             runcmd "dnf install -y libvhdi-tools"
             printok "Installing libvhdi-tools"
+        elif [[ "$OSNAME" == "Fedora" ]] && [[ "$INSTALL_EL_LIBVHDI" == "true" ]]; then
+            echo
+            printinfo "libvhdi-tools not available for Fedora from COPR. Skipping installation."
+            printinfo "XO will work without it, but some VHD operations may be limited."
         fi
     fi
 
@@ -1289,6 +1295,13 @@ function CheckOS {
 
     OSVERSION=$(runcmd_stdout "grep ^VERSION_ID /etc/os-release | cut -d'=' -f2 | grep -Eo '[0-9]{1,2}' | head -1")
     OSNAME=$(runcmd_stdout "grep ^NAME /etc/os-release | cut -d'=' -f2 | sed 's/\"//g' | awk '{print \$1}'")
+    # Special handling for Fedora Rawhide
+    if [[ "$OSNAME" == "Fedora" ]]; then
+        local VERSION_STRING=$(runcmd_stdout "grep ^VERSION_ID /etc/os-release | cut -d'=' -f2 | sed 's/\"//g'")
+        if [[ "$VERSION_STRING" == "rawhide" ]]; then
+            OSVERSION="rawhide"
+        fi
+    fi
 
     # check that were not on official XOA VM. if yes, bail out
     if [[ $(runcmd_stdout "grep ^GRUB_DISTRIBUTOR /etc/default/grub | grep 'Xen Orchestra'") ]]; then
@@ -1298,8 +1311,15 @@ function CheckOS {
 
     if [[ $(runcmd_stdout "command -v dnf") ]]; then
         PKG_FORMAT="rpm"
-        # Since version 10, redis is replaced with valkey
-        if [[ $OSVERSION -ge 10 ]]; then
+        # Handle Fedora separately - uses valkey since Fedora 40
+        if [[ "$OSNAME" == "Fedora" ]]; then
+            if [[ "$OSVERSION" == "rawhide" ]] || [[ "$OSVERSION" -ge 40 ]]; then
+                REDIS=0  # Use valkey
+            else
+                REDIS=1  # Use redis (for older Fedora versions if any)
+            fi
+        # For RHEL-based distros, valkey since version 10
+        elif [[ $OSVERSION -ge 10 ]]; then
             REDIS=0
         else
             REDIS=1
@@ -1321,8 +1341,8 @@ function CheckOS {
         return 0
     fi
 
-    if [[ ! "$OSNAME" =~ ^(Debian|Ubuntu|CentOS|Rocky|AlmaLinux)$ ]]; then
-        printfail "Only Ubuntu/Debian/CentOS/Rocky/AlmaLinux supported"
+    if [[ ! "$OSNAME" =~ ^(Debian|Ubuntu|CentOS|Rocky|AlmaLinux|Fedora)$ ]]; then
+        printfail "Only Ubuntu/Debian/CentOS/Rocky/AlmaLinux/Fedora supported"
         exit 1
     fi
 
@@ -1338,6 +1358,11 @@ function CheckOS {
 
     if [[ "$OSNAME" == "AlmaLinux" ]] && [[ ! "$OSVERSION" =~ ^(8|9|10)$ ]]; then
         printfail "Only AlmaLinux 8/9/10 supported"
+        exit 1
+    fi
+
+    if [[ "$OSNAME" == "Fedora" ]] && [[ ! "$OSVERSION" =~ ^(40|41|42|rawhide)$ ]]; then
+        printfail "Only Fedora 40/41/42/rawhide supported"
         exit 1
     fi
 
