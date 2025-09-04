@@ -1,18 +1,18 @@
 # Fedora Support for XenOrchestraInstallerUpdater
 
-This fork adds support for Fedora 40, 41, 42, and rawhide to the XenOrchestraInstallerUpdater script.
+This fork adds support for Fedora 41, 42, 43, and rawhide to the XenOrchestraInstallerUpdater script.
 
 ## Changes Made
 
 ### 1. Added Fedora to Supported Operating Systems
 - Modified OS detection to recognize Fedora
-- Added version checks for Fedora 40, 41, 42, and rawhide
+- Added version checks for Fedora 41, 42, 43, and rawhide
 - Special handling for Fedora Rawhide (rolling release)
 
 ### 2. Fixed Package Management for Fedora
-- **Valkey vs Redis**: Correctly detects that Fedora 40+ uses valkey instead of redis
+- **Valkey vs Redis**: Correctly detects that Fedora 41+ uses valkey instead of redis
 - **EPEL Repository**: Skips EPEL installation as it's not needed on Fedora
-- **libvhdi**: Provides information about libvhdi availability (currently not in Fedora repos)
+- **libvhdi**: Automatically installs from reversejames/libvhdi COPR repository for Fedora
 
 ### 3. Tested Configurations
 - Fedora 42 (current stable)
@@ -66,16 +66,16 @@ The script uses the same configuration file (`xo-install.cfg`) as the original.
 
 2. **Node.js**: Fedora 42 includes Node.js 22 in the base repository, which matches XO requirements.
 
-3. **libvhdi**: Currently not available in Fedora repositories. The script will skip this and inform you that XO will work without it, but some VHD operations may be limited.
+3. **libvhdi**: Automatically installed from the reversejames/libvhdi COPR repository. This provides full VHD operation support.
 
 ## Known Limitations
 
-- libvhdi-tools is not available from COPR for Fedora (only EPEL)
-- Some VHD operations may be limited without libvhdi
+- libvhdi-tools is installed from reversejames/libvhdi COPR repository
+- Full VHD operations are supported with libvhdi installed
 
 ## Future Improvements
 
-- [ ] Create COPR repository for libvhdi on Fedora
+- [x] COPR repository for libvhdi on Fedora (reversejames/libvhdi)
 - [ ] Add support for more Fedora versions as they're released
 - [ ] Improve rawhide handling for better stability
 
@@ -83,10 +83,10 @@ The script uses the same configuration file (`xo-install.cfg`) as the original.
 
 | Fedora Version | Status | Notes |
 |---------------|--------|-------|
-| Fedora 40 | ✅ Supported | Uses valkey |
-| Fedora 41 | ✅ Supported | Uses valkey |
-| Fedora 42 | ✅ Tested | Current stable, uses valkey |
-| Fedora Rawhide | ✅ Supported | Development version, uses valkey |
+| Fedora 41 | ✅ Supported | Uses valkey, libvhdi from COPR |
+| Fedora 42 | ✅ Tested | Current stable, uses valkey, libvhdi from COPR |
+| Fedora 43 | ✅ Supported | Uses valkey, libvhdi from COPR |
+| Fedora Rawhide | ✅ Supported | Development version, uses valkey, libvhdi from COPR |
 
 ## Contributing
 

@@ -254,17 +254,18 @@ function InstallDependenciesRPM {
 
     # Only install libvhdi-tools if vhdimount is not present
     if [[ -z $(runcmd_stdout "command -v vhdimount") ]]; then
-        # Skip COPR for Fedora as it only supports EPEL
-        if [[ "$INSTALL_REPOS" == "true" ]] && [[ "$INSTALL_EL_LIBVHDI" == "true" ]] && [[ "$OSNAME" != "Fedora" ]]; then
+        if [[ "$INSTALL_REPOS" == "true" ]] && [[ "$INSTALL_EL_LIBVHDI" == "true" ]]; then
             echo
             printprog "Installing libvhdi-tools"
-            runcmd "dnf copr enable -y bnerickson/libvhdi"
+            if [[ "$OSNAME" == "Fedora" ]]; then
+                # Use reversejames/libvhdi for Fedora
+                runcmd "dnf copr enable -y reversejames/libvhdi"
+            else
+                # Use bnerickson/libvhdi for RHEL-based systems
+                runcmd "dnf copr enable -y bnerickson/libvhdi"
+            fi
             runcmd "dnf install -y libvhdi-tools"
             printok "Installing libvhdi-tools"
-        elif [[ "$OSNAME" == "Fedora" ]] && [[ "$INSTALL_EL_LIBVHDI" == "true" ]]; then
-            echo
-            printinfo "libvhdi-tools not available for Fedora from COPR. Skipping installation."
-            printinfo "XO will work without it, but some VHD operations may be limited."
         fi
     fi
 
@@ -1311,9 +1312,9 @@ function CheckOS {
 
     if [[ $(runcmd_stdout "command -v dnf") ]]; then
         PKG_FORMAT="rpm"
-        # Handle Fedora separately - uses valkey since Fedora 40
+        # Handle Fedora separately - uses valkey since Fedora 41
         if [[ "$OSNAME" == "Fedora" ]]; then
-            if [[ "$OSVERSION" == "rawhide" ]] || [[ "$OSVERSION" -ge 40 ]]; then
+            if [[ "$OSVERSION" == "rawhide" ]] || [[ "$OSVERSION" -ge 41 ]]; then
                 REDIS=0  # Use valkey
             else
                 REDIS=1  # Use redis (for older Fedora versions if any)
@@ -1361,8 +1362,8 @@ function CheckOS {
         exit 1
     fi
 
-    if [[ "$OSNAME" == "Fedora" ]] && [[ ! "$OSVERSION" =~ ^(40|41|42|rawhide)$ ]]; then
-        printfail "Only Fedora 40/41/42/rawhide supported"
+    if [[ "$OSNAME" == "Fedora" ]] && [[ ! "$OSVERSION" =~ ^(41|42|43|rawhide)$ ]]; then
+        printfail "Only Fedora 41/42/43/rawhide supported"
         exit 1
     fi
 
