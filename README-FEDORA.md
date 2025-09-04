@@ -1,6 +1,8 @@
 # Fedora Support for XenOrchestraInstallerUpdater
 
-This fork adds support for Fedora 41, 42, 43, and rawhide to the XenOrchestraInstallerUpdater script.
+**⚠️ IMPORTANT: Xen Orchestra does not officially support Fedora. This is an experimental implementation.**
+
+This fork adds experimental support for Fedora 41, 42, 43, and rawhide to the XenOrchestraInstallerUpdater script.
 
 ## Changes Made
 
@@ -62,16 +64,20 @@ The script uses the same configuration file (`xo-install.cfg`) as the original.
 
 ### Fedora-Specific Notes
 
-1. **Yarn Installation**: The script will automatically configure the Yarn repository and install it, as it's not available in Fedora base repos.
+1. **Yarn Installation**: The script installs Fedora's native `yarnpkg` package instead of using external repositories. This follows Fedora packaging best practices and avoids third-party dependencies.
 
-2. **Node.js**: Fedora 42 includes Node.js 22 in the base repository, which matches XO requirements.
+2. **Node.js**: Fedora includes recent Node.js versions in the base repository, which should match XO requirements.
+
+3. **Package Differences**: Unlike RHEL-based systems which use Yarn's official repository, Fedora uses its native `yarnpkg` package to follow distribution packaging guidelines.
 
 3. **libvhdi**: Automatically installed from the reversejames/libvhdi COPR repository. This provides full VHD operation support.
 
 ## Known Limitations
 
+- **Unofficial Support**: Xen Orchestra does not officially support Fedora
+- **Experimental Status**: This installation may encounter unexpected issues
 - libvhdi-tools is installed from reversejames/libvhdi COPR repository
-- Full VHD operations are supported with libvhdi installed
+- Uses Fedora's `yarnpkg` package instead of upstream yarn
 
 ## Future Improvements
 

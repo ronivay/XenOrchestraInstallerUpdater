@@ -243,12 +243,17 @@ function InstallDependenciesRPM {
         echo
         printprog "Installing yarn"
 
-        # only install yarn repo if user allows it to be installed
-        if [[ "$INSTALL_REPOS" == "true" ]]; then
-            runcmd "curl -s -o /etc/yum.repos.d/yarn.repo https://dl.yarnpkg.com/rpm/yarn.repo"
+        if [[ "$OSNAME" == "Fedora" ]]; then
+            # Use Fedora's native yarnpkg package
+            runcmd "dnf -y install yarnpkg"
+        else
+            # For RHEL-based systems, use Yarn's official repository
+            if [[ "$INSTALL_REPOS" == "true" ]]; then
+                runcmd "curl -s -o /etc/yum.repos.d/yarn.repo https://dl.yarnpkg.com/rpm/yarn.repo"
+            fi
+            runcmd "dnf -y install yarn"
         fi
 
-        runcmd "dnf -y install yarn"
         printok "Installing yarn"
     fi
 
@@ -1375,6 +1380,14 @@ function CheckOS {
     if [[ "$OSNAME" == "Ubuntu" ]] && [[ ! "$OSVERSION" =~ ^(20|22|24)$ ]]; then
         printfail "Only Ubuntu 20/22/24 supported"
         exit 1
+    fi
+
+    # Display warning for Fedora users about unofficial support
+    if [[ "$OSNAME" == "Fedora" ]]; then
+        echo
+        printwarning "NOTICE: Xen Orchestra does not officially support Fedora"
+        printwarning "This is an experimental installation using Fedora's native packages"
+        echo
     fi
 
 }
