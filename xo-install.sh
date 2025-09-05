@@ -173,12 +173,9 @@ function printinfo {
     echo -e "${INFO} $*"
 }
 
-# Define printwarning if it doesn't already exist as a system command
-if ! command -v printwarning &>/dev/null; then
-    function printwarning {
-        echo -e "${INFO} $*"
-    }
-fi
+function printwarning {
+    echo -e "${INFO} $*"
+}
 
 # if script fails at a stage where installation is not complete, we don't want to keep the install specific directory and content
 # this is called by trap inside different functions
@@ -234,12 +231,17 @@ function InstallDependenciesRPM {
         echo
         printprog "Installing node.js"
 
-        # only install nodejs repo if user allows it to be installed
-        if [[ "$INSTALL_REPOS" == "true" ]]; then
-            runcmd "curl -s -L https://rpm.nodesource.com/setup_${NODEVERSION}.x | bash -"
+        if [[ "$OSNAME" == "Fedora" ]]; then
+            # Use Fedora's native nodejs package (v22)
+            runcmd "dnf install -y nodejs nodejs-npm"
+        else
+            # For RHEL-based systems, use NodeSource repository
+            if [[ "$INSTALL_REPOS" == "true" ]]; then
+                runcmd "curl -s -L https://rpm.nodesource.com/setup_${NODEVERSION}.x | bash -"
+            fi
+            runcmd "dnf install -y nodejs"
         fi
 
-        runcmd "dnf install -y nodejs"
         printok "Installing node.js"
     else
         UpdateNodeYarn
@@ -413,15 +415,25 @@ function UpdateNodeYarn {
 
     if [ "$PKG_FORMAT" == "rpm" ]; then
         # update node version if needed.
-        # skip update if repository install is disabled as we can't quarantee this actually updates anything
-        if [[ "${NODEV:-0}" -lt "${NODEVERSION}" ]] && [[ "$INSTALL_REPOS" == "true" ]]; then
+        # For Fedora, use native packages; for others use NodeSource if allowed
+        if [[ "${NODEV:-0}" -lt "${NODEVERSION}" ]]; then
             echo
             printprog "node.js version is ${NODEV:-"not installed"}, upgrading to ${NODEVERSION}.x"
 
-            runcmd "curl -sL https://rpm.nodesource.com/setup_${NODEVERSION}.x | bash -"
+            if [[ "$OSNAME" == "Fedora" ]]; then
+                # Use Fedora's native nodejs package
+                runcmd "dnf clean all"
+                runcmd "dnf install -y nodejs nodejs-npm"
+            elif [[ "$INSTALL_REPOS" == "true" ]]; then
+                # For RHEL-based systems, use NodeSource repository
+                runcmd "curl -sL https://rpm.nodesource.com/setup_${NODEVERSION}.x | bash -"
+                runcmd "dnf clean all"
+                runcmd "dnf install -y nodejs"
+            else
+                printfail "Node.js version update needed but INSTALL_REPOS set to false for non-Fedora system, can't continue"
+                exit 1
+            fi
 
-            runcmd "dnf clean all"
-            runcmd "dnf install -y nodejs"
             printok "node.js version is ${NODEV:-"not installed"}, upgrading to ${NODEVERSION}.x"
         else
             if [[ -z "$NODEV" ]]; then
