@@ -267,6 +267,428 @@ function ErrorHandling {
     exit 1
 }
 
+# Generate secure random password
+function GenerateSecurePassword {
+    # Generate a 16-character password with alphanumeric and special characters
+    local password=$(tr -dc 'A-Za-z0-9!@#$%^&*()_+-=' </dev/urandom | head -c 16)
+    echo "$password"
+}
+
+# Change XO admin credentials using xo-cli
+function ChangeAdminCredentials {
+    local new_email="$1"
+    local new_password="$2"
+    local delete_default="${3:-true}"  # Delete default user by default
+    
+    echo
+    printprog "Setting up admin credentials"
+    
+    # Wait for service to be fully ready
+    sleep 5
+    
+    # Register xo-cli with default credentials
+    if ! runcmd_stdout "xo-cli register --allowUnauthorized http://localhost:$PORT admin@admin.net admin" >/dev/null 2>&1; then
+        printfail "Failed to connect to XO server with default credentials"
+        return 1
+    fi
+    
+    # If we're creating a new user (different email), create it first
+    if [[ -n "$new_email" ]] && [[ "$new_email" != "admin@admin.net" ]]; then
+        # Create new admin user
+        if runcmd_stdout "xo-cli user.create email='$new_email' password='$new_password' permission='admin'" >/dev/null 2>&1; then
+            printok "New admin user created successfully"
+            
+            # Get the default admin user ID to delete it
+            if [[ "$delete_default" == "true" ]]; then
+                local default_admin_id=$(runcmd_stdout "xo-cli user.getAll 2>/dev/null | grep -B1 -A2 \"email: 'admin@admin.net'\" | grep 'id:' | cut -d\"'\" -f2")
+                
+                if [[ -n "$default_admin_id" ]]; then
+                    # Re-register with new credentials before deleting old admin
+                    if runcmd_stdout "xo-cli register --allowUnauthorized http://localhost:$PORT '$new_email' '$new_password'" >/dev/null 2>&1; then
+                        if runcmd_stdout "xo-cli user.delete id=$default_admin_id" >/dev/null 2>&1; then
+                            printok "Default admin user (admin@admin.net) deleted for security"
+                        else
+                            printfail "Warning: Could not delete default admin user. Please delete it manually!"
+                        fi
+                    else
+                        printfail "Warning: Could not re-authenticate with new credentials. Default user not deleted."
+                    fi
+                else
+                    printfail "Warning: Could not find default admin user ID to delete"
+                fi
+            fi
+            
+            echo
+            echo -e "       ${COLOR_GREEN}New admin username: $new_email${COLOR_N}"
+            echo -e "       ${COLOR_GREEN}New admin password: $new_password${COLOR_N}"
+            echo
+            echo -e "       ${COLOR_YELLOW}IMPORTANT: Save these credentials securely!${COLOR_N}"
+            return 0
+        else
+            printfail "Failed to create new admin user"
+            return 1
+        fi
+    elif [[ -n "$new_password" ]]; then
+        # Just changing password for admin@admin.net
+        local admin_id=$(runcmd_stdout "xo-cli user.getAll 2>/dev/null | grep -B1 -A2 \"email: 'admin@admin.net'\" | grep 'id:' | cut -d\"'\" -f2")
+        
+        if [[ -z "$admin_id" ]]; then
+            printfail "Failed to get admin user ID"
+            return 1
+        fi
+        
+        if runcmd_stdout "xo-cli user.set id=$admin_id password='$new_password'" >/dev/null 2>&1; then
+            printok "Admin password updated successfully"
+            echo
+            echo -e "       ${COLOR_GREEN}Username: admin@admin.net${COLOR_N}"
+            echo -e "       ${COLOR_GREEN}New password: $new_password${COLOR_N}"
+            echo
+            echo -e "       ${COLOR_YELLOW}IMPORTANT: Save this password securely!${COLOR_N}"
+            echo -e "       ${COLOR_YELLOW}WARNING: Consider creating a new admin user with a different email for better security${COLOR_N}"
+            return 0
+        else
+            printfail "Failed to update admin password"
+            return 1
+        fi
+    fi
+}
+
+# Interactive credential setup for installation
+function SetupCredentialsInteractive {
+    echo
+    echo "-----------------------------------------"
+    echo "Admin Credential Setup"
+    echo "-----------------------------------------"
+    echo
+    echo "For security, it's highly recommended to change the default credentials."
+    echo
+    echo "Choose an option:"
+    echo "1. Keep default credentials (admin@admin.net / admin) - NOT RECOMMENDED"
+    echo "2. Set custom email and password (default user will be deleted)"
+    echo "3. Set custom email with auto-generated password (default user will be deleted)"
+    echo "4. Change default password only (keeps admin@admin.net email)"
+    echo
+    read -r -p "Option [1-4]: " cred_option
+    
+    case $cred_option in
+        1)
+            echo
+            echo -e "       ${COLOR_RED}WARNING: Using default credentials is a security risk!${COLOR_N}"
+            echo -e "       ${COLOR_YELLOW}Default username: admin@admin.net password: admin${COLOR_N}"
+            echo -e "       ${COLOR_RED}IMPORTANT: Change these credentials immediately after installation!${COLOR_N}"
+            ;;
+        2)
+            echo
+            read -r -p "Enter new admin email: " new_email
+            # Validate email format
+            if [[ ! "$new_email" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
+                echo -e "${COLOR_RED}Invalid email format. Using default credentials.${COLOR_N}"
+                echo -e "       ${COLOR_YELLOW}Default username: admin@admin.net password: admin${COLOR_N}"
+                return
+            fi
+            
+            while true; do
+                read -r -s -p "Enter new admin password: " new_password
+                echo
+                read -r -s -p "Confirm password: " confirm_password
+                echo
+                if [[ "$new_password" == "$confirm_password" ]]; then
+                    if [[ ${#new_password} -lt 6 ]]; then
+                        echo -e "${COLOR_RED}Password must be at least 6 characters long${COLOR_N}"
+                    else
+                        break
+                    fi
+                else
+                    echo -e "${COLOR_RED}Passwords do not match${COLOR_N}"
+                fi
+            done
+            ChangeAdminCredentials "$new_email" "$new_password" "true"
+            ;;
+        3)
+            echo
+            read -r -p "Enter new admin email: " new_email
+            # Validate email format
+            if [[ ! "$new_email" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
+                echo -e "${COLOR_RED}Invalid email format. Using default credentials.${COLOR_N}"
+                echo -e "       ${COLOR_YELLOW}Default username: admin@admin.net password: admin${COLOR_N}"
+                return
+            fi
+            
+            local auto_password=$(GenerateSecurePassword)
+            ChangeAdminCredentials "$new_email" "$auto_password" "true"
+            ;;
+        4)
+            echo
+            echo -e "       ${COLOR_YELLOW}Generating secure password for admin@admin.net${COLOR_N}"
+            local auto_password=$(GenerateSecurePassword)
+            ChangeAdminCredentials "" "$auto_password" "false"
+            ;;
+        *)
+            echo
+            echo -e "       ${COLOR_YELLOW}Invalid option, using default credentials${COLOR_N}"
+            echo -e "       ${COLOR_RED}WARNING: Default username: admin@admin.net password: admin${COLOR_N}"
+            echo -e "       ${COLOR_RED}IMPORTANT: Change these credentials immediately after installation!${COLOR_N}"
+            ;;
+    esac
+}
+
+# Standalone credential management function for menu
+function ManageCredentials {
+    echo
+    echo "-----------------------------------------"
+    echo "Manage Admin Credentials"
+    echo "-----------------------------------------"
+    echo
+    
+    # Check if XO server is running
+    if ! runcmd_stdout "pgrep -f '^([a-zA-Z0-9_\/-]+?)node.*xo-server'" >/dev/null 2>&1; then
+        printfail "XO Server is not running. Please install or start it first."
+        return 1
+    fi
+    
+    echo "This will manage admin credentials for your XO installation."
+    echo
+    
+    # First, authenticate with current credentials
+    echo "Please authenticate with your current admin credentials:"
+    read -r -p "Enter current admin email: " current_email
+    read -r -s -p "Enter current admin password: " current_password
+    echo
+    
+    # Try to authenticate with provided credentials
+    if ! runcmd_stdout "xo-cli register --allowUnauthorized http://localhost:$PORT '$current_email' '$current_password'" >/dev/null 2>&1; then
+        printfail "Failed to authenticate with provided credentials"
+        return 1
+    fi
+    
+    printok "Authentication successful"
+    echo
+    
+    echo "Choose an option:"
+    echo "1. Create new admin user and delete current one"
+    echo "2. Create new admin user (keep current one)"
+    echo "3. Change current user's password only"
+    echo "4. List all admin users"
+    echo "5. Delete a user"
+    echo "6. Cancel"
+    echo
+    read -r -p "Option [1-6]: " manage_option
+    
+    case $manage_option in
+        1)
+            echo
+            read -r -p "Enter new admin email: " new_email
+            # Validate email format
+            if [[ ! "$new_email" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
+                echo -e "${COLOR_RED}Invalid email format${COLOR_N}"
+                return 1
+            fi
+            
+            echo "Choose password option:"
+            echo "1. Enter custom password"
+            echo "2. Generate secure password automatically"
+            read -r -p "Option [1-2]: " pass_option
+            
+            if [[ "$pass_option" == "1" ]]; then
+                while true; do
+                    read -r -s -p "Enter new admin password: " new_password
+                    echo
+                    read -r -s -p "Confirm password: " confirm_password
+                    echo
+                    if [[ "$new_password" == "$confirm_password" ]]; then
+                        if [[ ${#new_password} -lt 6 ]]; then
+                            echo -e "${COLOR_RED}Password must be at least 6 characters long${COLOR_N}"
+                        else
+                            break
+                        fi
+                    else
+                        echo -e "${COLOR_RED}Passwords do not match${COLOR_N}"
+                    fi
+                done
+            else
+                new_password=$(GenerateSecurePassword)
+                echo
+                echo -e "       ${COLOR_GREEN}Generated password: $new_password${COLOR_N}"
+                echo -e "       ${COLOR_YELLOW}IMPORTANT: Save this password securely!${COLOR_N}"
+            fi
+            
+            # Create new admin user
+            if runcmd_stdout "xo-cli user.create email='$new_email' password='$new_password' permission='admin'" >/dev/null 2>&1; then
+                printok "New admin user created successfully"
+                
+                # Get current user ID to delete
+                local current_user_id=$(runcmd_stdout "xo-cli user.getAll 2>/dev/null | grep -B1 -A2 \"email: '$current_email'\" | grep 'id:' | cut -d\"'\" -f2")
+                
+                if [[ -n "$current_user_id" ]]; then
+                    # Re-register with new credentials
+                    if runcmd_stdout "xo-cli register --allowUnauthorized http://localhost:$PORT '$new_email' '$new_password'" >/dev/null 2>&1; then
+                        if runcmd_stdout "xo-cli user.delete id=$current_user_id" >/dev/null 2>&1; then
+                            printok "Previous admin user ($current_email) deleted"
+                        else
+                            printfail "Warning: Could not delete previous admin user"
+                        fi
+                    fi
+                fi
+                
+                echo
+                echo -e "       ${COLOR_GREEN}New admin username: $new_email${COLOR_N}"
+                if [[ "$pass_option" != "1" ]]; then
+                    echo -e "       ${COLOR_GREEN}New admin password: $new_password${COLOR_N}"
+                fi
+            else
+                printfail "Failed to create new admin user"
+            fi
+            ;;
+        2)
+            echo
+            read -r -p "Enter new admin email: " new_email
+            # Validate email format
+            if [[ ! "$new_email" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
+                echo -e "${COLOR_RED}Invalid email format${COLOR_N}"
+                return 1
+            fi
+            
+            echo "Choose password option:"
+            echo "1. Enter custom password"
+            echo "2. Generate secure password automatically"
+            read -r -p "Option [1-2]: " pass_option
+            
+            if [[ "$pass_option" == "1" ]]; then
+                while true; do
+                    read -r -s -p "Enter new admin password: " new_password
+                    echo
+                    read -r -s -p "Confirm password: " confirm_password
+                    echo
+                    if [[ "$new_password" == "$confirm_password" ]]; then
+                        if [[ ${#new_password} -lt 6 ]]; then
+                            echo -e "${COLOR_RED}Password must be at least 6 characters long${COLOR_N}"
+                        else
+                            break
+                        fi
+                    else
+                        echo -e "${COLOR_RED}Passwords do not match${COLOR_N}"
+                    fi
+                done
+            else
+                new_password=$(GenerateSecurePassword)
+                echo
+                echo -e "       ${COLOR_GREEN}Generated password: $new_password${COLOR_N}"
+                echo -e "       ${COLOR_YELLOW}IMPORTANT: Save this password securely!${COLOR_N}"
+            fi
+            
+            # Create new admin user without deleting current one
+            if runcmd_stdout "xo-cli user.create email='$new_email' password='$new_password' permission='admin'" >/dev/null 2>&1; then
+                printok "New admin user created successfully"
+                echo
+                echo -e "       ${COLOR_GREEN}New admin username: $new_email${COLOR_N}"
+                if [[ "$pass_option" != "1" ]]; then
+                    echo -e "       ${COLOR_GREEN}New admin password: $new_password${COLOR_N}"
+                fi
+                echo -e "       ${COLOR_YELLOW}Note: Previous admin user ($current_email) still exists${COLOR_N}"
+            else
+                printfail "Failed to create new admin user"
+            fi
+            ;;
+        3)
+            echo
+            echo "Choose password option:"
+            echo "1. Enter custom password"
+            echo "2. Generate secure password automatically"
+            read -r -p "Option [1-2]: " pass_option
+            
+            if [[ "$pass_option" == "1" ]]; then
+                while true; do
+                    read -r -s -p "Enter new password: " new_password
+                    echo
+                    read -r -s -p "Confirm password: " confirm_password
+                    echo
+                    if [[ "$new_password" == "$confirm_password" ]]; then
+                        if [[ ${#new_password} -lt 6 ]]; then
+                            echo -e "${COLOR_RED}Password must be at least 6 characters long${COLOR_N}"
+                        else
+                            break
+                        fi
+                    else
+                        echo -e "${COLOR_RED}Passwords do not match${COLOR_N}"
+                    fi
+                done
+            else
+                new_password=$(GenerateSecurePassword)
+                echo
+                echo -e "       ${COLOR_GREEN}Generated password: $new_password${COLOR_N}"
+                echo -e "       ${COLOR_YELLOW}IMPORTANT: Save this password securely!${COLOR_N}"
+            fi
+            
+            # Get current user ID
+            local current_user_id=$(runcmd_stdout "xo-cli user.getAll 2>/dev/null | grep -B1 -A2 \"email: '$current_email'\" | grep 'id:' | cut -d\"'\" -f2")
+            
+            if [[ -n "$current_user_id" ]]; then
+                if runcmd_stdout "xo-cli user.set id=$current_user_id password='$new_password'" >/dev/null 2>&1; then
+                    printok "Password updated successfully"
+                else
+                    printfail "Failed to update password"
+                fi
+            else
+                printfail "Failed to find user"
+            fi
+            ;;
+        4)
+            echo
+            echo "Admin users:"
+            echo
+            runcmd_stdout "xo-cli user.getAll 2>/dev/null" | grep -B1 -A3 "permission: 'admin'" | grep -E "(email:|id:)" | sed 's/^[[:space:]]*/  /'
+            ;;
+        5)
+            echo
+            echo "Admin users:"
+            echo
+            local admin_users=$(runcmd_stdout "xo-cli user.getAll 2>/dev/null" | grep -B1 -A3 "permission: 'admin'" | grep -E "email:" | cut -d"'" -f2)
+            echo "$admin_users" | nl
+            echo
+            
+            # Count admin users
+            local admin_count=$(echo "$admin_users" | wc -l)
+            if [[ $admin_count -le 1 ]]; then
+                echo -e "${COLOR_RED}Cannot delete the only admin user!${COLOR_N}"
+                return 1
+            fi
+            
+            read -r -p "Enter the email of the user to delete: " delete_email
+            
+            if [[ "$delete_email" == "$current_email" ]]; then
+                echo -e "${COLOR_RED}Cannot delete the currently authenticated user!${COLOR_N}"
+                return 1
+            fi
+            
+            # Get user ID to delete
+            local delete_user_id=$(runcmd_stdout "xo-cli user.getAll 2>/dev/null | grep -B1 -A2 \"email: '$delete_email'\" | grep 'id:' | cut -d\"'\" -f2")
+            
+            if [[ -n "$delete_user_id" ]]; then
+                read -r -p "Are you sure you want to delete user $delete_email? [y/N]: " confirm
+                if [[ "$confirm" == "y" ]] || [[ "$confirm" == "Y" ]]; then
+                    if runcmd_stdout "xo-cli user.delete id=$delete_user_id" >/dev/null 2>&1; then
+                        printok "User $delete_email deleted successfully"
+                    else
+                        printfail "Failed to delete user"
+                    fi
+                else
+                    echo "Deletion cancelled"
+                fi
+            else
+                printfail "User not found"
+            fi
+            ;;
+        6)
+            echo "Cancelled"
+            return 0
+            ;;
+        *)
+            echo "Invalid option"
+            return 1
+            ;;
+    esac
+}
+
 # install package dependencies to rpm distros, based on: https://xen-orchestra.com/docs/from_the_sources.html
 function InstallDependenciesRPM {
 
@@ -1084,7 +1506,19 @@ function VerifyServiceStart {
             echo -e "       ${COLOR_GREEN}WebUI started in port $PORT. Make sure you have firewall rules in place to allow access.${COLOR_N}"
             # print username and password only when install was ran and skip while updating
             if [[ "$TASK" == "Installation" ]]; then
-                echo -e "       ${COLOR_GREEN}Default username: admin@admin.net password: admin${COLOR_N}"
+                # Ask user if they want to set up custom credentials
+                echo
+                echo -e "       ${COLOR_YELLOW}Would you like to set up custom admin credentials now?${COLOR_N}"
+                echo -e "       ${COLOR_WHITE}(If you skip this, default credentials will be used: admin@admin.net / admin)${COLOR_N}"
+                read -r -p "       Set up custom credentials? [y/N]: " setup_creds
+                
+                if [[ "$setup_creds" == "y" ]] || [[ "$setup_creds" == "Y" ]]; then
+                    SetupCredentialsInteractive
+                else
+                    echo
+                    echo -e "       ${COLOR_GREEN}Default username: admin@admin.net password: admin${COLOR_N}"
+                    echo -e "       ${COLOR_YELLOW}IMPORTANT: Change these credentials after logging in for security!${COLOR_N}"
+                fi
             fi
         fi
         if [[ "$XO_SVC" == "xo-proxy" ]]; then
@@ -1923,8 +2357,9 @@ function StartUpScreen {
     echo -e "${COLOR_WHITE}3. Rollback${COLOR_N}"
     echo -e "${COLOR_WHITE}4. Install proxy${COLOR_N}"
     echo -e "${COLOR_WHITE}5. Update proxy${COLOR_N}"
-    echo -e "${COLOR_WHITE}6. Uninstall${COLOR_N}"
-    echo -e "${COLOR_WHITE}7. Exit${COLOR_N}"
+    echo -e "${COLOR_WHITE}6. Manage admin credentials${COLOR_N}"
+    echo -e "${COLOR_WHITE}7. Uninstall${COLOR_N}"
+    echo -e "${COLOR_WHITE}8. Exit${COLOR_N}"
     echo
     read -r -p ": " option
 
@@ -2018,10 +2453,16 @@ function StartUpScreen {
             exit 0
             ;;
         6)
+            ManageCredentials
+            echo
+            read -r -p "Press Enter to return to main menu..." 
+            StartUpScreen
+            ;;
+        7)
             UninstallXO
             exit 0
             ;;
-        7)
+        8)
             exit 0
             ;;
         *)
