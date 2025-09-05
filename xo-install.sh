@@ -871,8 +871,12 @@ function InstallXO {
         exit 1
     fi
 
-    # Run yarn build with progress indicator
-    run_yarn_build "$INSTALLDIR/xo-builds/xen-orchestra-$TIME" "yarn --network-timeout ${YARN_NETWORK_TIMEOUT} build" "xo-server and xo-web build"
+    # Run yarn build with progress indicator - build separately for better visibility
+    # Build xo-server and its plugins first
+    run_yarn_build "$INSTALLDIR/xo-builds/xen-orchestra-$TIME" "TURBO_TELEMETRY_DISABLED=1 yarn --network-timeout ${YARN_NETWORK_TIMEOUT} run turbo run build --filter xo-server --filter xo-server-'*'" "xo-server build"
+
+    # Then build xo-web
+    run_yarn_build "$INSTALLDIR/xo-builds/xen-orchestra-$TIME" "TURBO_TELEMETRY_DISABLED=1 yarn --network-timeout ${YARN_NETWORK_TIMEOUT} run turbo run build --filter xo-web" "xo-web build"
 
     # Run v6 build if needed
     if [ "$INCLUDE_V6" == "true" ]; then
@@ -1176,8 +1180,8 @@ function InstallXOProxy {
         exit 1
     fi
 
-    # Run yarn build with progress indicator
-    run_yarn_build "$INSTALLDIR/xo-builds/xen-orchestra-$TIME" "yarn --network-timeout ${YARN_NETWORK_TIMEOUT} build" "xo-proxy build"
+    # Run yarn build with progress indicator - only build proxy, not web UI
+    run_yarn_build "$INSTALLDIR/xo-builds/xen-orchestra-$TIME" "TURBO_TELEMETRY_DISABLED=1 yarn --network-timeout ${YARN_NETWORK_TIMEOUT} run turbo run build --filter @xen-orchestra/proxy" "xo-proxy build"
 
     # shutdown possibly running xo-server
     if [[ $(runcmd_stdout "pgrep -f '^([a-zA-Z0-9_\/-]+?)node.*xo-proxy'") ]]; then
