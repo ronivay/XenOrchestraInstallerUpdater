@@ -177,6 +177,58 @@ function printwarning {
     echo -e "${INFO} $*"
 }
 
+# Robust git clone with retry logic and shallow clone support
+function git_clone_robust {
+    local repo_url="$1"
+    local target_dir="$2"
+    local branch="${3:-master}"
+    local max_retries=3
+    local retry_count=0
+    local clone_success=0
+
+    while [[ $retry_count -lt $max_retries ]] && [[ $clone_success -eq 0 ]]; do
+        if [[ $retry_count -eq 0 ]]; then
+            # First try: shallow clone with depth 1
+            printprog "Cloning repository (attempt $((retry_count+1))/$max_retries, shallow)"
+            if git clone --depth 1 --single-branch --branch "$branch" "$repo_url" "$target_dir" 2>/dev/null; then
+                clone_success=1
+                printok "Repository cloned successfully (shallow)"
+            fi
+        elif [[ $retry_count -eq 1 ]]; then
+            # Second try: shallow clone with more depth
+            printprog "Cloning repository (attempt $((retry_count+1))/$max_retries, depth=100)"
+            if git clone --depth 100 --single-branch --branch "$branch" "$repo_url" "$target_dir" 2>/dev/null; then
+                clone_success=1
+                printok "Repository cloned successfully (depth=100)"
+            fi
+        else
+            # Final try: full clone
+            printprog "Cloning repository (attempt $((retry_count+1))/$max_retries, full)"
+            if git clone "$repo_url" "$target_dir" 2>/dev/null; then
+                clone_success=1
+                printok "Repository cloned successfully (full)"
+            fi
+        fi
+
+        if [[ $clone_success -eq 0 ]]; then
+            retry_count=$((retry_count+1))
+            if [[ $retry_count -lt $max_retries ]]; then
+                printinfo "Clone failed, retrying in 5 seconds..."
+                sleep 5
+                # Clean up any partial clone
+                rm -rf "$target_dir" 2>/dev/null || true
+            fi
+        fi
+    done
+
+    if [[ $clone_success -eq 0 ]]; then
+        printfail "Failed to clone repository after $max_retries attempts"
+        return 1
+    fi
+
+    return 0
+}
+
 # if script fails at a stage where installation is not complete, we don't want to keep the install specific directory and content
 # this is called by trap inside different functions
 function ErrorHandling {
@@ -514,7 +566,10 @@ function InstallAdditionalXOPlugins {
 
         if [[ ! -d "$PLUGIN_SRC_DIR" ]]; then
             runcmd "mkdir -p \"$PLUGIN_SRC_DIR\""
-            runcmd "git clone \"${x}\" \"$PLUGIN_SRC_DIR\""
+            if ! git_clone_robust "${x}" "$PLUGIN_SRC_DIR" "master"; then
+                printfail "Failed to clone plugin repository: ${x}"
+                exit 1
+            fi
         else
             runcmd "cd \"$PLUGIN_SRC_DIR\" && git pull --ff-only"
             runcmd "cd $SCRIPT_DIR"
@@ -626,7 +681,10 @@ function PrepInstall {
     printinfo "Fetching $XO_SVC_DESC source code"
     if [[ ! -d "$XO_SRC_DIR" ]]; then
         runcmd "mkdir -p \"$XO_SRC_DIR\""
-        runcmd "git clone \"${REPOSITORY}\" \"$XO_SRC_DIR\""
+        if ! git_clone_robust "${REPOSITORY}" "$XO_SRC_DIR" "$BRANCH"; then
+            printfail "Failed to clone repository"
+            exit 1
+        fi
     else
         runcmd "cd \"$XO_SRC_DIR\" && git remote set-url origin \"${REPOSITORY}\" && \
             git fetch --prune && \
