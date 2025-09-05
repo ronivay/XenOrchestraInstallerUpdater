@@ -282,6 +282,7 @@ function ChangeAdminCredentials {
     local new_email="$1"
     local new_password="$2"
     local delete_default="${3:-true}"  # Delete default user by default
+    local show_password="${4:-false}"  # Only show auto-generated passwords
     
     echo
     printprog "Setting up admin credentials"
@@ -323,9 +324,13 @@ function ChangeAdminCredentials {
             
             echo
             echo -e "       ${COLOR_GREEN}New admin username: $new_email${COLOR_N}"
-            echo -e "       ${COLOR_GREEN}New admin password: $new_password${COLOR_N}"
-            echo
-            echo -e "       ${COLOR_YELLOW}IMPORTANT: Save these credentials securely!${COLOR_N}"
+            if [[ "$show_password" == "true" ]]; then
+                echo -e "       ${COLOR_GREEN}New admin password: $new_password${COLOR_N}"
+                echo
+                echo -e "       ${COLOR_YELLOW}IMPORTANT: Save these credentials securely!${COLOR_N}"
+            else
+                echo -e "       ${COLOR_GREEN}Password set successfully (not displayed for security)${COLOR_N}"
+            fi
             return 0
         else
             printfail "Failed to create new admin user"
@@ -344,9 +349,13 @@ function ChangeAdminCredentials {
             printok "Admin password updated successfully"
             echo
             echo -e "       ${COLOR_GREEN}Username: admin@admin.net${COLOR_N}"
-            echo -e "       ${COLOR_GREEN}New password: $new_password${COLOR_N}"
-            echo
-            echo -e "       ${COLOR_YELLOW}IMPORTANT: Save this password securely!${COLOR_N}"
+            if [[ "$show_password" == "true" ]]; then
+                echo -e "       ${COLOR_GREEN}New password: $new_password${COLOR_N}"
+                echo
+                echo -e "       ${COLOR_YELLOW}IMPORTANT: Save this password securely!${COLOR_N}"
+            else
+                echo -e "       ${COLOR_GREEN}Password set successfully (not displayed for security)${COLOR_N}"
+            fi
             echo -e "       ${COLOR_YELLOW}WARNING: Consider creating a new admin user with a different email for better security${COLOR_N}"
             return 0
         else
@@ -431,11 +440,11 @@ function SetupCredentialsInteractive {
     elif [[ "$new_email" == "admin@admin.net" ]]; then
         # Default email, custom password
         echo -e "       ${COLOR_GREEN}Setting custom password for admin@admin.net${COLOR_N}"
-        ChangeAdminCredentials "" "$new_password" "false"
+        ChangeAdminCredentials "" "$new_password" "false" "false"
     else
         # Custom email (with custom or default password)
         echo -e "       ${COLOR_GREEN}Creating new admin user: $new_email${COLOR_N}"
-        ChangeAdminCredentials "$new_email" "$new_password" "true"
+        ChangeAdminCredentials "$new_email" "$new_password" "true" "false"
     fi
 }
 
@@ -588,8 +597,10 @@ function ManageCredentials {
                 printok "New admin user created successfully"
                 echo
                 echo -e "       ${COLOR_GREEN}New admin username: $new_email${COLOR_N}"
-                if [[ "$pass_option" != "1" ]]; then
+                if [[ "$pass_option" == "2" ]]; then
                     echo -e "       ${COLOR_GREEN}New admin password: $new_password${COLOR_N}"
+                else
+                    echo -e "       ${COLOR_GREEN}Password set successfully (not displayed for security)${COLOR_N}"
                 fi
                 echo -e "       ${COLOR_YELLOW}Note: Previous admin user ($current_email) still exists${COLOR_N}"
             else
