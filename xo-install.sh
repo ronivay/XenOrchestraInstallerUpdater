@@ -564,15 +564,24 @@ function InstallAdditionalXOPlugins {
         local PLUGIN_NAME=$(runcmd_stdout "basename '$x' | rev | cut -c 5- | rev")
         local PLUGIN_SRC_DIR=$(runcmd_stdout "realpath -m '$XO_SRC_DIR/../$PLUGIN_NAME'")
 
-        if [[ ! -d "$PLUGIN_SRC_DIR" ]]; then
+        # Check if directory exists and is a valid git repository
+        if [[ -d "$PLUGIN_SRC_DIR" ]] && [[ -d "$PLUGIN_SRC_DIR/.git" ]]; then
+            # Directory exists and is a git repo, update it
+            runcmd "cd \"$PLUGIN_SRC_DIR\" && git pull --ff-only"
+            runcmd "cd $SCRIPT_DIR"
+        else
+            # Directory doesn't exist or is not a git repo
+            if [[ -d "$PLUGIN_SRC_DIR" ]]; then
+                # Directory exists but is not a git repo
+                printinfo "Plugin directory exists but is not a git repository, removing"
+                runcmd "rm -rf \"$PLUGIN_SRC_DIR\""
+            fi
+
             runcmd "mkdir -p \"$PLUGIN_SRC_DIR\""
             if ! git_clone_robust "${x}" "$PLUGIN_SRC_DIR" "master"; then
                 printfail "Failed to clone plugin repository: ${x}"
                 exit 1
             fi
-        else
-            runcmd "cd \"$PLUGIN_SRC_DIR\" && git pull --ff-only"
-            runcmd "cd $SCRIPT_DIR"
         fi
 
         runcmd "cp -r $PLUGIN_SRC_DIR $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/"
@@ -679,17 +688,46 @@ function PrepInstall {
     echo
     # keep the actual source code in one directory and either clone or git fetch depending on if directory exists already
     printinfo "Fetching $XO_SVC_DESC source code"
-    if [[ ! -d "$XO_SRC_DIR" ]]; then
+
+    # Validate XO_SRC_DIR path for safety
+    if [[ -z "$XO_SRC_DIR" ]] || [[ "$XO_SRC_DIR" == "/" ]] || [[ "$XO_SRC_DIR" == "$HOME" ]] || [[ ! "$XO_SRC_DIR" =~ ^/opt/xo/ ]]; then
+        printfail "Invalid XO_SRC_DIR path: $XO_SRC_DIR"
+        exit 1
+    fi
+
+    # Check if directory exists and is a valid git repository
+    if [[ -d "$XO_SRC_DIR" ]] && [[ -d "$XO_SRC_DIR/.git" ]]; then
+        # Directory exists and is a git repo, update it
+        runcmd "cd \"$XO_SRC_DIR\" && git remote set-url origin \"${REPOSITORY}\" && \
+            git fetch --prune && \
+            git reset --hard origin/master && \
+            git clean -xdff"
+    else
+        # Directory doesn't exist or is not a git repo
+        if [[ -d "$XO_SRC_DIR" ]]; then
+            # Directory exists but is not a git repo
+            printinfo "Directory exists but is not a git repository"
+            # Check if directory is empty or contains only a few files (likely from failed clone)
+            local file_count=$(find "$XO_SRC_DIR" -maxdepth 1 -type f 2>/dev/null | wc -l)
+            local dir_count=$(find "$XO_SRC_DIR" -maxdepth 1 -type d 2>/dev/null | wc -l)
+
+            if [[ $file_count -eq 0 ]] && [[ $dir_count -le 1 ]]; then
+                # Directory is empty or nearly empty, safe to remove
+                printinfo "Removing empty directory and re-cloning"
+                runcmd "rm -rf \"$XO_SRC_DIR\""
+            else
+                # Directory has content, ask for confirmation or fail
+                printfail "Directory $XO_SRC_DIR exists but is not a git repository and contains files"
+                printfail "Please manually remove or backup the directory and try again"
+                exit 1
+            fi
+        fi
+
         runcmd "mkdir -p \"$XO_SRC_DIR\""
         if ! git_clone_robust "${REPOSITORY}" "$XO_SRC_DIR" "$BRANCH"; then
             printfail "Failed to clone repository"
             exit 1
         fi
-    else
-        runcmd "cd \"$XO_SRC_DIR\" && git remote set-url origin \"${REPOSITORY}\" && \
-            git fetch --prune && \
-            git reset --hard origin/master && \
-            git clean -xdff"
     fi
 
     # Deploy the latest xen-orchestra source to the new install directory.
