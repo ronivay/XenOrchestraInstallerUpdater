@@ -376,23 +376,46 @@ function SetupCredentialsInteractive {
         fi
     fi
     
-    # Get password
-    read -r -s -p "Enter admin password [admin]: " new_password
-    echo
-    if [[ -z "$new_password" ]]; then
-        new_password="admin"
-    else
-        # Validate password length
-        if [[ ${#new_password} -lt 6 ]]; then
-            echo -e "${COLOR_RED}Password must be at least 6 characters. Using default: admin${COLOR_N}"
-            new_password="admin"
-        else
-            # Confirm password if custom
+    # Get password - if custom email, require valid password
+    if [[ "$new_email" != "admin@admin.net" ]]; then
+        # Custom email - must set a valid password
+        while true; do
+            read -r -s -p "Enter admin password (min 6 chars): " new_password
+            echo
+            
+            if [[ ${#new_password} -lt 6 ]]; then
+                echo -e "${COLOR_RED}Password must be at least 6 characters long. Please try again.${COLOR_N}"
+                continue
+            fi
+            
             read -r -s -p "Confirm password: " confirm_password
             echo
+            
             if [[ "$new_password" != "$confirm_password" ]]; then
-                echo -e "${COLOR_RED}Passwords do not match. Using default: admin${COLOR_N}"
+                echo -e "${COLOR_RED}Passwords do not match. Please try again.${COLOR_N}"
+            else
+                break
+            fi
+        done
+    else
+        # Default email - allow default password
+        read -r -s -p "Enter admin password [admin]: " new_password
+        echo
+        if [[ -z "$new_password" ]]; then
+            new_password="admin"
+        else
+            # Validate password length
+            if [[ ${#new_password} -lt 6 ]]; then
+                echo -e "${COLOR_RED}Password must be at least 6 characters. Using default: admin${COLOR_N}"
                 new_password="admin"
+            else
+                # Confirm password if custom
+                read -r -s -p "Confirm password: " confirm_password
+                echo
+                if [[ "$new_password" != "$confirm_password" ]]; then
+                    echo -e "${COLOR_RED}Passwords do not match. Using default: admin${COLOR_N}"
+                    new_password="admin"
+                fi
             fi
         fi
     fi
