@@ -304,21 +304,29 @@ function ChangeAdminCredentials {
             
             # Get the default admin user ID to delete it
             if [[ "$delete_default" == "true" ]]; then
-                local default_admin_id=$(runcmd_stdout "xo-cli user.getAll 2>/dev/null | grep -B1 -A2 \"email: 'admin@admin.net'\" | grep 'id:' | cut -d\"'\" -f2")
-                
-                if [[ -n "$default_admin_id" ]]; then
-                    # Re-register with new credentials before deleting old admin
-                    if runcmd_stdout "xo-cli register --allowUnauthorized http://localhost:$PORT '$new_email' '$new_password'" >/dev/null 2>&1; then
-                        if runcmd_stdout "xo-cli user.delete id=$default_admin_id" >/dev/null 2>&1; then
-                            printok "Default admin user (admin@admin.net) deleted for security"
+                # Check if default admin user exists
+                local user_list=$(runcmd_stdout "xo-cli user.getAll 2>/dev/null")
+                if echo "$user_list" | grep -q "email: 'admin@admin.net'"; then
+                    # Default user exists, try to delete it
+                    local default_admin_id=$(echo "$user_list" | grep -B1 -A2 "email: 'admin@admin.net'" | grep 'id:' | cut -d"'" -f2)
+                    
+                    if [[ -n "$default_admin_id" ]]; then
+                        # Re-register with new credentials before deleting old admin
+                        if runcmd_stdout "xo-cli register --allowUnauthorized http://localhost:$PORT '$new_email' '$new_password'" >/dev/null 2>&1; then
+                            if runcmd_stdout "xo-cli user.delete id=$default_admin_id" >/dev/null 2>&1; then
+                                printok "Default admin user (admin@admin.net) deleted for security"
+                            else
+                                printfail "Warning: Could not delete default admin user. Please delete it manually!"
+                            fi
                         else
-                            printfail "Warning: Could not delete default admin user. Please delete it manually!"
+                            printfail "Warning: Could not re-authenticate with new credentials. Default user not deleted."
                         fi
                     else
-                        printfail "Warning: Could not re-authenticate with new credentials. Default user not deleted."
+                        printfail "Warning: Could not extract default admin user ID"
                     fi
                 else
-                    printfail "Warning: Could not find default admin user ID to delete"
+                    # Default user doesn't exist - this is fine
+                    printok "Default admin user already removed or never existed"
                 fi
             fi
             
