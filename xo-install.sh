@@ -173,6 +173,13 @@ function printinfo {
     echo -e "${INFO} $*"
 }
 
+# Define printwarning if it doesn't already exist as a system command
+if ! command -v printwarning &>/dev/null; then
+    function printwarning {
+        echo -e "${INFO} $*"
+    }
+fi
+
 # if script fails at a stage where installation is not complete, we don't want to keep the install specific directory and content
 # this is called by trap inside different functions
 function ErrorHandling {
