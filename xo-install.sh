@@ -298,9 +298,50 @@ function ChangeAdminCredentials {
     
     # If we're creating a new user (different email), create it first
     if [[ -n "$new_email" ]] && [[ "$new_email" != "admin@admin.net" ]]; then
-        # Create new admin user
-        if runcmd_stdout "xo-cli user.create email='$new_email' password='$new_password' permission='admin'" >/dev/null 2>&1; then
-            printok "New admin user created successfully"
+        
+        # Escape single quotes in password for shell command
+        local escaped_password="${new_password//\'/\'\\\'\'}"
+        
+        # First check if the user already exists
+        local user_list=$(runcmd_stdout "xo-cli user.getAll 2>/dev/null")
+        
+        if echo "$user_list" | grep -q "email: '$new_email'"; then
+            # User exists, update their password
+            printok "User $new_email already exists, updating password..."
+            
+            # Get the user ID
+            local user_id=$(echo "$user_list" | grep -B1 -A2 "email: '$new_email'" | grep 'id:' | cut -d"'" -f2)
+            
+            if [[ -n "$user_id" ]]; then
+                if runcmd_stdout "xo-cli user.set id='$user_id' password='$escaped_password'" >/dev/null 2>&1; then
+                    printok "Password updated successfully for existing user"
+                    local create_result=0
+                else
+                    printfail "Failed to update password for existing user"
+                    return 1
+                fi
+            else
+                printfail "Could not find user ID for $new_email"
+                return 1
+            fi
+        else
+            # User doesn't exist, create them
+            local create_output=$(xo-cli user.create email="$new_email" password="$escaped_password" permission="admin" 2>&1)
+            local create_result=$?
+            
+            if [[ $create_result -eq 0 ]]; then
+                printok "New admin user created successfully"
+            else
+                printfail "Failed to create new admin user: $create_output"
+                return 1
+            fi
+        fi
+        
+        if [[ $create_result -eq 0 ]]; then
+            # Verify the new user can authenticate
+            if ! runcmd_stdout "xo-cli register --allowUnauthorized http://localhost:$PORT '$new_email' '$escaped_password'" >/dev/null 2>&1; then
+                printfail "Warning: Authentication failed with new credentials"
+            fi
             
             # Get the default admin user ID to delete it
             if [[ "$delete_default" == "true" ]]; then
@@ -340,20 +381,21 @@ function ChangeAdminCredentials {
                 echo -e "       ${COLOR_GREEN}Password set successfully (not displayed for security)${COLOR_N}"
             fi
             return 0
-        else
-            printfail "Failed to create new admin user"
-            return 1
         fi
-    elif [[ -n "$new_password" ]]; then
+    elif [[ -z "$new_email" ]] && [[ -n "$new_password" ]]; then
         # Just changing password for admin@admin.net
-        local admin_id=$(runcmd_stdout "xo-cli user.getAll 2>/dev/null | grep -B1 -A2 \"email: 'admin@admin.net'\" | grep 'id:' | cut -d\"'\" -f2")
+        printok "Updating password for admin@admin.net..."
+        
+        # Get user list and extract admin ID
+        local user_list=$(runcmd_stdout "xo-cli user.getAll 2>/dev/null")
+        local admin_id=$(echo "$user_list" | grep -B1 -A2 "email: 'admin@admin.net'" | grep 'id:' | cut -d"'" -f2)
         
         if [[ -z "$admin_id" ]]; then
             printfail "Failed to get admin user ID"
             return 1
         fi
         
-        if runcmd_stdout "xo-cli user.set id=$admin_id password='$new_password'" >/dev/null 2>&1; then
+        if runcmd_stdout "xo-cli user.set id='$admin_id' password='$new_password'" >/dev/null 2>&1; then
             printok "Admin password updated successfully"
             echo
             echo -e "       ${COLOR_GREEN}Username: admin@admin.net${COLOR_N}"
@@ -370,6 +412,10 @@ function ChangeAdminCredentials {
             printfail "Failed to update admin password"
             return 1
         fi
+    else
+        # This shouldn't happen, but handle it gracefully
+        printfail "Invalid parameters: email='$new_email' password provided=$([[ -n "$new_password" ]] && echo "yes" || echo "no")"
+        return 1
     fi
 }
 
@@ -536,31 +582,48 @@ function ManageCredentials {
                 echo -e "       ${COLOR_YELLOW}IMPORTANT: Save this password securely!${COLOR_N}"
             fi
             
-            # Create new admin user
-            if runcmd_stdout "xo-cli user.create email='$new_email' password='$new_password' permission='admin'" >/dev/null 2>&1; then
-                printok "New admin user created successfully"
+            # Check if user already exists and create/update accordingly
+            local user_list=$(runcmd_stdout "xo-cli user.getAll 2>/dev/null")
+            
+            if echo "$user_list" | grep -q "email: '$new_email'"; then
+                # User exists, update their password
+                printok "User $new_email already exists, updating password..."
+                local user_id=$(echo "$user_list" | grep -B1 -A2 "email: '$new_email'" | grep 'id:' | cut -d"'" -f2)
                 
-                # Get current user ID to delete
-                local current_user_id=$(runcmd_stdout "xo-cli user.getAll 2>/dev/null | grep -B1 -A2 \"email: '$current_email'\" | grep 'id:' | cut -d\"'\" -f2")
-                
-                if [[ -n "$current_user_id" ]]; then
-                    # Re-register with new credentials
-                    if runcmd_stdout "xo-cli register --allowUnauthorized http://localhost:$PORT '$new_email' '$new_password'" >/dev/null 2>&1; then
-                        if runcmd_stdout "xo-cli user.delete id=$current_user_id" >/dev/null 2>&1; then
-                            printok "Previous admin user ($current_email) deleted"
-                        else
-                            printfail "Warning: Could not delete previous admin user"
-                        fi
-                    fi
-                fi
-                
-                echo
-                echo -e "       ${COLOR_GREEN}New admin username: $new_email${COLOR_N}"
-                if [[ "$pass_option" != "1" ]]; then
-                    echo -e "       ${COLOR_GREEN}New admin password: $new_password${COLOR_N}"
+                if [[ -n "$user_id" ]] && runcmd_stdout "xo-cli user.set id='$user_id' password='$new_password'" >/dev/null 2>&1; then
+                    printok "Password updated successfully for existing user"
+                else
+                    printfail "Failed to update password for existing user"
+                    return 1
                 fi
             else
-                printfail "Failed to create new admin user"
+                # Create new admin user
+                if runcmd_stdout "xo-cli user.create email='$new_email' password='$new_password' permission='admin'" >/dev/null 2>&1; then
+                    printok "New admin user created successfully"
+                else
+                    printfail "Failed to create new admin user"
+                    return 1
+                fi
+            fi
+            
+            # Get current user ID to delete
+            local current_user_id=$(runcmd_stdout "xo-cli user.getAll 2>/dev/null | grep -B1 -A2 \"email: '$current_email'\" | grep 'id:' | cut -d\"'\" -f2")
+            
+            if [[ -n "$current_user_id" ]]; then
+                # Re-register with new credentials
+                if runcmd_stdout "xo-cli register --allowUnauthorized http://localhost:$PORT '$new_email' '$new_password'" >/dev/null 2>&1; then
+                    if runcmd_stdout "xo-cli user.delete id=$current_user_id" >/dev/null 2>&1; then
+                        printok "Previous admin user ($current_email) deleted"
+                    else
+                        printfail "Warning: Could not delete previous admin user"
+                    fi
+                fi
+            fi
+            
+            echo
+            echo -e "       ${COLOR_GREEN}New admin username: $new_email${COLOR_N}"
+            if [[ "$pass_option" != "1" ]]; then
+                echo -e "       ${COLOR_GREEN}New admin password: $new_password${COLOR_N}"
             fi
             ;;
         2)
@@ -600,20 +663,38 @@ function ManageCredentials {
                 echo -e "       ${COLOR_YELLOW}IMPORTANT: Save this password securely!${COLOR_N}"
             fi
             
-            # Create new admin user without deleting current one
-            if runcmd_stdout "xo-cli user.create email='$new_email' password='$new_password' permission='admin'" >/dev/null 2>&1; then
-                printok "New admin user created successfully"
-                echo
-                echo -e "       ${COLOR_GREEN}New admin username: $new_email${COLOR_N}"
-                if [[ "$pass_option" == "2" ]]; then
-                    echo -e "       ${COLOR_GREEN}New admin password: $new_password${COLOR_N}"
+            # Check if user already exists and create/update accordingly
+            local user_list=$(runcmd_stdout "xo-cli user.getAll 2>/dev/null")
+            
+            if echo "$user_list" | grep -q "email: '$new_email'"; then
+                # User exists, update their password
+                printok "User $new_email already exists, updating password..."
+                local user_id=$(echo "$user_list" | grep -B1 -A2 "email: '$new_email'" | grep 'id:' | cut -d"'" -f2)
+                
+                if [[ -n "$user_id" ]] && runcmd_stdout "xo-cli user.set id='$user_id' password='$new_password'" >/dev/null 2>&1; then
+                    printok "Password updated successfully for existing user"
                 else
-                    echo -e "       ${COLOR_GREEN}Password set successfully (not displayed for security)${COLOR_N}"
+                    printfail "Failed to update password for existing user"
+                    return 1
                 fi
-                echo -e "       ${COLOR_YELLOW}Note: Previous admin user ($current_email) still exists${COLOR_N}"
             else
-                printfail "Failed to create new admin user"
+                # Create new admin user without deleting current one
+                if runcmd_stdout "xo-cli user.create email='$new_email' password='$new_password' permission='admin'" >/dev/null 2>&1; then
+                    printok "New admin user created successfully"
+                else
+                    printfail "Failed to create new admin user"
+                    return 1
+                fi
             fi
+            
+            echo
+            echo -e "       ${COLOR_GREEN}New admin username: $new_email${COLOR_N}"
+            if [[ "$pass_option" == "2" ]]; then
+                echo -e "       ${COLOR_GREEN}New admin password: $new_password${COLOR_N}"
+            else
+                echo -e "       ${COLOR_GREEN}Password set successfully (not displayed for security)${COLOR_N}"
+            fi
+            echo -e "       ${COLOR_YELLOW}Note: Previous admin user ($current_email) still exists${COLOR_N}"
             ;;
         3)
             echo
@@ -2105,6 +2186,26 @@ function UninstallXO {
                     printprog "Removing XO server cache"
                     runcmd "rm -rf \"$CONFIGPATH/.cache/xo-server\""
                     printok "Removed XO server cache"
+                fi
+
+                # Clear Valkey/Redis data for XO
+                if command -v valkey-cli &>/dev/null || command -v redis-cli &>/dev/null; then
+                    local redis_cmd="valkey-cli"
+                    if ! command -v valkey-cli &>/dev/null; then
+                        redis_cmd="redis-cli"
+                    fi
+                    
+                    printprog "Clearing XO data from Valkey/Redis"
+                    # Get all XO-related keys and delete them
+                    local xo_keys=$($redis_cmd --scan --pattern "xo:*" 2>/dev/null || true)
+                    if [[ -n "$xo_keys" ]]; then
+                        echo "$xo_keys" | while read -r key; do
+                            $redis_cmd DEL "$key" &>/dev/null || true
+                        done
+                        printok "Cleared XO data from Valkey/Redis"
+                    else
+                        printinfo "No XO data found in Valkey/Redis"
+                    fi
                 fi
             else
                 printinfo "Deletion cancelled - preserving configuration and data files"
