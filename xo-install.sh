@@ -72,6 +72,7 @@ COLOR_GREEN='\e[1;32m'
 COLOR_RED='\e[1;31m'
 COLOR_BLUE='\e[1;34m'
 COLOR_WHITE='\e[1;97m'
+COLOR_YELLOW='\e[1;33m'
 OK="[${COLOR_GREEN}ok${COLOR_N}]"
 FAIL="[${COLOR_RED}fail${COLOR_N}]"
 INFO="[${COLOR_BLUE}info${COLOR_N}]"
@@ -199,7 +200,7 @@ function printprog {
 
 function printok {
     # shellcheck disable=SC1117
-    echo -e "\r${OK} $*"
+    echo -e "${OK} $*"
 }
 
 function printfail {
