@@ -155,6 +155,43 @@ function runcmd_stdout {
     bash -c -o pipefail "$1" 2>>"$LOGFILE" | tee -a "$LOGFILE" || return 1
 }
 
+# Run yarn build with progress indication
+function run_yarn_build {
+    local build_dir="$1"
+    local build_cmd="$2"
+    local build_desc="${3:-build}"
+
+    echo "+ cd $build_dir && $build_cmd" >>"$LOGFILE"
+
+    # Start the build in background and get its PID
+    (cd "$build_dir" && bash -c "$build_cmd" >>"$LOGFILE" 2>&1) &
+    local build_pid=$!
+
+    # Show progress while build is running
+    local spin='-\|/'
+    local i=0
+    local elapsed=0
+
+    while kill -0 $build_pid 2>/dev/null; do
+        i=$(( (i+1) %4 ))
+        printf "\r${PROGRESS} Running $build_desc... %c [%ds]" "${spin:$i:1}" $elapsed
+        sleep 1
+        elapsed=$((elapsed+1))
+    done
+
+    # Check if build succeeded
+    wait $build_pid
+    local build_status=$?
+
+    if [ $build_status -eq 0 ]; then
+        printf "\r${OK} Running $build_desc [%ds]                    \n" $elapsed
+        return 0
+    else
+        printf "\r${FAIL} Running $build_desc failed [%ds]                    \n" $elapsed
+        return 1
+    fi
+}
+
 # make output we print pretty
 function printprog {
     echo -ne "${PROGRESS} $*"
@@ -824,9 +861,23 @@ function InstallXO {
     echo
     printinfo "xo-server and xo-web build takes quite a while. Grab a cup of coffee and lay back"
     echo
-    printprog "Running installation"
-    runcmd "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn --network-timeout ${YARN_NETWORK_TIMEOUT} && yarn --network-timeout ${YARN_NETWORK_TIMEOUT} build"
-    printok "Running installation"
+
+    # Run yarn install with progress
+    printprog "Installing dependencies"
+    if runcmd "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn --network-timeout ${YARN_NETWORK_TIMEOUT}"; then
+        printok "Installing dependencies"
+    else
+        printfail "Failed to install dependencies"
+        exit 1
+    fi
+
+    # Run yarn build with progress indicator
+    run_yarn_build "$INSTALLDIR/xo-builds/xen-orchestra-$TIME" "yarn --network-timeout ${YARN_NETWORK_TIMEOUT} build" "xo-server and xo-web build"
+
+    # Run v6 build if needed
+    if [ "$INCLUDE_V6" == "true" ]; then
+        run_yarn_build "$INSTALLDIR/xo-builds/xen-orchestra-$TIME" "yarn --network-timeout ${YARN_NETWORK_TIMEOUT} run turbo run build --filter @xen-orchestra/web" "v6 web interface build"
+    fi
 
     # Install plugins (takes care of 3rd party plugins as well)
     InstallXOPlugins
@@ -1115,9 +1166,18 @@ function InstallXOProxy {
     echo
     printinfo "xo-proxy build takes quite a while. Grab a cup of coffee and lay back"
     echo
-    printprog "Running installation"
-    runcmd "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn --network-timeout ${YARN_NETWORK_TIMEOUT} && yarn --network-timeout ${YARN_NETWORK_TIMEOUT} build"
-    printok "Running installation"
+
+    # Run yarn install with progress
+    printprog "Installing dependencies"
+    if runcmd "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn --network-timeout ${YARN_NETWORK_TIMEOUT}"; then
+        printok "Installing dependencies"
+    else
+        printfail "Failed to install dependencies"
+        exit 1
+    fi
+
+    # Run yarn build with progress indicator
+    run_yarn_build "$INSTALLDIR/xo-builds/xen-orchestra-$TIME" "yarn --network-timeout ${YARN_NETWORK_TIMEOUT} build" "xo-proxy build"
 
     # shutdown possibly running xo-server
     if [[ $(runcmd_stdout "pgrep -f '^([a-zA-Z0-9_\/-]+?)node.*xo-proxy'") ]]; then
