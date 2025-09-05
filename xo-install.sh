@@ -200,6 +200,8 @@ function printprog {
 
 function printok {
     # shellcheck disable=SC1117
+    # Clear the line and print the success message
+    printf "\r\033[K"
     echo -e "${OK} $*"
 }
 
@@ -361,76 +363,57 @@ function SetupCredentialsInteractive {
     echo "Admin Credential Setup"
     echo "-----------------------------------------"
     echo
-    echo "For security, it's highly recommended to change the default credentials."
-    echo
-    echo "Choose an option:"
-    echo "1. Keep default credentials (admin@admin.net / admin) - NOT RECOMMENDED"
-    echo "2. Set custom email and password (default user will be deleted)"
-    echo "3. Set custom email with auto-generated password (default user will be deleted)"
-    echo "4. Change default password only (keeps admin@admin.net email)"
-    echo
-    read -r -p "Option [1-4]: " cred_option
     
-    case $cred_option in
-        1)
+    # Get email address
+    read -r -p "Enter admin email [admin@admin.net]: " new_email
+    if [[ -z "$new_email" ]]; then
+        new_email="admin@admin.net"
+    else
+        # Validate email format
+        if [[ ! "$new_email" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
+            echo -e "${COLOR_RED}Invalid email format. Using default: admin@admin.net${COLOR_N}"
+            new_email="admin@admin.net"
+        fi
+    fi
+    
+    # Get password
+    read -r -s -p "Enter admin password [admin]: " new_password
+    echo
+    if [[ -z "$new_password" ]]; then
+        new_password="admin"
+    else
+        # Validate password length
+        if [[ ${#new_password} -lt 6 ]]; then
+            echo -e "${COLOR_RED}Password must be at least 6 characters. Using default: admin${COLOR_N}"
+            new_password="admin"
+        else
+            # Confirm password if custom
+            read -r -s -p "Confirm password: " confirm_password
             echo
-            echo -e "       ${COLOR_RED}WARNING: Using default credentials is a security risk!${COLOR_N}"
-            echo -e "       ${COLOR_YELLOW}Default username: admin@admin.net password: admin${COLOR_N}"
-            echo -e "       ${COLOR_RED}IMPORTANT: Change these credentials immediately after installation!${COLOR_N}"
-            ;;
-        2)
-            echo
-            read -r -p "Enter new admin email: " new_email
-            # Validate email format
-            if [[ ! "$new_email" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
-                echo -e "${COLOR_RED}Invalid email format. Using default credentials.${COLOR_N}"
-                echo -e "       ${COLOR_YELLOW}Default username: admin@admin.net password: admin${COLOR_N}"
-                return
+            if [[ "$new_password" != "$confirm_password" ]]; then
+                echo -e "${COLOR_RED}Passwords do not match. Using default: admin${COLOR_N}"
+                new_password="admin"
             fi
-            
-            while true; do
-                read -r -s -p "Enter new admin password: " new_password
-                echo
-                read -r -s -p "Confirm password: " confirm_password
-                echo
-                if [[ "$new_password" == "$confirm_password" ]]; then
-                    if [[ ${#new_password} -lt 6 ]]; then
-                        echo -e "${COLOR_RED}Password must be at least 6 characters long${COLOR_N}"
-                    else
-                        break
-                    fi
-                else
-                    echo -e "${COLOR_RED}Passwords do not match${COLOR_N}"
-                fi
-            done
-            ChangeAdminCredentials "$new_email" "$new_password" "true"
-            ;;
-        3)
-            echo
-            read -r -p "Enter new admin email: " new_email
-            # Validate email format
-            if [[ ! "$new_email" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
-                echo -e "${COLOR_RED}Invalid email format. Using default credentials.${COLOR_N}"
-                echo -e "       ${COLOR_YELLOW}Default username: admin@admin.net password: admin${COLOR_N}"
-                return
-            fi
-            
-            local auto_password=$(GenerateSecurePassword)
-            ChangeAdminCredentials "$new_email" "$auto_password" "true"
-            ;;
-        4)
-            echo
-            echo -e "       ${COLOR_YELLOW}Generating secure password for admin@admin.net${COLOR_N}"
-            local auto_password=$(GenerateSecurePassword)
-            ChangeAdminCredentials "" "$auto_password" "false"
-            ;;
-        *)
-            echo
-            echo -e "       ${COLOR_YELLOW}Invalid option, using default credentials${COLOR_N}"
-            echo -e "       ${COLOR_RED}WARNING: Default username: admin@admin.net password: admin${COLOR_N}"
-            echo -e "       ${COLOR_RED}IMPORTANT: Change these credentials immediately after installation!${COLOR_N}"
-            ;;
-    esac
+        fi
+    fi
+    
+    # Display result and handle credential changes
+    echo
+    if [[ "$new_email" == "admin@admin.net" ]] && [[ "$new_password" == "admin" ]]; then
+        # Both defaults
+        echo -e "       ${COLOR_RED}WARNING: Using default credentials is a security risk!${COLOR_N}"
+        echo -e "       ${COLOR_YELLOW}Username: admin@admin.net${COLOR_N}"
+        echo -e "       ${COLOR_YELLOW}Password: admin${COLOR_N}"
+        echo -e "       ${COLOR_RED}IMPORTANT: Change these credentials immediately after installation!${COLOR_N}"
+    elif [[ "$new_email" == "admin@admin.net" ]]; then
+        # Default email, custom password
+        echo -e "       ${COLOR_GREEN}Setting custom password for admin@admin.net${COLOR_N}"
+        ChangeAdminCredentials "" "$new_password" "false"
+    else
+        # Custom email (with custom or default password)
+        echo -e "       ${COLOR_GREEN}Creating new admin user: $new_email${COLOR_N}"
+        ChangeAdminCredentials "$new_email" "$new_password" "true"
+    fi
 }
 
 # Standalone credential management function for menu
