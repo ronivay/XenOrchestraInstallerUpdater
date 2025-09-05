@@ -1454,6 +1454,219 @@ function RollBackInstallation {
 
 }
 
+# Uninstall XO build, services, and configuration
+function UninstallXO {
+
+    set -uo pipefail
+
+    # Validate INSTALLDIR path for safety
+    if [[ -z "$INSTALLDIR" ]] || [[ "$INSTALLDIR" == "/" ]] || [[ "$INSTALLDIR" == "$HOME" ]] || [[ ! "$INSTALLDIR" =~ ^/opt/ ]]; then
+        printfail "Invalid INSTALLDIR path: $INSTALLDIR - refusing to uninstall for safety"
+        exit 1
+    fi
+
+    # Check if XO is installed
+    if [[ ! -d "$INSTALLDIR" ]]; then
+        printinfo "XO installation directory not found at $INSTALLDIR"
+        exit 0
+    fi
+
+    # Determine what's installed
+    local has_xo_server=false
+    local has_xo_proxy=false
+
+    if [[ -L "$INSTALLDIR/xo-server" ]] && [[ -n $(runcmd_stdout "readlink -e $INSTALLDIR/xo-server" 2>/dev/null || true) ]]; then
+        has_xo_server=true
+    fi
+
+    if [[ -L "$INSTALLDIR/xo-proxy" ]] && [[ -n $(runcmd_stdout "readlink -e $INSTALLDIR/xo-proxy" 2>/dev/null || true) ]]; then
+        has_xo_proxy=true
+    fi
+
+    # Check for service files
+    local has_xo_server_service=false
+    local has_xo_proxy_service=false
+
+    if [[ -f "/etc/systemd/system/xo-server.service" ]]; then
+        has_xo_server_service=true
+    fi
+
+    if [[ -f "/etc/systemd/system/xo-proxy.service" ]]; then
+        has_xo_proxy_service=true
+    fi
+
+    if [[ "$has_xo_server" == "false" ]] && [[ "$has_xo_proxy" == "false" ]] && [[ "$has_xo_server_service" == "false" ]] && [[ "$has_xo_proxy_service" == "false" ]]; then
+        printinfo "No XO installation found"
+        exit 0
+    fi
+
+    echo
+    printinfo "This will completely uninstall XO from your system"
+    echo
+
+    # Show what will be removed
+    echo "The following will be removed:"
+    echo "  - All builds in $INSTALLDIR/xo-builds/"
+    echo "  - Source code in $INSTALLDIR/xo-src/"
+    echo "  - Symlinks in $INSTALLDIR"
+    [[ "$has_xo_server_service" == "true" ]] && echo "  - xo-server systemd service"
+    [[ "$has_xo_proxy_service" == "true" ]] && echo "  - xo-proxy systemd service"
+    echo "  - XO configuration files in $CONFIGPATH/.config/xo-server"
+    echo "  - XO cache and data in $CONFIGPATH/.local/share/xo-server"
+    echo
+
+    read -r -p "Are you sure you want to completely uninstall XO? [y/N]: " answer
+    case $answer in
+        y|Y)
+            ;;
+        *)
+            echo "Uninstall cancelled"
+            exit 0
+            ;;
+    esac
+
+    # Stop and disable xo-server service
+    if [[ "$has_xo_server_service" == "true" ]]; then
+        echo
+        if [[ $(runcmd_stdout "systemctl is-active xo-server" 2>/dev/null || true) == "active" ]]; then
+            printprog "Stopping xo-server service"
+            runcmd "/bin/systemctl stop xo-server" || true
+            printok "Stopped xo-server service"
+        fi
+
+        if [[ $(runcmd_stdout "systemctl is-enabled xo-server" 2>/dev/null || true) == "enabled" ]]; then
+            printprog "Disabling xo-server service"
+            runcmd "/bin/systemctl disable xo-server" || true
+            printok "Disabled xo-server service"
+        fi
+
+        printprog "Removing xo-server service file"
+        runcmd "rm -f /etc/systemd/system/xo-server.service"
+        printok "Removed xo-server service file"
+    fi
+
+    # Stop and disable xo-proxy service
+    if [[ "$has_xo_proxy_service" == "true" ]]; then
+        echo
+        if [[ $(runcmd_stdout "systemctl is-active xo-proxy" 2>/dev/null || true) == "active" ]]; then
+            printprog "Stopping xo-proxy service"
+            runcmd "/bin/systemctl stop xo-proxy" || true
+            printok "Stopped xo-proxy service"
+        fi
+
+        if [[ $(runcmd_stdout "systemctl is-enabled xo-proxy" 2>/dev/null || true) == "enabled" ]]; then
+            printprog "Disabling xo-proxy service"
+            runcmd "/bin/systemctl disable xo-proxy" || true
+            printok "Disabled xo-proxy service"
+        fi
+
+        printprog "Removing xo-proxy service file"
+        runcmd "rm -f /etc/systemd/system/xo-proxy.service"
+        printok "Removed xo-proxy service file"
+    fi
+
+    # Reload systemd if we removed service files
+    if [[ "$has_xo_server_service" == "true" ]] || [[ "$has_xo_proxy_service" == "true" ]]; then
+        printprog "Reloading systemd daemon"
+        runcmd "/bin/systemctl daemon-reload"
+        printok "Reloaded systemd daemon"
+    fi
+
+    # Remove symlinks
+    echo
+    printprog "Removing symlinks"
+    local symlinks=("xo-server" "xo-web" "xo-cli" "xo-proxy")
+    for link in "${symlinks[@]}"; do
+        if [[ -L "$INSTALLDIR/$link" ]]; then
+            runcmd "rm -f \"$INSTALLDIR/$link\""
+            printinfo "Removed $INSTALLDIR/$link symlink"
+        fi
+    done
+    printok "Removed symlinks"
+
+    # Remove build directories
+    if [[ -d "$INSTALLDIR/xo-builds" ]]; then
+        echo
+        printprog "Removing build directories"
+        # Double-check the path is safe
+        if [[ "$INSTALLDIR/xo-builds" =~ ^/opt/xo/xo-builds$ ]]; then
+            runcmd "rm -rf \"$INSTALLDIR/xo-builds\""
+            printok "Removed build directories"
+        else
+            printfail "Unsafe path detected, skipping removal of $INSTALLDIR/xo-builds"
+        fi
+    fi
+
+    # Remove source directories
+    if [[ -d "$INSTALLDIR/xo-src" ]]; then
+        echo
+        printprog "Removing source directories"
+        # Double-check the path is safe
+        if [[ "$INSTALLDIR/xo-src" =~ ^/opt/xo/xo-src$ ]]; then
+            runcmd "rm -rf \"$INSTALLDIR/xo-src\""
+            printok "Removed source directories"
+        else
+            printfail "Unsafe path detected, skipping removal of $INSTALLDIR/xo-src"
+        fi
+    fi
+
+    # Remove XO configuration and data files
+    echo
+    read -r -p "Remove XO configuration and data files? [y/N]: " answer
+    case $answer in
+        y|Y)
+            if [[ -d "$CONFIGPATH/.config/xo-server" ]]; then
+                printprog "Removing XO server configuration"
+                runcmd "rm -rf \"$CONFIGPATH/.config/xo-server\""
+                printok "Removed XO server configuration"
+            fi
+
+            if [[ -d "$CONFIGPATH/.local/share/xo-server" ]]; then
+                printprog "Removing XO server data"
+                runcmd "rm -rf \"$CONFIGPATH/.local/share/xo-server\""
+                printok "Removed XO server data"
+            fi
+
+            if [[ -d "$CONFIGPATH/.cache/xo-server" ]]; then
+                printprog "Removing XO server cache"
+                runcmd "rm -rf \"$CONFIGPATH/.cache/xo-server\""
+                printok "Removed XO server cache"
+            fi
+            ;;
+        *)
+            printinfo "Preserving configuration and data files"
+            ;;
+    esac
+
+    # Check if INSTALLDIR is now empty and remove if so
+    if [[ -d "$INSTALLDIR" ]]; then
+        local remaining_files=$(find "$INSTALLDIR" -type f 2>/dev/null | wc -l)
+        if [[ $remaining_files -eq 0 ]]; then
+            echo
+            printprog "Removing empty installation directory"
+            runcmd "rmdir \"$INSTALLDIR\"" 2>/dev/null || true
+            printok "Removed empty installation directory"
+        else
+            echo
+            printinfo "Installation directory not empty, preserving $INSTALLDIR"
+        fi
+    fi
+
+    # Remove sudoers file if it exists
+    if [[ -f "$SUDOERSFILE" ]]; then
+        echo
+        printprog "Removing sudoers file"
+        runcmd "rm -f \"$SUDOERSFILE\""
+        printok "Removed sudoers file"
+    fi
+
+    echo
+    printok "XO uninstall completed"
+    echo
+    printinfo "Log files have been preserved in $LOGPATH"
+    echo
+}
+
 # only specific list of operating systems are supported. check operating system name/version here
 function CheckOS {
 
@@ -1693,7 +1906,8 @@ function StartUpScreen {
     echo -e "${COLOR_WHITE}3. Rollback${COLOR_N}"
     echo -e "${COLOR_WHITE}4. Install proxy${COLOR_N}"
     echo -e "${COLOR_WHITE}5. Update proxy${COLOR_N}"
-    echo -e "${COLOR_WHITE}6. Exit${COLOR_N}"
+    echo -e "${COLOR_WHITE}6. Uninstall${COLOR_N}"
+    echo -e "${COLOR_WHITE}7. Exit${COLOR_N}"
     echo
     read -r -p ": " option
 
@@ -1787,6 +2001,10 @@ function StartUpScreen {
             exit 0
             ;;
         6)
+            UninstallXO
+            exit 0
+            ;;
+        7)
             exit 0
             ;;
         *)
