@@ -1501,7 +1501,7 @@ function UninstallXO {
     fi
 
     echo
-    printinfo "This will completely uninstall XO from your system"
+    printinfo "This will uninstall XO from your system"
     echo
 
     # Show what will be removed
@@ -1511,11 +1511,13 @@ function UninstallXO {
     echo "  - Symlinks in $INSTALLDIR"
     [[ "$has_xo_server_service" == "true" ]] && echo "  - xo-server systemd service"
     [[ "$has_xo_proxy_service" == "true" ]] && echo "  - xo-proxy systemd service"
+    echo
+    echo "The following will require SEPARATE confirmation:"
     echo "  - XO configuration files in $CONFIGPATH/.config/xo-server"
     echo "  - XO cache and data in $CONFIGPATH/.local/share/xo-server"
     echo
 
-    read -r -p "Are you sure you want to completely uninstall XO? [y/N]: " answer
+    read -r -p "Are you sure you want to uninstall XO? [y/N]: " answer
     case $answer in
         y|Y)
             ;;
@@ -1610,27 +1612,38 @@ function UninstallXO {
         fi
     fi
 
-    # Remove XO configuration and data files
+    # Remove XO configuration and data files - requires explicit confirmation
     echo
-    read -r -p "Remove XO configuration and data files? [y/N]: " answer
+    printinfo "XO configuration and data files contain your settings and database"
+    echo "  Location: $CONFIGPATH/.config/xo-server"
+    echo "  Location: $CONFIGPATH/.local/share/xo-server"
+    echo
+    read -r -p "Do you want to PERMANENTLY DELETE configuration and data files? [y/N]: " answer
     case $answer in
         y|Y)
-            if [[ -d "$CONFIGPATH/.config/xo-server" ]]; then
-                printprog "Removing XO server configuration"
-                runcmd "rm -rf \"$CONFIGPATH/.config/xo-server\""
-                printok "Removed XO server configuration"
-            fi
+            echo
+            printwarning "This action cannot be undone!"
+            read -r -p "Type 'DELETE' to confirm permanent removal of config and data: " confirm
+            if [[ "$confirm" == "DELETE" ]]; then
+                if [[ -d "$CONFIGPATH/.config/xo-server" ]]; then
+                    printprog "Removing XO server configuration"
+                    runcmd "rm -rf \"$CONFIGPATH/.config/xo-server\""
+                    printok "Removed XO server configuration"
+                fi
 
-            if [[ -d "$CONFIGPATH/.local/share/xo-server" ]]; then
-                printprog "Removing XO server data"
-                runcmd "rm -rf \"$CONFIGPATH/.local/share/xo-server\""
-                printok "Removed XO server data"
-            fi
+                if [[ -d "$CONFIGPATH/.local/share/xo-server" ]]; then
+                    printprog "Removing XO server data"
+                    runcmd "rm -rf \"$CONFIGPATH/.local/share/xo-server\""
+                    printok "Removed XO server data"
+                fi
 
-            if [[ -d "$CONFIGPATH/.cache/xo-server" ]]; then
-                printprog "Removing XO server cache"
-                runcmd "rm -rf \"$CONFIGPATH/.cache/xo-server\""
-                printok "Removed XO server cache"
+                if [[ -d "$CONFIGPATH/.cache/xo-server" ]]; then
+                    printprog "Removing XO server cache"
+                    runcmd "rm -rf \"$CONFIGPATH/.cache/xo-server\""
+                    printok "Removed XO server cache"
+                fi
+            else
+                printinfo "Deletion cancelled - preserving configuration and data files"
             fi
             ;;
         *)
