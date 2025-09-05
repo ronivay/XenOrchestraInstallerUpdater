@@ -177,7 +177,7 @@ function printwarning {
     echo -e "${INFO} $*"
 }
 
-# Robust git clone with retry logic and shallow clone support
+# Robust git clone with retry logic - uses shallow clone for efficiency
 function git_clone_robust {
     local repo_url="$1"
     local target_dir="$2"
@@ -187,30 +187,13 @@ function git_clone_robust {
     local clone_success=0
 
     while [[ $retry_count -lt $max_retries ]] && [[ $clone_success -eq 0 ]]; do
-        if [[ $retry_count -eq 0 ]]; then
-            # First try: shallow clone with depth 1
-            printprog "Cloning repository (attempt $((retry_count+1))/$max_retries, shallow)"
-            if git clone --depth 1 --single-branch --branch "$branch" "$repo_url" "$target_dir" 2>/dev/null; then
-                clone_success=1
-                printok "Repository cloned successfully (shallow)"
-            fi
-        elif [[ $retry_count -eq 1 ]]; then
-            # Second try: shallow clone with more depth
-            printprog "Cloning repository (attempt $((retry_count+1))/$max_retries, depth=100)"
-            if git clone --depth 100 --single-branch --branch "$branch" "$repo_url" "$target_dir" 2>/dev/null; then
-                clone_success=1
-                printok "Repository cloned successfully (depth=100)"
-            fi
-        else
-            # Final try: full clone
-            printprog "Cloning repository (attempt $((retry_count+1))/$max_retries, full)"
-            if git clone "$repo_url" "$target_dir" 2>/dev/null; then
-                clone_success=1
-                printok "Repository cloned successfully (full)"
-            fi
-        fi
+        printprog "Cloning repository (attempt $((retry_count+1))/$max_retries)"
 
-        if [[ $clone_success -eq 0 ]]; then
+        # Always use shallow clone with depth 1 - we don't need history for installation
+        if git clone --depth 1 --single-branch --branch "$branch" "$repo_url" "$target_dir" 2>/dev/null; then
+            clone_success=1
+            printok "Repository cloned successfully"
+        else
             retry_count=$((retry_count+1))
             if [[ $retry_count -lt $max_retries ]]; then
                 printinfo "Clone failed, retrying in 5 seconds..."
