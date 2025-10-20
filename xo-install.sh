@@ -1323,8 +1323,8 @@ function CheckOS {
         return 0
     fi
 
-    if [[ ! "$OSNAME" =~ ^(Debian|Ubuntu|CentOS|Rocky|AlmaLinux)$ ]]; then
-        printfail "Only Ubuntu/Debian/CentOS/Rocky/AlmaLinux supported"
+    if [[ ! "$OSNAME" =~ ^(Debian|Ubuntu|CentOS|Rocky|AlmaLinux|Oracle)$ ]]; then
+        printfail "Only Ubuntu/Debian/CentOS/Rocky/AlmaLinux/OracleLinux supported"
         exit 1
     fi
 
@@ -1340,6 +1340,11 @@ function CheckOS {
 
     if [[ "$OSNAME" == "AlmaLinux" ]] && [[ ! "$OSVERSION" =~ ^(8|9|10)$ ]]; then
         printfail "Only AlmaLinux 8/9/10 supported"
+        exit 1
+    fi
+
+    if [[ "$OSNAME" == "Oracle" ]] && [[ ! "$OSVERSION" =~ ^(8|9|10)$ ]]; then
+        printfail "Only Oracle Linux 8/9/10 supported"
         exit 1
     fi
 
