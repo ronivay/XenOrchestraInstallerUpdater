@@ -15,7 +15,7 @@ jobs:
       uses: ludeeus/action-shellcheck@2.0.0
 
     - name: run shfmt
-      uses: luizm/action-sh-checker@v0.9.0
+      uses: luizm/action-sh-checker@v0.10.0
       env:
         SHFMT_OPTS: -d
       with:
