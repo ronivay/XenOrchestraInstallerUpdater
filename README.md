@@ -45,6 +45,7 @@ Supported Linux distributions and versions:
 - Rocky Linux 10
 - Rocky Linux 9
 - Rocky Linux 8
+- Debian 13
 - Debian 12
 - Debian 11
 - Debian 10
