@@ -72,6 +72,7 @@ COLOR_GREEN='\e[1;32m'
 COLOR_RED='\e[1;31m'
 COLOR_BLUE='\e[1;34m'
 COLOR_WHITE='\e[1;97m'
+COLOR_YELLOW='\e[1;33m'
 OK="[${COLOR_GREEN}ok${COLOR_N}]"
 FAIL="[${COLOR_RED}fail${COLOR_N}]"
 INFO="[${COLOR_BLUE}info${COLOR_N}]"
@@ -155,6 +156,43 @@ function runcmd_stdout {
     bash -c -o pipefail "$1" 2>>"$LOGFILE" | tee -a "$LOGFILE" || return 1
 }
 
+# Run yarn build with progress indication
+function run_yarn_build {
+    local build_dir="$1"
+    local build_cmd="$2"
+    local build_desc="${3:-build}"
+
+    echo "+ cd $build_dir && $build_cmd" >>"$LOGFILE"
+
+    # Start the build in background and get its PID
+    (cd "$build_dir" && bash -c "$build_cmd" >>"$LOGFILE" 2>&1) &
+    local build_pid=$!
+
+    # Show progress while build is running
+    local spin='-\|/'
+    local i=0
+    local elapsed=0
+
+    while kill -0 $build_pid 2>/dev/null; do
+        i=$(( (i+1) %4 ))
+        printf "\r${PROGRESS} Running $build_desc... %c [%ds]" "${spin:$i:1}" $elapsed
+        sleep 1
+        elapsed=$((elapsed+1))
+    done
+
+    # Check if build succeeded
+    wait $build_pid
+    local build_status=$?
+
+    if [ $build_status -eq 0 ]; then
+        printf "\r${OK} Running $build_desc [%ds]                    \n" $elapsed
+        return 0
+    else
+        printf "\r${FAIL} Running $build_desc failed [%ds]                    \n" $elapsed
+        return 1
+    fi
+}
+
 # make output we print pretty
 function printprog {
     echo -ne "${PROGRESS} $*"
@@ -162,7 +200,9 @@ function printprog {
 
 function printok {
     # shellcheck disable=SC1117
-    echo -e "\r${OK} $*"
+    # Clear the line and print the success message
+    printf "\r\033[K"
+    echo -e "${OK} $*"
 }
 
 function printfail {
@@ -171,6 +211,45 @@ function printfail {
 
 function printinfo {
     echo -e "${INFO} $*"
+}
+
+function printwarning {
+    echo -e "${INFO} $*"
+}
+
+# Robust git clone with retry logic - uses shallow clone for efficiency
+function git_clone_robust {
+    local repo_url="$1"
+    local target_dir="$2"
+    local branch="${3:-master}"
+    local max_retries=3
+    local retry_count=0
+    local clone_success=0
+
+    while [[ $retry_count -lt $max_retries ]] && [[ $clone_success -eq 0 ]]; do
+        printprog "Cloning repository (attempt $((retry_count+1))/$max_retries)"
+
+        # Always use shallow clone with depth 1 - we don't need history for installation
+        if git clone --depth 1 --single-branch --branch "$branch" "$repo_url" "$target_dir" 2>/dev/null; then
+            clone_success=1
+            printok "Repository cloned successfully"
+        else
+            retry_count=$((retry_count+1))
+            if [[ $retry_count -lt $max_retries ]]; then
+                printinfo "Clone failed, retrying in 5 seconds..."
+                sleep 5
+                # Clean up any partial clone
+                rm -rf "$target_dir" 2>/dev/null || true
+            fi
+        fi
+    done
+
+    if [[ $clone_success -eq 0 ]]; then
+        printfail "Failed to clone repository after $max_retries attempts"
+        return 1
+    fi
+
+    return 0
 }
 
 # if script fails at a stage where installation is not complete, we don't want to keep the install specific directory and content
@@ -191,6 +270,532 @@ function ErrorHandling {
     exit 1
 }
 
+# Generate secure random password
+function GenerateSecurePassword {
+    # Generate a 16-character password with alphanumeric and special characters
+    local password=$(tr -dc 'A-Za-z0-9!@#$%^&*()_+-=' </dev/urandom | head -c 16)
+    echo "$password"
+}
+
+# Change XO admin credentials using xo-cli
+function ChangeAdminCredentials {
+    local new_email="$1"
+    local new_password="$2"
+    local delete_default="${3:-true}"  # Delete default user by default
+    local show_password="${4:-false}"  # Only show auto-generated passwords
+    
+    echo
+    printprog "Setting up admin credentials"
+    
+    # Wait for service to be fully ready
+    sleep 5
+    
+    # Register xo-cli with default credentials
+    if ! runcmd_stdout "xo-cli register --allowUnauthorized http://localhost:$PORT admin@admin.net admin" >/dev/null 2>&1; then
+        printfail "Failed to connect to XO server with default credentials"
+        return 1
+    fi
+    
+    # If we're creating a new user (different email), create it first
+    if [[ -n "$new_email" ]] && [[ "$new_email" != "admin@admin.net" ]]; then
+        
+        # Escape single quotes in password for shell command
+        local escaped_password="${new_password//\'/\'\\\'\'}"
+        
+        # First check if the user already exists
+        local user_list=$(runcmd_stdout "xo-cli user.getAll 2>/dev/null")
+        
+        if echo "$user_list" | grep -q "email: '$new_email'"; then
+            # User exists, update their password
+            printok "User $new_email already exists, updating password..."
+            
+            # Get the user ID
+            local user_id=$(echo "$user_list" | grep -B1 -A2 "email: '$new_email'" | grep 'id:' | cut -d"'" -f2)
+            
+            if [[ -n "$user_id" ]]; then
+                if runcmd_stdout "xo-cli user.set id='$user_id' password='$escaped_password'" >/dev/null 2>&1; then
+                    printok "Password updated successfully for existing user"
+                    local create_result=0
+                else
+                    printfail "Failed to update password for existing user"
+                    return 1
+                fi
+            else
+                printfail "Could not find user ID for $new_email"
+                return 1
+            fi
+        else
+            # User doesn't exist, create them
+            local create_output=$(xo-cli user.create email="$new_email" password="$escaped_password" permission="admin" 2>&1)
+            local create_result=$?
+            
+            if [[ $create_result -eq 0 ]]; then
+                printok "New admin user created successfully"
+            else
+                printfail "Failed to create new admin user: $create_output"
+                return 1
+            fi
+        fi
+        
+        if [[ $create_result -eq 0 ]]; then
+            # Verify the new user can authenticate
+            if ! runcmd_stdout "xo-cli register --allowUnauthorized http://localhost:$PORT '$new_email' '$escaped_password'" >/dev/null 2>&1; then
+                printfail "Warning: Authentication failed with new credentials"
+            fi
+            
+            # Get the default admin user ID to delete it
+            if [[ "$delete_default" == "true" ]]; then
+                # Check if default admin user exists
+                local user_list=$(runcmd_stdout "xo-cli user.getAll 2>/dev/null")
+                if echo "$user_list" | grep -q "email: 'admin@admin.net'"; then
+                    # Default user exists, try to delete it
+                    local default_admin_id=$(echo "$user_list" | grep -B1 -A2 "email: 'admin@admin.net'" | grep 'id:' | cut -d"'" -f2)
+                    
+                    if [[ -n "$default_admin_id" ]]; then
+                        # Re-register with new credentials before deleting old admin
+                        if runcmd_stdout "xo-cli register --allowUnauthorized http://localhost:$PORT '$new_email' '$new_password'" >/dev/null 2>&1; then
+                            if runcmd_stdout "xo-cli user.delete id=$default_admin_id" >/dev/null 2>&1; then
+                                printok "Default admin user (admin@admin.net) deleted for security"
+                            else
+                                printfail "Warning: Could not delete default admin user. Please delete it manually!"
+                            fi
+                        else
+                            printfail "Warning: Could not re-authenticate with new credentials. Default user not deleted."
+                        fi
+                    else
+                        printfail "Warning: Could not extract default admin user ID"
+                    fi
+                else
+                    # Default user doesn't exist - this is fine
+                    printok "Default admin user already removed or never existed"
+                fi
+            fi
+            
+            echo
+            echo -e "       ${COLOR_GREEN}New admin username: $new_email${COLOR_N}"
+            if [[ "$show_password" == "true" ]]; then
+                echo -e "       ${COLOR_GREEN}New admin password: $new_password${COLOR_N}"
+                echo
+                echo -e "       ${COLOR_YELLOW}IMPORTANT: Save these credentials securely!${COLOR_N}"
+            else
+                echo -e "       ${COLOR_GREEN}Password set successfully (not displayed for security)${COLOR_N}"
+            fi
+            return 0
+        fi
+    elif [[ -z "$new_email" ]] && [[ -n "$new_password" ]]; then
+        # Just changing password for admin@admin.net
+        printok "Updating password for admin@admin.net..."
+        
+        # Get user list and extract admin ID
+        local user_list=$(runcmd_stdout "xo-cli user.getAll 2>/dev/null")
+        local admin_id=$(echo "$user_list" | grep -B1 -A2 "email: 'admin@admin.net'" | grep 'id:' | cut -d"'" -f2)
+        
+        if [[ -z "$admin_id" ]]; then
+            printfail "Failed to get admin user ID"
+            return 1
+        fi
+        
+        if runcmd_stdout "xo-cli user.set id='$admin_id' password='$new_password'" >/dev/null 2>&1; then
+            printok "Admin password updated successfully"
+            echo
+            echo -e "       ${COLOR_GREEN}Username: admin@admin.net${COLOR_N}"
+            if [[ "$show_password" == "true" ]]; then
+                echo -e "       ${COLOR_GREEN}New password: $new_password${COLOR_N}"
+                echo
+                echo -e "       ${COLOR_YELLOW}IMPORTANT: Save this password securely!${COLOR_N}"
+            else
+                echo -e "       ${COLOR_GREEN}Password set successfully (not displayed for security)${COLOR_N}"
+            fi
+            echo -e "       ${COLOR_YELLOW}WARNING: Consider creating a new admin user with a different email for better security${COLOR_N}"
+            return 0
+        else
+            printfail "Failed to update admin password"
+            return 1
+        fi
+    else
+        # This shouldn't happen, but handle it gracefully
+        printfail "Invalid parameters: email='$new_email' password provided=$([[ -n "$new_password" ]] && echo "yes" || echo "no")"
+        return 1
+    fi
+}
+
+# Interactive credential setup for installation
+function SetupCredentialsInteractive {
+    echo
+    echo "-----------------------------------------"
+    echo "Admin Credential Setup"
+    echo "-----------------------------------------"
+    echo
+    
+    # Get email address
+    read -r -p "Enter admin email [admin@admin.net]: " new_email
+    if [[ -z "$new_email" ]]; then
+        new_email="admin@admin.net"
+    else
+        # Validate email format
+        if [[ ! "$new_email" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
+            echo -e "${COLOR_RED}Invalid email format. Using default: admin@admin.net${COLOR_N}"
+            new_email="admin@admin.net"
+        fi
+    fi
+    
+    # Get password - if custom email, require valid password
+    if [[ "$new_email" != "admin@admin.net" ]]; then
+        # Custom email - must set a valid password
+        while true; do
+            read -r -s -p "Enter admin password (min 6 chars): " new_password
+            echo
+            
+            if [[ ${#new_password} -lt 6 ]]; then
+                echo -e "${COLOR_RED}Password must be at least 6 characters long. Please try again.${COLOR_N}"
+                continue
+            fi
+            
+            read -r -s -p "Confirm password: " confirm_password
+            echo
+            
+            if [[ "$new_password" != "$confirm_password" ]]; then
+                echo -e "${COLOR_RED}Passwords do not match. Please try again.${COLOR_N}"
+            else
+                break
+            fi
+        done
+    else
+        # Default email - allow default password
+        read -r -s -p "Enter admin password [admin]: " new_password
+        echo
+        if [[ -z "$new_password" ]]; then
+            new_password="admin"
+        else
+            # Validate password length
+            if [[ ${#new_password} -lt 6 ]]; then
+                echo -e "${COLOR_RED}Password must be at least 6 characters. Using default: admin${COLOR_N}"
+                new_password="admin"
+            else
+                # Confirm password if custom
+                read -r -s -p "Confirm password: " confirm_password
+                echo
+                if [[ "$new_password" != "$confirm_password" ]]; then
+                    echo -e "${COLOR_RED}Passwords do not match. Using default: admin${COLOR_N}"
+                    new_password="admin"
+                fi
+            fi
+        fi
+    fi
+    
+    # Display result and handle credential changes
+    echo
+    if [[ "$new_email" == "admin@admin.net" ]] && [[ "$new_password" == "admin" ]]; then
+        # Both defaults
+        echo -e "       ${COLOR_RED}WARNING: Using default credentials is a security risk!${COLOR_N}"
+        echo -e "       ${COLOR_YELLOW}Username: admin@admin.net${COLOR_N}"
+        echo -e "       ${COLOR_YELLOW}Password: admin${COLOR_N}"
+        echo -e "       ${COLOR_RED}IMPORTANT: Change these credentials immediately after installation!${COLOR_N}"
+    elif [[ "$new_email" == "admin@admin.net" ]]; then
+        # Default email, custom password
+        echo -e "       ${COLOR_GREEN}Setting custom password for admin@admin.net${COLOR_N}"
+        ChangeAdminCredentials "" "$new_password" "false" "false"
+    else
+        # Custom email (with custom or default password)
+        echo -e "       ${COLOR_GREEN}Creating new admin user: $new_email${COLOR_N}"
+        ChangeAdminCredentials "$new_email" "$new_password" "true" "false"
+    fi
+}
+
+# Standalone credential management function for menu
+function ManageCredentials {
+    echo
+    echo "-----------------------------------------"
+    echo "Manage Admin Credentials"
+    echo "-----------------------------------------"
+    echo
+    
+    # Check if XO server is running
+    if ! runcmd_stdout "pgrep -f '^([a-zA-Z0-9_\/-]+?)node.*xo-server'" >/dev/null 2>&1; then
+        printfail "XO Server is not running. Please install or start it first."
+        return 1
+    fi
+    
+    echo "This will manage admin credentials for your XO installation."
+    echo
+    
+    # First, authenticate with current credentials
+    echo "Please authenticate with your current admin credentials:"
+    read -r -p "Enter current admin email: " current_email
+    read -r -s -p "Enter current admin password: " current_password
+    echo
+    
+    # Try to authenticate with provided credentials
+    if ! runcmd_stdout "xo-cli register --allowUnauthorized http://localhost:$PORT '$current_email' '$current_password'" >/dev/null 2>&1; then
+        printfail "Failed to authenticate with provided credentials"
+        return 1
+    fi
+    
+    printok "Authentication successful"
+    echo
+    
+    echo "Choose an option:"
+    echo "1. Create new admin user and delete current one"
+    echo "2. Create new admin user (keep current one)"
+    echo "3. Change current user's password only"
+    echo "4. List all admin users"
+    echo "5. Delete a user"
+    echo "6. Cancel"
+    echo
+    read -r -p "Option [1-6]: " manage_option
+    
+    case $manage_option in
+        1)
+            echo
+            read -r -p "Enter new admin email: " new_email
+            # Validate email format
+            if [[ ! "$new_email" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
+                echo -e "${COLOR_RED}Invalid email format${COLOR_N}"
+                return 1
+            fi
+            
+            echo "Choose password option:"
+            echo "1. Enter custom password"
+            echo "2. Generate secure password automatically"
+            read -r -p "Option [1-2]: " pass_option
+            
+            if [[ "$pass_option" == "1" ]]; then
+                while true; do
+                    read -r -s -p "Enter new admin password: " new_password
+                    echo
+                    read -r -s -p "Confirm password: " confirm_password
+                    echo
+                    if [[ "$new_password" == "$confirm_password" ]]; then
+                        if [[ ${#new_password} -lt 6 ]]; then
+                            echo -e "${COLOR_RED}Password must be at least 6 characters long${COLOR_N}"
+                        else
+                            break
+                        fi
+                    else
+                        echo -e "${COLOR_RED}Passwords do not match${COLOR_N}"
+                    fi
+                done
+            else
+                new_password=$(GenerateSecurePassword)
+                echo
+                echo -e "       ${COLOR_GREEN}Generated password: $new_password${COLOR_N}"
+                echo -e "       ${COLOR_YELLOW}IMPORTANT: Save this password securely!${COLOR_N}"
+            fi
+            
+            # Check if user already exists and create/update accordingly
+            local user_list=$(runcmd_stdout "xo-cli user.getAll 2>/dev/null")
+            
+            if echo "$user_list" | grep -q "email: '$new_email'"; then
+                # User exists, update their password
+                printok "User $new_email already exists, updating password..."
+                local user_id=$(echo "$user_list" | grep -B1 -A2 "email: '$new_email'" | grep 'id:' | cut -d"'" -f2)
+                
+                if [[ -n "$user_id" ]] && runcmd_stdout "xo-cli user.set id='$user_id' password='$new_password'" >/dev/null 2>&1; then
+                    printok "Password updated successfully for existing user"
+                else
+                    printfail "Failed to update password for existing user"
+                    return 1
+                fi
+            else
+                # Create new admin user
+                if runcmd_stdout "xo-cli user.create email='$new_email' password='$new_password' permission='admin'" >/dev/null 2>&1; then
+                    printok "New admin user created successfully"
+                else
+                    printfail "Failed to create new admin user"
+                    return 1
+                fi
+            fi
+            
+            # Get current user ID to delete
+            local current_user_id=$(runcmd_stdout "xo-cli user.getAll 2>/dev/null | grep -B1 -A2 \"email: '$current_email'\" | grep 'id:' | cut -d\"'\" -f2")
+            
+            if [[ -n "$current_user_id" ]]; then
+                # Re-register with new credentials
+                if runcmd_stdout "xo-cli register --allowUnauthorized http://localhost:$PORT '$new_email' '$new_password'" >/dev/null 2>&1; then
+                    if runcmd_stdout "xo-cli user.delete id=$current_user_id" >/dev/null 2>&1; then
+                        printok "Previous admin user ($current_email) deleted"
+                    else
+                        printfail "Warning: Could not delete previous admin user"
+                    fi
+                fi
+            fi
+            
+            echo
+            echo -e "       ${COLOR_GREEN}New admin username: $new_email${COLOR_N}"
+            if [[ "$pass_option" != "1" ]]; then
+                echo -e "       ${COLOR_GREEN}New admin password: $new_password${COLOR_N}"
+            fi
+            ;;
+        2)
+            echo
+            read -r -p "Enter new admin email: " new_email
+            # Validate email format
+            if [[ ! "$new_email" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
+                echo -e "${COLOR_RED}Invalid email format${COLOR_N}"
+                return 1
+            fi
+            
+            echo "Choose password option:"
+            echo "1. Enter custom password"
+            echo "2. Generate secure password automatically"
+            read -r -p "Option [1-2]: " pass_option
+            
+            if [[ "$pass_option" == "1" ]]; then
+                while true; do
+                    read -r -s -p "Enter new admin password: " new_password
+                    echo
+                    read -r -s -p "Confirm password: " confirm_password
+                    echo
+                    if [[ "$new_password" == "$confirm_password" ]]; then
+                        if [[ ${#new_password} -lt 6 ]]; then
+                            echo -e "${COLOR_RED}Password must be at least 6 characters long${COLOR_N}"
+                        else
+                            break
+                        fi
+                    else
+                        echo -e "${COLOR_RED}Passwords do not match${COLOR_N}"
+                    fi
+                done
+            else
+                new_password=$(GenerateSecurePassword)
+                echo
+                echo -e "       ${COLOR_GREEN}Generated password: $new_password${COLOR_N}"
+                echo -e "       ${COLOR_YELLOW}IMPORTANT: Save this password securely!${COLOR_N}"
+            fi
+            
+            # Check if user already exists and create/update accordingly
+            local user_list=$(runcmd_stdout "xo-cli user.getAll 2>/dev/null")
+            
+            if echo "$user_list" | grep -q "email: '$new_email'"; then
+                # User exists, update their password
+                printok "User $new_email already exists, updating password..."
+                local user_id=$(echo "$user_list" | grep -B1 -A2 "email: '$new_email'" | grep 'id:' | cut -d"'" -f2)
+                
+                if [[ -n "$user_id" ]] && runcmd_stdout "xo-cli user.set id='$user_id' password='$new_password'" >/dev/null 2>&1; then
+                    printok "Password updated successfully for existing user"
+                else
+                    printfail "Failed to update password for existing user"
+                    return 1
+                fi
+            else
+                # Create new admin user without deleting current one
+                if runcmd_stdout "xo-cli user.create email='$new_email' password='$new_password' permission='admin'" >/dev/null 2>&1; then
+                    printok "New admin user created successfully"
+                else
+                    printfail "Failed to create new admin user"
+                    return 1
+                fi
+            fi
+            
+            echo
+            echo -e "       ${COLOR_GREEN}New admin username: $new_email${COLOR_N}"
+            if [[ "$pass_option" == "2" ]]; then
+                echo -e "       ${COLOR_GREEN}New admin password: $new_password${COLOR_N}"
+            else
+                echo -e "       ${COLOR_GREEN}Password set successfully (not displayed for security)${COLOR_N}"
+            fi
+            echo -e "       ${COLOR_YELLOW}Note: Previous admin user ($current_email) still exists${COLOR_N}"
+            ;;
+        3)
+            echo
+            echo "Choose password option:"
+            echo "1. Enter custom password"
+            echo "2. Generate secure password automatically"
+            read -r -p "Option [1-2]: " pass_option
+            
+            if [[ "$pass_option" == "1" ]]; then
+                while true; do
+                    read -r -s -p "Enter new password: " new_password
+                    echo
+                    read -r -s -p "Confirm password: " confirm_password
+                    echo
+                    if [[ "$new_password" == "$confirm_password" ]]; then
+                        if [[ ${#new_password} -lt 6 ]]; then
+                            echo -e "${COLOR_RED}Password must be at least 6 characters long${COLOR_N}"
+                        else
+                            break
+                        fi
+                    else
+                        echo -e "${COLOR_RED}Passwords do not match${COLOR_N}"
+                    fi
+                done
+            else
+                new_password=$(GenerateSecurePassword)
+                echo
+                echo -e "       ${COLOR_GREEN}Generated password: $new_password${COLOR_N}"
+                echo -e "       ${COLOR_YELLOW}IMPORTANT: Save this password securely!${COLOR_N}"
+            fi
+            
+            # Get current user ID
+            local current_user_id=$(runcmd_stdout "xo-cli user.getAll 2>/dev/null | grep -B1 -A2 \"email: '$current_email'\" | grep 'id:' | cut -d\"'\" -f2")
+            
+            if [[ -n "$current_user_id" ]]; then
+                if runcmd_stdout "xo-cli user.set id=$current_user_id password='$new_password'" >/dev/null 2>&1; then
+                    printok "Password updated successfully"
+                else
+                    printfail "Failed to update password"
+                fi
+            else
+                printfail "Failed to find user"
+            fi
+            ;;
+        4)
+            echo
+            echo "Admin users:"
+            echo
+            runcmd_stdout "xo-cli user.getAll 2>/dev/null" | grep -B1 -A3 "permission: 'admin'" | grep -E "(email:|id:)" | sed 's/^[[:space:]]*/  /'
+            ;;
+        5)
+            echo
+            echo "Admin users:"
+            echo
+            local admin_users=$(runcmd_stdout "xo-cli user.getAll 2>/dev/null" | grep -B1 -A3 "permission: 'admin'" | grep -E "email:" | cut -d"'" -f2)
+            echo "$admin_users" | nl
+            echo
+            
+            # Count admin users
+            local admin_count=$(echo "$admin_users" | wc -l)
+            if [[ $admin_count -le 1 ]]; then
+                echo -e "${COLOR_RED}Cannot delete the only admin user!${COLOR_N}"
+                return 1
+            fi
+            
+            read -r -p "Enter the email of the user to delete: " delete_email
+            
+            if [[ "$delete_email" == "$current_email" ]]; then
+                echo -e "${COLOR_RED}Cannot delete the currently authenticated user!${COLOR_N}"
+                return 1
+            fi
+            
+            # Get user ID to delete
+            local delete_user_id=$(runcmd_stdout "xo-cli user.getAll 2>/dev/null | grep -B1 -A2 \"email: '$delete_email'\" | grep 'id:' | cut -d\"'\" -f2")
+            
+            if [[ -n "$delete_user_id" ]]; then
+                read -r -p "Are you sure you want to delete user $delete_email? [y/N]: " confirm
+                if [[ "$confirm" == "y" ]] || [[ "$confirm" == "Y" ]]; then
+                    if runcmd_stdout "xo-cli user.delete id=$delete_user_id" >/dev/null 2>&1; then
+                        printok "User $delete_email deleted successfully"
+                    else
+                        printfail "Failed to delete user"
+                    fi
+                else
+                    echo "Deletion cancelled"
+                fi
+            else
+                printfail "User not found"
+            fi
+            ;;
+        6)
+            echo "Cancelled"
+            return 0
+            ;;
+        *)
+            echo "Invalid option"
+            return 1
+            ;;
+    esac
+}
+
 # install package dependencies to rpm distros, based on: https://xen-orchestra.com/docs/from_the_sources.html
 function InstallDependenciesRPM {
 
@@ -208,7 +813,8 @@ function InstallDependenciesRPM {
     fi
 
     # only install epel-release if doesn't exist and user allows it to be installed
-    if [[ -z $(runcmd_stdout "rpm -qa epel-release") ]] && [[ "$INSTALL_REPOS" == "true" ]]; then
+    # Skip for Fedora as it doesn't need EPEL
+    if [[ -z $(runcmd_stdout "rpm -qa epel-release") ]] && [[ "$INSTALL_REPOS" == "true" ]] && [[ "$OSNAME" != "Fedora" ]]; then
         echo
         printprog "Installing epel-repo"
         runcmd "dnf -y install epel-release"
@@ -226,12 +832,17 @@ function InstallDependenciesRPM {
         echo
         printprog "Installing node.js"
 
-        # only install nodejs repo if user allows it to be installed
-        if [[ "$INSTALL_REPOS" == "true" ]]; then
-            runcmd "curl -s -L https://rpm.nodesource.com/setup_${NODEVERSION}.x | bash -"
+        if [[ "$OSNAME" == "Fedora" ]]; then
+            # Use Fedora's native nodejs package (v22)
+            runcmd "dnf install -y nodejs nodejs-npm"
+        else
+            # For RHEL-based systems, use NodeSource repository
+            if [[ "$INSTALL_REPOS" == "true" ]]; then
+                runcmd "curl -s -L https://rpm.nodesource.com/setup_${NODEVERSION}.x | bash -"
+            fi
+            runcmd "dnf install -y nodejs"
         fi
 
-        runcmd "dnf install -y nodejs"
         printok "Installing node.js"
     else
         UpdateNodeYarn
@@ -242,12 +853,17 @@ function InstallDependenciesRPM {
         echo
         printprog "Installing yarn"
 
-        # only install yarn repo if user allows it to be installed
-        if [[ "$INSTALL_REPOS" == "true" ]]; then
-            runcmd "curl -s -o /etc/yum.repos.d/yarn.repo https://dl.yarnpkg.com/rpm/yarn.repo"
+        if [[ "$OSNAME" == "Fedora" ]]; then
+            # Use Fedora's native yarnpkg package
+            runcmd "dnf -y install yarnpkg"
+        else
+            # For RHEL-based systems, use Yarn's official repository
+            if [[ "$INSTALL_REPOS" == "true" ]]; then
+                runcmd "curl -s -o /etc/yum.repos.d/yarn.repo https://dl.yarnpkg.com/rpm/yarn.repo"
+            fi
+            runcmd "dnf -y install yarn"
         fi
 
-        runcmd "dnf -y install yarn"
         printok "Installing yarn"
     fi
 
@@ -256,7 +872,13 @@ function InstallDependenciesRPM {
         if [[ "$INSTALL_REPOS" == "true" ]] && [[ "$INSTALL_EL_LIBVHDI" == "true" ]]; then
             echo
             printprog "Installing libvhdi-tools"
-            runcmd "dnf copr enable -y bnerickson/libvhdi"
+            if [[ "$OSNAME" == "Fedora" ]]; then
+                # Use reversejames/libvhdi for Fedora
+                runcmd "dnf copr enable -y reversejames/libvhdi"
+            else
+                # Use bnerickson/libvhdi for RHEL-based systems
+                runcmd "dnf copr enable -y bnerickson/libvhdi"
+            fi
             runcmd "dnf install -y libvhdi-tools"
             printok "Installing libvhdi-tools"
         fi
@@ -394,15 +1016,25 @@ function UpdateNodeYarn {
 
     if [ "$PKG_FORMAT" == "rpm" ]; then
         # update node version if needed.
-        # skip update if repository install is disabled as we can't quarantee this actually updates anything
-        if [[ "${NODEV:-0}" -lt "${NODEVERSION}" ]] && [[ "$INSTALL_REPOS" == "true" ]]; then
+        # For Fedora, use native packages; for others use NodeSource if allowed
+        if [[ "${NODEV:-0}" -lt "${NODEVERSION}" ]]; then
             echo
             printprog "node.js version is ${NODEV:-"not installed"}, upgrading to ${NODEVERSION}.x"
 
-            runcmd "curl -sL https://rpm.nodesource.com/setup_${NODEVERSION}.x | bash -"
+            if [[ "$OSNAME" == "Fedora" ]]; then
+                # Use Fedora's native nodejs package
+                runcmd "dnf clean all"
+                runcmd "dnf install -y nodejs nodejs-npm"
+            elif [[ "$INSTALL_REPOS" == "true" ]]; then
+                # For RHEL-based systems, use NodeSource repository
+                runcmd "curl -sL https://rpm.nodesource.com/setup_${NODEVERSION}.x | bash -"
+                runcmd "dnf clean all"
+                runcmd "dnf install -y nodejs"
+            else
+                printfail "Node.js version update needed but INSTALL_REPOS set to false for non-Fedora system, can't continue"
+                exit 1
+            fi
 
-            runcmd "dnf clean all"
-            runcmd "dnf install -y nodejs"
             printok "node.js version is ${NODEV:-"not installed"}, upgrading to ${NODEVERSION}.x"
         else
             if [[ -z "$NODEV" ]]; then
@@ -481,12 +1113,24 @@ function InstallAdditionalXOPlugins {
         local PLUGIN_NAME=$(runcmd_stdout "basename '$x' | rev | cut -c 5- | rev")
         local PLUGIN_SRC_DIR=$(runcmd_stdout "realpath -m '$XO_SRC_DIR/../$PLUGIN_NAME'")
 
-        if [[ ! -d "$PLUGIN_SRC_DIR" ]]; then
-            runcmd "mkdir -p \"$PLUGIN_SRC_DIR\""
-            runcmd "git clone \"${x}\" \"$PLUGIN_SRC_DIR\""
-        else
+        # Check if directory exists and is a valid git repository
+        if [[ -d "$PLUGIN_SRC_DIR" ]] && [[ -d "$PLUGIN_SRC_DIR/.git" ]]; then
+            # Directory exists and is a git repo, update it
             runcmd "cd \"$PLUGIN_SRC_DIR\" && git pull --ff-only"
             runcmd "cd $SCRIPT_DIR"
+        else
+            # Directory doesn't exist or is not a git repo
+            if [[ -d "$PLUGIN_SRC_DIR" ]]; then
+                # Directory exists but is not a git repo
+                printinfo "Plugin directory exists but is not a git repository, removing"
+                runcmd "rm -rf \"$PLUGIN_SRC_DIR\""
+            fi
+
+            runcmd "mkdir -p \"$PLUGIN_SRC_DIR\""
+            if ! git_clone_robust "${x}" "$PLUGIN_SRC_DIR" "master"; then
+                printfail "Failed to clone plugin repository: ${x}"
+                exit 1
+            fi
         fi
 
         runcmd "cp -r $PLUGIN_SRC_DIR $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/"
@@ -593,14 +1237,46 @@ function PrepInstall {
     echo
     # keep the actual source code in one directory and either clone or git fetch depending on if directory exists already
     printinfo "Fetching $XO_SVC_DESC source code"
-    if [[ ! -d "$XO_SRC_DIR" ]]; then
-        runcmd "mkdir -p \"$XO_SRC_DIR\""
-        runcmd "git clone \"${REPOSITORY}\" \"$XO_SRC_DIR\""
-    else
+
+    # Validate XO_SRC_DIR path for safety
+    if [[ -z "$XO_SRC_DIR" ]] || [[ "$XO_SRC_DIR" == "/" ]] || [[ "$XO_SRC_DIR" == "$HOME" ]] || [[ ! "$XO_SRC_DIR" =~ ^/opt/xo/ ]]; then
+        printfail "Invalid XO_SRC_DIR path: $XO_SRC_DIR"
+        exit 1
+    fi
+
+    # Check if directory exists and is a valid git repository
+    if [[ -d "$XO_SRC_DIR" ]] && [[ -d "$XO_SRC_DIR/.git" ]]; then
+        # Directory exists and is a git repo, update it
         runcmd "cd \"$XO_SRC_DIR\" && git remote set-url origin \"${REPOSITORY}\" && \
             git fetch --prune && \
             git reset --hard origin/master && \
             git clean -xdff"
+    else
+        # Directory doesn't exist or is not a git repo
+        if [[ -d "$XO_SRC_DIR" ]]; then
+            # Directory exists but is not a git repo
+            printinfo "Directory exists but is not a git repository"
+            # Check if directory is empty or contains only a few files (likely from failed clone)
+            local file_count=$(find "$XO_SRC_DIR" -maxdepth 1 -type f 2>/dev/null | wc -l)
+            local dir_count=$(find "$XO_SRC_DIR" -maxdepth 1 -type d 2>/dev/null | wc -l)
+
+            if [[ $file_count -eq 0 ]] && [[ $dir_count -le 1 ]]; then
+                # Directory is empty or nearly empty, safe to remove
+                printinfo "Removing empty directory and re-cloning"
+                runcmd "rm -rf \"$XO_SRC_DIR\""
+            else
+                # Directory has content, ask for confirmation or fail
+                printfail "Directory $XO_SRC_DIR exists but is not a git repository and contains files"
+                printfail "Please manually remove or backup the directory and try again"
+                exit 1
+            fi
+        fi
+
+        runcmd "mkdir -p \"$XO_SRC_DIR\""
+        if ! git_clone_robust "${REPOSITORY}" "$XO_SRC_DIR" "$BRANCH"; then
+            printfail "Failed to clone repository"
+            exit 1
+        fi
     fi
 
     # Deploy the latest xen-orchestra source to the new install directory.
@@ -714,9 +1390,27 @@ function InstallXO {
     echo
     printinfo "xo-server and xo-web build takes quite a while. Grab a cup of coffee and lay back"
     echo
-    printprog "Running installation"
-    runcmd "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn --network-timeout ${YARN_NETWORK_TIMEOUT} && yarn --network-timeout ${YARN_NETWORK_TIMEOUT} build"
-    printok "Running installation"
+
+    # Run yarn install with progress
+    printprog "Installing dependencies"
+    if runcmd "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn --network-timeout ${YARN_NETWORK_TIMEOUT}"; then
+        printok "Installing dependencies"
+    else
+        printfail "Failed to install dependencies"
+        exit 1
+    fi
+
+    # Run yarn build with progress indicator - build separately for better visibility
+    # Build xo-server and its plugins first
+    run_yarn_build "$INSTALLDIR/xo-builds/xen-orchestra-$TIME" "TURBO_TELEMETRY_DISABLED=1 yarn --network-timeout ${YARN_NETWORK_TIMEOUT} run turbo run build --filter xo-server --filter xo-server-'*'" "xo-server build"
+
+    # Then build xo-web
+    run_yarn_build "$INSTALLDIR/xo-builds/xen-orchestra-$TIME" "TURBO_TELEMETRY_DISABLED=1 yarn --network-timeout ${YARN_NETWORK_TIMEOUT} run turbo run build --filter xo-web" "xo-web build"
+
+    # Run v6 build if needed
+    if [ "$INCLUDE_V6" == "true" ]; then
+        run_yarn_build "$INSTALLDIR/xo-builds/xen-orchestra-$TIME" "yarn --network-timeout ${YARN_NETWORK_TIMEOUT} run turbo run build --filter @xen-orchestra/web" "v6 web interface build"
+    fi
 
     # Install plugins (takes care of 3rd party plugins as well)
     InstallXOPlugins
@@ -919,7 +1613,19 @@ function VerifyServiceStart {
             echo -e "       ${COLOR_GREEN}WebUI started in port $PORT. Make sure you have firewall rules in place to allow access.${COLOR_N}"
             # print username and password only when install was ran and skip while updating
             if [[ "$TASK" == "Installation" ]]; then
-                echo -e "       ${COLOR_GREEN}Default username: admin@admin.net password: admin${COLOR_N}"
+                # Ask user if they want to set up custom credentials
+                echo
+                echo -e "       ${COLOR_YELLOW}Would you like to set up custom admin credentials now?${COLOR_N}"
+                echo -e "       ${COLOR_WHITE}(If you skip this, default credentials will be used: admin@admin.net / admin)${COLOR_N}"
+                read -r -p "       Set up custom credentials? [y/N]: " setup_creds
+                
+                if [[ "$setup_creds" == "y" ]] || [[ "$setup_creds" == "Y" ]]; then
+                    SetupCredentialsInteractive
+                else
+                    echo
+                    echo -e "       ${COLOR_GREEN}Default username: admin@admin.net password: admin${COLOR_N}"
+                    echo -e "       ${COLOR_YELLOW}IMPORTANT: Change these credentials after logging in for security!${COLOR_N}"
+                fi
             fi
         fi
         if [[ "$XO_SVC" == "xo-proxy" ]]; then
@@ -1005,9 +1711,18 @@ function InstallXOProxy {
     echo
     printinfo "xo-proxy build takes quite a while. Grab a cup of coffee and lay back"
     echo
-    printprog "Running installation"
-    runcmd "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn --network-timeout ${YARN_NETWORK_TIMEOUT} && yarn --network-timeout ${YARN_NETWORK_TIMEOUT} build"
-    printok "Running installation"
+
+    # Run yarn install with progress
+    printprog "Installing dependencies"
+    if runcmd "cd $INSTALLDIR/xo-builds/xen-orchestra-$TIME && yarn --network-timeout ${YARN_NETWORK_TIMEOUT}"; then
+        printok "Installing dependencies"
+    else
+        printfail "Failed to install dependencies"
+        exit 1
+    fi
+
+    # Run yarn build with progress indicator - only build proxy, not web UI
+    run_yarn_build "$INSTALLDIR/xo-builds/xen-orchestra-$TIME" "TURBO_TELEMETRY_DISABLED=1 yarn --network-timeout ${YARN_NETWORK_TIMEOUT} run turbo run build --filter @xen-orchestra/proxy" "xo-proxy build"
 
     # shutdown possibly running xo-server
     if [[ $(runcmd_stdout "pgrep -f '^([a-zA-Z0-9_\/-]+?)node.*xo-proxy'") ]]; then
@@ -1284,11 +1999,264 @@ function RollBackInstallation {
 
 }
 
+# Uninstall XO build, services, and configuration
+function UninstallXO {
+
+    set -uo pipefail
+
+    # Validate INSTALLDIR path for safety
+    if [[ -z "$INSTALLDIR" ]] || [[ "$INSTALLDIR" == "/" ]] || [[ "$INSTALLDIR" == "$HOME" ]] || [[ ! "$INSTALLDIR" =~ ^/opt/ ]]; then
+        printfail "Invalid INSTALLDIR path: $INSTALLDIR - refusing to uninstall for safety"
+        exit 1
+    fi
+
+    # Check if XO is installed
+    if [[ ! -d "$INSTALLDIR" ]]; then
+        printinfo "XO installation directory not found at $INSTALLDIR"
+        exit 0
+    fi
+
+    # Determine what's installed
+    local has_xo_server=false
+    local has_xo_proxy=false
+
+    if [[ -L "$INSTALLDIR/xo-server" ]] && [[ -n $(runcmd_stdout "readlink -e $INSTALLDIR/xo-server" 2>/dev/null || true) ]]; then
+        has_xo_server=true
+    fi
+
+    if [[ -L "$INSTALLDIR/xo-proxy" ]] && [[ -n $(runcmd_stdout "readlink -e $INSTALLDIR/xo-proxy" 2>/dev/null || true) ]]; then
+        has_xo_proxy=true
+    fi
+
+    # Check for service files
+    local has_xo_server_service=false
+    local has_xo_proxy_service=false
+
+    if [[ -f "/etc/systemd/system/xo-server.service" ]]; then
+        has_xo_server_service=true
+    fi
+
+    if [[ -f "/etc/systemd/system/xo-proxy.service" ]]; then
+        has_xo_proxy_service=true
+    fi
+
+    if [[ "$has_xo_server" == "false" ]] && [[ "$has_xo_proxy" == "false" ]] && [[ "$has_xo_server_service" == "false" ]] && [[ "$has_xo_proxy_service" == "false" ]]; then
+        printinfo "No XO installation found"
+        exit 0
+    fi
+
+    echo
+    printinfo "This will uninstall XO from your system"
+    echo
+
+    # Show what will be removed
+    echo "The following will be removed:"
+    echo "  - All builds in $INSTALLDIR/xo-builds/"
+    echo "  - Source code in $INSTALLDIR/xo-src/"
+    echo "  - Symlinks in $INSTALLDIR"
+    [[ "$has_xo_server_service" == "true" ]] && echo "  - xo-server systemd service"
+    [[ "$has_xo_proxy_service" == "true" ]] && echo "  - xo-proxy systemd service"
+    echo
+    echo "The following will require SEPARATE confirmation:"
+    echo "  - XO configuration files in $CONFIGPATH/.config/xo-server"
+    echo "  - XO cache and data in $CONFIGPATH/.local/share/xo-server"
+    echo
+
+    read -r -p "Are you sure you want to uninstall XO? [y/N]: " answer
+    case $answer in
+        y|Y)
+            ;;
+        *)
+            echo "Uninstall cancelled"
+            exit 0
+            ;;
+    esac
+
+    # Stop and disable xo-server service
+    if [[ "$has_xo_server_service" == "true" ]]; then
+        echo
+        if [[ $(runcmd_stdout "systemctl is-active xo-server" 2>/dev/null || true) == "active" ]]; then
+            printprog "Stopping xo-server service"
+            runcmd "/bin/systemctl stop xo-server" || true
+            printok "Stopped xo-server service"
+        fi
+
+        if [[ $(runcmd_stdout "systemctl is-enabled xo-server" 2>/dev/null || true) == "enabled" ]]; then
+            printprog "Disabling xo-server service"
+            runcmd "/bin/systemctl disable xo-server" || true
+            printok "Disabled xo-server service"
+        fi
+
+        printprog "Removing xo-server service file"
+        runcmd "rm -f /etc/systemd/system/xo-server.service"
+        printok "Removed xo-server service file"
+    fi
+
+    # Stop and disable xo-proxy service
+    if [[ "$has_xo_proxy_service" == "true" ]]; then
+        echo
+        if [[ $(runcmd_stdout "systemctl is-active xo-proxy" 2>/dev/null || true) == "active" ]]; then
+            printprog "Stopping xo-proxy service"
+            runcmd "/bin/systemctl stop xo-proxy" || true
+            printok "Stopped xo-proxy service"
+        fi
+
+        if [[ $(runcmd_stdout "systemctl is-enabled xo-proxy" 2>/dev/null || true) == "enabled" ]]; then
+            printprog "Disabling xo-proxy service"
+            runcmd "/bin/systemctl disable xo-proxy" || true
+            printok "Disabled xo-proxy service"
+        fi
+
+        printprog "Removing xo-proxy service file"
+        runcmd "rm -f /etc/systemd/system/xo-proxy.service"
+        printok "Removed xo-proxy service file"
+    fi
+
+    # Reload systemd if we removed service files
+    if [[ "$has_xo_server_service" == "true" ]] || [[ "$has_xo_proxy_service" == "true" ]]; then
+        printprog "Reloading systemd daemon"
+        runcmd "/bin/systemctl daemon-reload"
+        printok "Reloaded systemd daemon"
+    fi
+
+    # Remove symlinks
+    echo
+    printprog "Removing symlinks"
+    local symlinks=("xo-server" "xo-web" "xo-cli" "xo-proxy")
+    for link in "${symlinks[@]}"; do
+        if [[ -L "$INSTALLDIR/$link" ]]; then
+            runcmd "rm -f \"$INSTALLDIR/$link\""
+            printinfo "Removed $INSTALLDIR/$link symlink"
+        fi
+    done
+    printok "Removed symlinks"
+
+    # Remove build directories
+    if [[ -d "$INSTALLDIR/xo-builds" ]]; then
+        echo
+        printprog "Removing build directories"
+        # Double-check the path is safe
+        if [[ "$INSTALLDIR/xo-builds" =~ ^/opt/xo/xo-builds$ ]]; then
+            runcmd "rm -rf \"$INSTALLDIR/xo-builds\""
+            printok "Removed build directories"
+        else
+            printfail "Unsafe path detected, skipping removal of $INSTALLDIR/xo-builds"
+        fi
+    fi
+
+    # Remove source directories
+    if [[ -d "$INSTALLDIR/xo-src" ]]; then
+        echo
+        printprog "Removing source directories"
+        # Double-check the path is safe
+        if [[ "$INSTALLDIR/xo-src" =~ ^/opt/xo/xo-src$ ]]; then
+            runcmd "rm -rf \"$INSTALLDIR/xo-src\""
+            printok "Removed source directories"
+        else
+            printfail "Unsafe path detected, skipping removal of $INSTALLDIR/xo-src"
+        fi
+    fi
+
+    # Remove XO configuration and data files - requires explicit confirmation
+    echo
+    printinfo "XO configuration and data files contain your settings and database"
+    echo "  Location: $CONFIGPATH/.config/xo-server"
+    echo "  Location: $CONFIGPATH/.local/share/xo-server"
+    echo
+    read -r -p "Do you want to PERMANENTLY DELETE configuration and data files? [y/N]: " answer
+    case $answer in
+        y|Y)
+            echo
+            printwarning "This action cannot be undone!"
+            read -r -p "Type 'DELETE' to confirm permanent removal of config and data: " confirm
+            if [[ "$confirm" == "DELETE" ]]; then
+                if [[ -d "$CONFIGPATH/.config/xo-server" ]]; then
+                    printprog "Removing XO server configuration"
+                    runcmd "rm -rf \"$CONFIGPATH/.config/xo-server\""
+                    printok "Removed XO server configuration"
+                fi
+
+                if [[ -d "$CONFIGPATH/.local/share/xo-server" ]]; then
+                    printprog "Removing XO server data"
+                    runcmd "rm -rf \"$CONFIGPATH/.local/share/xo-server\""
+                    printok "Removed XO server data"
+                fi
+
+                if [[ -d "$CONFIGPATH/.cache/xo-server" ]]; then
+                    printprog "Removing XO server cache"
+                    runcmd "rm -rf \"$CONFIGPATH/.cache/xo-server\""
+                    printok "Removed XO server cache"
+                fi
+
+                # Clear Valkey/Redis data for XO
+                if command -v valkey-cli &>/dev/null || command -v redis-cli &>/dev/null; then
+                    local redis_cmd="valkey-cli"
+                    if ! command -v valkey-cli &>/dev/null; then
+                        redis_cmd="redis-cli"
+                    fi
+                    
+                    printprog "Clearing XO data from Valkey/Redis"
+                    # Get all XO-related keys and delete them
+                    local xo_keys=$($redis_cmd --scan --pattern "xo:*" 2>/dev/null || true)
+                    if [[ -n "$xo_keys" ]]; then
+                        echo "$xo_keys" | while read -r key; do
+                            $redis_cmd DEL "$key" &>/dev/null || true
+                        done
+                        printok "Cleared XO data from Valkey/Redis"
+                    else
+                        printinfo "No XO data found in Valkey/Redis"
+                    fi
+                fi
+            else
+                printinfo "Deletion cancelled - preserving configuration and data files"
+            fi
+            ;;
+        *)
+            printinfo "Preserving configuration and data files"
+            ;;
+    esac
+
+    # Check if INSTALLDIR is now empty and remove if so
+    if [[ -d "$INSTALLDIR" ]]; then
+        local remaining_files=$(find "$INSTALLDIR" -type f 2>/dev/null | wc -l)
+        if [[ $remaining_files -eq 0 ]]; then
+            echo
+            printprog "Removing empty installation directory"
+            runcmd "rmdir \"$INSTALLDIR\"" 2>/dev/null || true
+            printok "Removed empty installation directory"
+        else
+            echo
+            printinfo "Installation directory not empty, preserving $INSTALLDIR"
+        fi
+    fi
+
+    # Remove sudoers file if it exists
+    if [[ -f "$SUDOERSFILE" ]]; then
+        echo
+        printprog "Removing sudoers file"
+        runcmd "rm -f \"$SUDOERSFILE\""
+        printok "Removed sudoers file"
+    fi
+
+    echo
+    printok "XO uninstall completed"
+    echo
+    printinfo "Log files have been preserved in $LOGPATH"
+    echo
+}
+
 # only specific list of operating systems are supported. check operating system name/version here
 function CheckOS {
 
     OSVERSION=$(runcmd_stdout "grep ^VERSION_ID /etc/os-release | cut -d'=' -f2 | grep -Eo '[0-9]{1,2}' | head -1")
     OSNAME=$(runcmd_stdout "grep ^NAME /etc/os-release | cut -d'=' -f2 | sed 's/\"//g' | awk '{print \$1}'")
+    # Special handling for Fedora Rawhide
+    if [[ "$OSNAME" == "Fedora" ]]; then
+        local VERSION_STRING=$(runcmd_stdout "grep ^VERSION_ID /etc/os-release | cut -d'=' -f2 | sed 's/\"//g'")
+        if [[ "$VERSION_STRING" == "rawhide" ]]; then
+            OSVERSION="rawhide"
+        fi
+    fi
 
     # check that were not on official XOA VM. if yes, bail out
     if [[ $(runcmd_stdout "grep ^GRUB_DISTRIBUTOR /etc/default/grub | grep 'Xen Orchestra'") ]]; then
@@ -1298,8 +2266,15 @@ function CheckOS {
 
     if [[ $(runcmd_stdout "command -v dnf") ]]; then
         PKG_FORMAT="rpm"
-        # Since version 10, redis is replaced with valkey
-        if [[ $OSVERSION -ge 10 ]]; then
+        # Handle Fedora separately - uses valkey since Fedora 41
+        if [[ "$OSNAME" == "Fedora" ]]; then
+            if [[ "$OSVERSION" == "rawhide" ]] || [[ "$OSVERSION" -ge 41 ]]; then
+                REDIS=0  # Use valkey
+            else
+                REDIS=1  # Use redis (for older Fedora versions if any)
+            fi
+        # For RHEL-based distros, valkey since version 10
+        elif [[ $OSVERSION -ge 10 ]]; then
             REDIS=0
         else
             REDIS=1
@@ -1321,8 +2296,8 @@ function CheckOS {
         return 0
     fi
 
-    if [[ ! "$OSNAME" =~ ^(Debian|Ubuntu|CentOS|Rocky|AlmaLinux)$ ]]; then
-        printfail "Only Ubuntu/Debian/CentOS/Rocky/AlmaLinux supported"
+    if [[ ! "$OSNAME" =~ ^(Debian|Ubuntu|CentOS|Rocky|AlmaLinux|Fedora)$ ]]; then
+        printfail "Only Ubuntu/Debian/CentOS/Rocky/AlmaLinux/Fedora supported"
         exit 1
     fi
 
@@ -1341,6 +2316,11 @@ function CheckOS {
         exit 1
     fi
 
+    if [[ "$OSNAME" == "Fedora" ]] && [[ ! "$OSVERSION" =~ ^(41|42|43|rawhide)$ ]]; then
+        printfail "Only Fedora 41/42/43/rawhide supported"
+        exit 1
+    fi
+
     if [[ "$OSNAME" == "Debian" ]] && [[ ! "$OSVERSION" =~ ^(10|11|12|13)$ ]]; then
         printfail "Only Debian 10/11/12/13 supported"
         exit 1
@@ -1349,6 +2329,14 @@ function CheckOS {
     if [[ "$OSNAME" == "Ubuntu" ]] && [[ ! "$OSVERSION" =~ ^(20|22|24)$ ]]; then
         printfail "Only Ubuntu 20/22/24 supported"
         exit 1
+    fi
+
+    # Display warning for Fedora users about unofficial support
+    if [[ "$OSNAME" == "Fedora" ]]; then
+        echo
+        printwarning "NOTICE: Xen Orchestra does not officially support Fedora"
+        printwarning "This is an experimental installation using Fedora's native packages"
+        echo
     fi
 
 }
@@ -1496,7 +2484,9 @@ function StartUpScreen {
     echo -e "${COLOR_WHITE}3. Rollback${COLOR_N}"
     echo -e "${COLOR_WHITE}4. Install proxy${COLOR_N}"
     echo -e "${COLOR_WHITE}5. Update proxy${COLOR_N}"
-    echo -e "${COLOR_WHITE}6. Exit${COLOR_N}"
+    echo -e "${COLOR_WHITE}6. Manage admin credentials${COLOR_N}"
+    echo -e "${COLOR_WHITE}7. Uninstall${COLOR_N}"
+    echo -e "${COLOR_WHITE}8. Exit${COLOR_N}"
     echo
     read -r -p ": " option
 
@@ -1590,6 +2580,16 @@ function StartUpScreen {
             exit 0
             ;;
         6)
+            ManageCredentials
+            echo
+            read -r -p "Press Enter to return to main menu..." 
+            StartUpScreen
+            ;;
+        7)
+            UninstallXO
+            exit 0
+            ;;
+        8)
             exit 0
             ;;
         *)
