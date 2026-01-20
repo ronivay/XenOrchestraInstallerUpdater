@@ -308,11 +308,11 @@ function InstallDependenciesDeb {
     runcmd "apt-get install -y apt-transport-https ca-certificates"
     printok "Installing apt-transport-https and ca-certificates packages to support https repos"
 
-    if [[ "$OSNAME" == "Debian" ]] && [[ "$OSVERSION" =~ ^(10|11|12|13)$ ]]; then
+    if [[ "$OSNAME" == "Debian" ]] && [[ "$OSVERSION" =~ ^(11|12|13)$ ]]; then
         echo
-        printprog "Debian 10/11/12/13, so installing gnupg also"
+        printprog "Debian 11/12/13, so installing gnupg also"
         runcmd "apt-get install gnupg -y"
-        printok "Debian 10/11/12/13, so installing gnupg also"
+        printok "Debian 11/12/13, so installing gnupg also"
     fi
 
     # Debian 13 doesn't come with libfuse2 anymore
@@ -1326,8 +1326,8 @@ function CheckOS {
         exit 1
     fi
 
-    if [[ "$OSNAME" == "CentOS" ]] && [[ ! "$OSVERSION" =~ ^(8|9|10)$ ]]; then
-        printfail "Only CentOS 8/9/10 supported"
+    if [[ "$OSNAME" == "CentOS" ]] && [[ ! "$OSVERSION" =~ ^(9|10)$ ]]; then
+        printfail "Only CentOS 9/10 supported"
         exit 1
     fi
 
@@ -1341,13 +1341,13 @@ function CheckOS {
         exit 1
     fi
 
-    if [[ "$OSNAME" == "Debian" ]] && [[ ! "$OSVERSION" =~ ^(10|11|12|13)$ ]]; then
-        printfail "Only Debian 10/11/12/13 supported"
+    if [[ "$OSNAME" == "Debian" ]] && [[ ! "$OSVERSION" =~ ^(11|12|13)$ ]]; then
+        printfail "Only Debian 11/12/13 supported"
         exit 1
     fi
 
-    if [[ "$OSNAME" == "Ubuntu" ]] && [[ ! "$OSVERSION" =~ ^(20|22|24)$ ]]; then
-        printfail "Only Ubuntu 20/22/24 supported"
+    if [[ "$OSNAME" == "Ubuntu" ]] && [[ ! "$OSVERSION" =~ ^(22|24)$ ]]; then
+        printfail "Only Ubuntu 22/24 supported"
         exit 1
     fi
 
