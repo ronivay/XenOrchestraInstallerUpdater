@@ -424,6 +424,10 @@ function UpdateNodeYarn {
     fi
 
     if [ "$PKG_FORMAT" == "deb" ]; then
+        if [[ "$INSTALL_REPOS" == "true" ]]; then
+            # make sure yarn repository key is up to date
+            runcmd "curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg -o /etc/apt/trusted.gpg.d/yarn.asc"
+        fi
         if [[ "${NODEV:-0}" -lt "${NODEVERSION}" ]] && [[ "$INSTALL_REPOS" == "true" ]]; then
             echo
             printprog "node.js version is ${NODEV:-"not installed"}, upgrading to ${NODEVERSION}.x"
