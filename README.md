@@ -222,7 +222,8 @@ Built and tested on XCP-ng 8.x
 
 I run my own little implementation of automation consisting of ansible and virtual machines to test the installation on a regular basis with different operating systems. Test results are visible in badges on top of this readme.
 
-VM image is also built totally by me and distributed from webservers i maintain.
+VM image is also built from scratch by me and distributed from an object storage.
+
 
 ### Contributing
 
