@@ -315,13 +315,13 @@ function InstallDependenciesDeb {
         printok "Debian 11/12/13, so installing gnupg also"
     fi
 
-    # Debian 13 doesn't come with libfuse2 anymore
+    # Debian 13 / Ubuntu 26.04 don't come with libfuse2 anymore
     # it needs to be installed specifically as XO relies on it for now
-    if [[ "$OSNAME" == "Debian" ]] && [[ "$OSVERSION" == 13 ]]; then
+    if { [[ "$OSNAME" == "Debian" ]] && [[ "$OSVERSION" == 13 ]]; } || { [[ "$OSNAME" == "Ubuntu" ]] && [[ "$OSVERSION" == 26 ]]; }; then
         echo
-        printprog "Debian 13, so installing libfuse2t64"
+        printprog "Installing libfuse2t64"
         runcmd "apt-get install libfuse2t64 -y"
-        printok "Debian 13, so installing libfuse2t64"
+        printok "Installing libfuse2t64"
     fi
 
     # install setcap for non-root port binding if missing
@@ -1350,8 +1350,8 @@ function CheckOS {
         exit 1
     fi
 
-    if [[ "$OSNAME" == "Ubuntu" ]] && [[ ! "$OSVERSION" =~ ^(22|24)$ ]]; then
-        printfail "Only Ubuntu 22/24 supported"
+    if [[ "$OSNAME" == "Ubuntu" ]] && [[ ! "$OSVERSION" =~ ^(22|24|26)$ ]]; then
+        printfail "Only Ubuntu 22/24/26 supported"
         exit 1
     fi
 
