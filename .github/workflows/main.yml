@@ -2,8 +2,8 @@ name: xo-install test
 on:
   pull_request:
     paths:
-      - 'xo-install.sh'
-      - 'sample.xo-install.cfg'
+      - "xo-install.sh"
+      - "sample.xo-install.cfg"
   workflow_dispatch:
 
 jobs:
@@ -11,9 +11,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - name: Remove runner-preinstalled Node
-        run: sudo rm -f /usr/local/bin/node /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack
-        shell: bash
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
       - name: xo-install run
         id: install
         run: sudo ./xo-install.sh --install
