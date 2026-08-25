@@ -756,21 +756,8 @@ function InstallXO {
         runcmd "sed -i \"/SyslogIdentifier=.*/a User=$XOUSER\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service"
 
         if [ "$PORT" -le "1024" ]; then
-            local NODEBINARY=$(runcmd_stdout "command -v node")
-            if [[ -L "$NODEBINARY" ]]; then
-                local NODEBINARY=$(runcmd_stdout "readlink -e $NODEBINARY")
-            fi
-
-            if [[ -n "$NODEBINARY" ]]; then
-                printprog "Attempting to set cap_net_bind_service permission for $NODEBINARY"
-                runcmd "setcap 'cap_net_bind_service=+ep' $NODEBINARY" && printok "Attempting to set cap_net_bind_service permission for $NODEBINARY" ||
-                    {
-                        printfail "Attempting to set cap_net_bind_service permission for $NODEBINARY"
-                        echo "	Non-privileged user might not be able to bind to <1024 port. xo-server won't start most likely"
-                    }
-            else
-                printfail "Can't find node executable, or it's a symlink to non existing file. Not trying to setcap. xo-server won't start most likely"
-            fi
+            printinfo "Adding CapabilityBoundingSet and AmbientCapabilities to systemd config"
+            runcmd "sed -i \"/SyslogIdentifier=.*/a CapabilityBoundingSet=CAP_NET_BIND_SERVICE\nAmbientCapabilities=CAP_NET_BIND_SERVICE\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service"
         fi
     fi
 
