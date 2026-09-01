@@ -324,14 +324,6 @@ function InstallDependenciesDeb {
         printok "Installing libfuse2t64"
     fi
 
-    # install setcap for non-root port binding if missing
-    if [[ -z $(runcmd_stdout "command -v setcap") ]]; then
-        echo
-        printprog "Installing setcap"
-        runcmd "apt-get install -y libcap2-bin"
-        printok "Installing setcap"
-    fi
-
     # only run automated node install if executable not found
     if [[ -z $(runcmd_stdout "command -v node") ]] || [[ -z $(runcmd_stdout "command -v npm") ]]; then
         echo
@@ -756,8 +748,8 @@ function InstallXO {
         runcmd "sed -i \"/SyslogIdentifier=.*/a User=$XOUSER\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service"
 
         if [ "$PORT" -le "1024" ]; then
-            printinfo "Adding CapabilityBoundingSet and AmbientCapabilities to systemd config"
-            runcmd "sed -i \"/SyslogIdentifier=.*/a CapabilityBoundingSet=CAP_NET_BIND_SERVICE\nAmbientCapabilities=CAP_NET_BIND_SERVICE\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service"
+            printinfo "Adding AmbientCapabilities to systemd config"
+            runcmd "sed -i \"/SyslogIdentifier=.*/a AmbientCapabilities=CAP_NET_BIND_SERVICE\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/xo-server.service"
         fi
     fi
 
