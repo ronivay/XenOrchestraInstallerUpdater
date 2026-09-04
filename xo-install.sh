@@ -53,6 +53,9 @@ INSTALL_REPOS="${INSTALL_REPOS:-"true"}"
 SYSLOG_TARGET="${SYSLOG_TARGET:-""}"
 YARN_CACHE_CLEANUP="${YARN_CACHE_CLEANUP:-"false"}"
 YARN_NETWORK_TIMEOUT="${YARN_NETWORK_TIMEOUT:-"300000"}"
+PUBLIC_URL="${PUBLIC_URL:-""}"
+USE_FORWARDED_HEADERS="${USE_FORWARDED_HEADERS:-"false"}"
+COOKIE_SECURE="${COOKIE_SECURE:-"false"}"
 
 # set variables not changeable in configfile
 TIME=$(date +%Y%m%d%H%M)
@@ -842,6 +845,21 @@ function InstallXO {
             printinfo "Enabling remote syslog in xo-server configuration file"
             runcmd "sed -i \"s%#\[logs.transport.syslog\]%\[logs.transport.syslog\]%\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
             runcmd "sed -i \"/^\[logs.transport.syslog.*/a target = '$SYSLOG_TARGET'\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
+        fi
+
+        if [[ -n "$PUBLIC_URL" ]]; then
+            printinfo "Setting public URL in xo-server configuration file"
+            runcmd "sed -i \"/^#publicUrl =.*/a publicUrl = '$PUBLIC_URL'\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
+        fi
+
+        if [[ "$USE_FORWARDED_HEADERS" == "true" ]]; then
+            printinfo "Trusting forwarded headers in xo-server configuration file"
+            runcmd "sed -i \"s/#useForwardedHeaders = true/useForwardedHeaders = true/\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
+        fi
+
+        if [[ "$COOKIE_SECURE" == "true" ]]; then
+            printinfo "Enabling secure cookies in xo-server configuration file"
+            runcmd "sed -i \"/^\[http.cookies\]/a secure = true\" $INSTALLDIR/xo-builds/xen-orchestra-$TIME/packages/xo-server/sample.config.toml"
         fi
 
         printinfo "Activating modified configuration file"
