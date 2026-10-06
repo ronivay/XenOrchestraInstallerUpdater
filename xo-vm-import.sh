@@ -152,9 +152,9 @@ function VMImport {
     # Import image. We pipe through zcat because xe vm-import should transparently decompress gzipped image, but doesn't seem to understand when stream ends when piped through curl/wget whatnot.
     # if SR was not defined, we leave that parameter out
     if [[ $sruuid == "default" ]]; then
-        uuid=$(curl "$IMAGE_URL" | zcat | xe vm-import filename=/dev/stdin)
+        uuid=$(wget -O- "$IMAGE_URL" | zcat | xe vm-import filename=/dev/stdin)
     else
-        uuid=$(curl "$IMAGE_URL" | zcat | xe vm-import filename=/dev/stdin sr-uuid="$sruuid")
+        uuid=$(wget -O- "$IMAGE_URL" | zcat | xe vm-import filename=/dev/stdin sr-uuid="$sruuid")
     fi
 
     # exit if import failed for any reason
