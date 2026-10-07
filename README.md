@@ -193,7 +193,7 @@ Plugins are installed according to what is specified in `PLUGINS` variable insid
 
 ### Image
 
-If you don't want to first install a VM and then use `xo-install.sh` script on it, you have the possibility to import VM image which has everything already setup. Use `xo-vm-import.sh` to do this, it'll download a prebuilt Debian 11 image which has Xen Orchestra and XenOrchestraInstallerUpdater installed.
+If you don't want to first install a VM and then use `xo-install.sh` script on it, you have the possibility to import VM image which has everything already setup. Use `xo-vm-import.sh` to do this, it'll download a prebuilt Debian 13 image which has Xen Orchestra and XenOrchestraInstallerUpdater installed.
 
 Details of image build process [here](https://github.com/ronivay/xen-orchestra-vm)
 
