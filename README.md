@@ -152,7 +152,7 @@ deb:
 - dmidecode
 - sudo (if set in xo-install.cfg)
 - patch
-- libfuse2t64 (debian 13)
+- libfuse2t64 (debian 13, ubuntu 26.04)
 ```
 
 Following repositories will be installed if needed and repository install is enabled in xo-install.cfg

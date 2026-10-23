@@ -318,14 +318,7 @@ function InstallDependenciesDeb {
         printok "Debian 11/12/13, so installing gnupg also"
     fi
 
-    # Debian 13 / Ubuntu 26.04 don't come with libfuse2 anymore
-    # it needs to be installed specifically as XO relies on it for now
-    if { [[ "$OSNAME" == "Debian" ]] && [[ "$OSVERSION" == 13 ]]; } || { [[ "$OSNAME" == "Ubuntu" ]] && [[ "$OSVERSION" == 26 ]]; }; then
-        echo
-        printprog "Installing libfuse2t64"
-        runcmd "apt-get install libfuse2t64 -y"
-        printok "Installing libfuse2t64"
-    fi
+    InstallLibFuse2
 
     # only run automated node install if executable not found
     if [[ -z $(runcmd_stdout "command -v node") ]] || [[ -z $(runcmd_stdout "command -v npm") ]]; then
@@ -369,6 +362,30 @@ function InstallDependenciesDeb {
     runcmd "/bin/systemctl enable rpcbind && /bin/systemctl start rpcbind"
     printok "Enabling and starting rpcbind service"
 
+}
+
+# Debian 13 / Ubuntu 26.04 don't come with libfuse2 anymore
+# it needs to be installed specifically as XO relies on it for now.
+# also checked on update as it may be missing if OS was upgraded in place
+function InstallLibFuse2 {
+
+    set -euo pipefail
+
+    trap ErrorHandling ERR INT
+
+    if [[ "$PKG_FORMAT" != "deb" ]]; then
+        return 0
+    fi
+
+    if { [[ "$OSNAME" == "Debian" ]] && [[ "$OSVERSION" == 13 ]]; } || { [[ "$OSNAME" == "Ubuntu" ]] && [[ "$OSVERSION" == 26 ]]; }; then
+        if ! dpkg-query -W -f='${Status}' libfuse2t64 2>/dev/null | grep -q "install ok installed"; then
+            echo
+            printprog "Installing libfuse2t64"
+            runcmd "apt-get update"
+            runcmd "apt-get install libfuse2t64 -y"
+            printok "Installing libfuse2t64"
+        fi
+    fi
 }
 
 # keep node.js and yarn up to date
@@ -958,6 +975,8 @@ function VerifyServiceStart {
 
 # run xen orchestra installation but also cleanup old installations based on value in xo-install.cfg
 function UpdateXO {
+
+    InstallLibFuse2
 
     if [[ "$XO_SVC" == "xo-server" ]]; then
         InstallXO
